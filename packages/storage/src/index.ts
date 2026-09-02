@@ -1,17 +1,21 @@
 /**
  * @opensearch/storage
- * Storage Boundary Scaffolding (Phase 1)
- * Actual document/URL persistence implementation is scheduled for Phase 3.
+ * Phase 3: Storage Foundation — Complete Implementation
  */
 
-import { ServiceBoundaryInfo } from '@opensearch/shared';
+// Domain Models
+export * from './models.js';
 
-export const STORAGE_MODULE_INFO: ServiceBoundaryInfo = {
-  moduleName: '@opensearch/storage',
-  purpose: 'Persistent storage for crawled documents and search metadata',
-  currentPhaseScope: 'Phase 1: Boundary initialization only. Implementation starts in Phase 3.',
-};
+// Repository Abstractions (interfaces)
+export * from './repositories.js';
 
-export function getStorageModuleInfo(): ServiceBoundaryInfo {
-  return STORAGE_MODULE_INFO;
-}
+// Validation
+export { STORAGE_LIMITS } from './validation.js';
+
+// Concrete Adapters
+export { JsonStorageAdapter } from './adapters/json-adapter.js';
+export type { JsonStorageAdapterOptions } from './adapters/json-adapter.js';
+
+// Factory (preferred usage for application code)
+export { createStorageAdapter } from './factory.js';
+export type { StorageFactoryOptions } from './factory.js';

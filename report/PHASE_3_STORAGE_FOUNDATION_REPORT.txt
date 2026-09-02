@@ -1,0 +1,185 @@
+OPENSEARCH V1.0.0 — MILESTONE 1: PROJECT FOUNDATION
+PHASE 3: STORAGE FOUNDATION — COMPLETION REPORT
+Generated: 2026-09-03
+═══════════════════════════════════════════════════════════════════════════════
+
+## OVERVIEW
+
+Phase 3 establishes a clean, persistent, replaceable storage foundation for
+crawled documents and search metadata. The implementation follows an
+adapter-pattern architecture: all storage contracts are defined as TypeScript
+interfaces, and the first concrete backend is a zero-dependency JSON file store.
+Future phases (crawler, indexer, search) depend only on the interfaces, not on
+the JSON backend, making the storage layer swappable without touching any other
+package.
+
+All work is scoped to the @opensearch/storage package. No other packages were
+modified except package.json (added verify:phase3 script).
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## FILES CREATED
+
+packages/storage/src/models.ts
+  Domain models for all four entity types. Covers:
+  • DocumentRecord — crawled page content (id, url, urlHash, title,
+    description, headings, bodyText, language, contentType, contentLength,
+    httpStatus, outboundLinks, crawledAt, updatedAt, indexStatus,
+    lastIndexedAt, indexVersion)
+  • UrlRecord — URL frontier metadata (urlHash, url, domain, scheme,
+    crawlStatus, discoveredAt, lastAttemptedAt, lastSucceededAt,
+    attemptCount, lastHttpStatus, referrerUrl, depth)
+  • CrawlRecord — per-attempt crawl event log (crawlId, url, urlHash,
+    status, httpStatus, contentType, responseBytes, durationMs, startedAt,
+    completedAt, errorMessage, redirectChain, finalUrl, documentId)
+  • IndexMetadataRecord — index build lifecycle metadata (buildId, version,
+    startedAt, completedAt, isActive, documentCount, termCount, indexPath,
+    status, errorMessage, lastRebuildAt)
+  
+  Also exports: CRAWL_STATUS, INDEX_STATUS enums, and all
+  Create*/Update* input types.
+
+packages/storage/src/repositories.ts
+  Storage abstraction interfaces:
+  • DocumentRepository (create, findById, findByUrlHash, findByUrl,
+    update, count, list, findByIndexStatus)
+  • UrlRepository (create, findByHash, findByUrl, update, count,
+    findByCrawlStatus)
+  • CrawlRepository (create, findById, findByUrl, findByUrlHash, count)
+  • IndexMetadataRepository (create, findById, findActive, update, list)
+  • StorageAdapter (documents, urls, crawls, indexMetadata,
+    initialize, close, health)
+  • StorageHealth — health/diagnostics value type
+
+packages/storage/src/validation.ts
+  Boundary validation for all four Create* input types:
+  • URL validation (scheme, length, format) via shared sanitizeUrl
+  • Field-type and range checks (httpStatus 100-599, contentLength ≥ 0, etc.)
+  • Enum checks for CRAWL_STATUS and INDEX_STATUS values
+  • STORAGE_LIMITS constants (MAX_URL_LENGTH, MAX_BODY_TEXT_BYTES, etc.)
+  • throwDuplicateError helper for consistent ConflictError generation
+
+packages/storage/src/adapters/json-adapter.ts
+  Concrete local storage backend (JsonStorageAdapter):
+  • Persistence: one JSON file per collection (documents.json, urls.json,
+    crawls.json, index-metadata.json) inside the configured storageDir
+  • Atomic writes: write-to-.tmp-then-rename prevents file corruption
+  • In-memory indexes: URL→ID and URLHash→ID maps for O(1) lookups
+  • Lifecycle: initialize() creates directories, loads files, rebuilds
+    indexes; close() marks adapter as uninitialized
+  • Guard: all repository accessors throw StorageError if called before
+    initialize()
+  • No external dependencies: uses only node:fs, node:path, node:crypto,
+    and @opensearch/shared utilities
+
+packages/storage/src/factory.ts
+  createStorageAdapter(options) — wires typed AppConfig (from Phase 2
+  loadConfig) to a JsonStorageAdapter. Application code calls this factory
+  and depends only on the StorageAdapter interface, not the concrete class.
+
+packages/storage/src/index.ts  [UPDATED]
+  Updated entry point re-exports all Phase 3 modules:
+  models, repositories, validation limits, JsonStorageAdapter,
+  JsonStorageAdapterOptions, createStorageAdapter, StorageFactoryOptions.
+
+packages/storage/tests/document-repository.test.ts
+  13 tests covering: create, findById, findByUrl, findByUrlHash, duplicates
+  (ConflictError), update, NotFoundError, count, list with pagination,
+  findByIndexStatus, field validation, and persistence across restart.
+
+packages/storage/tests/url-repository.test.ts
+  10 tests covering: create, findByHash, findByUrl, duplicate prevention,
+  update (crawlStatus, attemptCount, lastHttpStatus), findByCrawlStatus,
+  scheme validation, and persistence across restart.
+
+packages/storage/tests/crawl-and-index.test.ts
+  14 tests covering: crawl create/findById/findByUrl/findByUrlHash/count,
+  validation, persistence; index metadata create/findById/findActive/update/
+  list ordering; and StorageAdapter health + initialization guards.
+
+scripts/verify-phase3.mjs  [NEW]
+  End-to-end verification script (46 checks):
+  • Document Repository: 12 checks
+  • URL Repository: 9 checks
+  • Crawl Repository: 6 checks
+  • Index Metadata Repository: 7 checks
+  • Persistence (simulated restart): 3 checks
+  • Storage Health: 4 checks
+  • Input Validation: 5 checks
+  Each suite runs in an isolated temp directory; all dirs are cleaned up.
+
+package.json  [UPDATED]
+  Added: "verify:phase3": "node ./scripts/verify-phase3.mjs"
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## DESIGN DECISIONS
+
+1. JSON file backend (not SQLite)
+   The project requires zero external dependencies at V1.0.0 and the storage
+   layer must be demonstrably replaceable. A pure JSON store with atomic writes
+   is durable, zero-config, and requires no native binaries. A future phase can
+   swap to SQLite (better-sqlite3) or PostgreSQL by implementing StorageAdapter.
+
+2. Atomic writes (tmp+rename)
+   `fs.writeFileSync(tmpPath) → fs.renameSync(tmpPath, filePath)` is atomic on
+   most OS/filesystem combinations. If the process crashes mid-write, the old
+   file is intact and the .tmp file is orphaned (harmless).
+
+3. Adapter pattern — strict interface separation
+   packages/storage/src/repositories.ts defines pure TypeScript interfaces.
+   The JsonStorageAdapter lives behind those interfaces. No other package imports
+   the concrete adapter class directly; all usage goes through createStorageAdapter()
+   and the StorageAdapter interface.
+
+4. In-memory secondary indexes
+   URL→DocumentId and URLHash→DocumentId maps are rebuilt from the JSON file
+   on initialize(). This gives O(1) lookup-by-url and lookup-by-hash without
+   needing secondary index files. Rebuilding on start keeps state consistent
+   even if the process crashed between a write and an index update.
+
+5. Create/Update input types separated from full records
+   CreateDocumentInput omits system-managed fields (id, crawledAt, updatedAt,
+   indexStatus). UpdateDocumentInput makes all non-identifier fields optional.
+   This enforces correct usage at the TypeScript level.
+
+6. Validation at storage boundary, not deep inside
+   All validation happens in validation.ts before any file I/O. If an invalid
+   input reaches the adapter, it throws a ValidationError (not a StorageError).
+   This makes error handling predictable for callers.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## VERIFICATION RESULTS
+
+TypeScript typecheck (tsc -b):   PASSED — 0 errors
+Unit tests (vitest run):          PASSED — 64/64 tests (37 new + 27 existing)
+  • packages/storage/tests/document-repository.test.ts: 13/13
+  • packages/storage/tests/url-repository.test.ts:      10/10
+  • packages/storage/tests/crawl-and-index.test.ts:     14/14
+  • All prior Phase 1 & 2 tests:                        27/27
+End-to-end verification script:   PASSED — 46/46 checks
+
+Full build (tsc -b, all workspaces): PASSED
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## PHASE GATE STATUS
+
+All Phase 3 requirements from PHASE.txt are satisfied:
+
+  [x] Well-typed domain models (Document, UrlMetadata, CrawlMetadata,
+      IndexMetadata) with stable identifiers, timestamps, content fields,
+      crawl state, HTTP metadata, and indexing state/version
+  [x] StorageAdapter interface and per-entity Repository interfaces
+      separating contract from implementation
+  [x] Local zero-cost backend (JSON files, atomic writes, no native deps)
+  [x] Storage wired to Phase 2 AppConfig (storageDir from loadConfig)
+  [x] Unit tests covering CRUD, duplicates, validation, status filtering,
+      and persistence across simulated process restarts
+  [x] verify-phase3.mjs script (46 checks, exit 0 on success)
+  [x] PHASE_3_STORAGE_FOUNDATION_REPORT.txt in report/
+
+Phase 3 is COMPLETE. Phase 4 (Web Crawler Foundation) may proceed.
+
+═══════════════════════════════════════════════════════════════════════════════
