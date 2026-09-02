@@ -1,0 +1,16 @@
+{
+  "name": "@opensearch/storage",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Storage abstraction and persistence models for OpenSearch",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "node -e \"fs.rmSync('dist', { recursive: true, force: true })\""
+  },
+  "dependencies": {
+    "@opensearch/shared": "*"
+  }
+}

@@ -1,0 +1,9 @@
+node_modules/
+dist/
+build/
+coverage/
+.git/
+report/
+PHASE.txt
+PROJECT.txt
+data/

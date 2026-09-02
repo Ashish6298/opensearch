@@ -1,0 +1,447 @@
+================================================================================
+PROJECT — OPENSEARCH
+VERSION — V1.0.0
+TYPE — PUBLIC, GENERAL-PURPOSE, PRIVACY-FIRST SEARCH ENGINE
+COST TARGET — ₹0 INITIAL DEVELOPMENT / LAUNCH COST
+================================================================================
+
+1. PROJECT OVERVIEW
+--------------------------------------------------------------------------------
+OpenSearch is a self-built, public web search engine intended to let ordinary
+people search the web through an independent search interface backed by its own
+crawler, web index, query-processing layer, ranking engine, and search API.
+
+The V1.0.0 goal is NOT to compete with Google-scale infrastructure. The goal is
+to create a real, usable search engine that:
+- discovers and crawls publicly accessible web pages,
+- stores and indexes searchable page content,
+- processes user queries,
+- ranks results using the project's own ranking pipeline,
+- presents useful search results through a responsive web application,
+- can be deployed publicly using free/zero-cost infrastructure where practical,
+- avoids unnecessary tracking and user profiling.
+
+The project must be designed so the V1.0.0 foundation can evolve into a much
+larger search platform without requiring a complete rewrite.
+
+2. END GOAL OF V1.0.0
+--------------------------------------------------------------------------------
+At the end of V1.0.0, a normal user anywhere in the world should be able to:
+
+1. Open the public search website.
+2. Enter a natural-language or keyword search query.
+3. Submit the query without creating an account.
+4. Receive relevant indexed web results.
+5. Open result pages in a new tab.
+6. Navigate through multiple result pages when available.
+7. See result title, URL/domain, and useful snippet/description.
+8. Refine searches using basic filters where implemented.
+9. Use the service comfortably on desktop and mobile browsers.
+
+The system must be a genuine search engine, not a UI wrapper around Google,
+Bing, Brave, or another external search provider.
+
+3. CORE PRODUCT PRINCIPLES
+--------------------------------------------------------------------------------
+3.1 Real Search
+The system must maintain its own crawl/index/search pipeline.
+
+3.2 Privacy First
+Do not require accounts for normal searching. Do not build user profiles.
+Do not retain identifiable search history unless a future version explicitly
+introduces an opt-in feature with a documented privacy model.
+
+3.3 Zero-Cost First
+Development and initial public deployment should target ₹0 using free/open
+source software and free infrastructure tiers where possible. The architecture
+must not assume paid infrastructure is permanently available.
+
+3.4 Open and Modular
+Crawler, parser, indexer, ranking, API, frontend, configuration, and testing
+must be separated into understandable modules/services.
+
+3.5 Safe and Responsible Crawling
+Respect robots.txt, crawl delays where applicable, HTTP status codes, content
+types, redirects, URL normalization, duplicate prevention, and reasonable
+request rates.
+
+3.6 No Artificial Feature Inflation
+V1.0.0 must prioritize reliability and search quality over flashy features.
+
+4. V1.0.0 FUNCTIONAL SCOPE
+--------------------------------------------------------------------------------
+A. Public Search Interface
+- Search box
+- Search submission
+- Results page
+- Result title
+- Result URL/domain
+- Result snippet
+- Result count where reliably available
+- Pagination
+- Loading state
+- Empty-state handling
+- Error state
+- Responsive desktop/mobile layout
+
+B. Query Processing
+- Query normalization
+- Whitespace normalization
+- Basic tokenization
+- Case normalization
+- Safe query handling
+- Basic query parsing
+- Support for common punctuation without crashing
+- Protection against malformed/abusive queries
+
+C. Web Crawler
+- Seed URLs
+- URL queue
+- Fetching
+- HTTP response handling
+- Redirect handling
+- robots.txt handling
+- Content-type filtering
+- HTML extraction
+- Link discovery
+- URL normalization
+- Duplicate URL prevention
+- Crawl limits
+- Retry handling
+- Timeout handling
+- Logging
+- Polite request scheduling
+
+D. Content Processing
+Extract at minimum:
+- canonical URL when available
+- page title
+- meta description when available
+- headings
+- visible textual content
+- links
+- language when detectable
+- HTTP metadata
+- crawl timestamp
+
+The system should remove obvious non-content elements such as scripts and
+styles before indexing.
+
+E. Indexing
+The index must support efficient retrieval of documents matching a query.
+
+The implementation should support:
+- document IDs
+- token/document mapping
+- term frequency
+- document frequency
+- field-aware information where practical
+- title weighting
+- heading weighting
+- body weighting
+- document metadata
+- index persistence
+- index rebuild/update capability
+
+F. Ranking
+V1.0.0 should use a deterministic, explainable ranking pipeline.
+
+Baseline ranking may use BM25 or an equivalent proven lexical retrieval method,
+combined with sensible signals such as:
+- title match
+- heading match
+- body match
+- exact phrase relevance where supported
+- URL/domain relevance
+- document quality signals
+- freshness when meaningful
+- duplicate penalties
+
+Do not claim that ranking is equivalent to Google.
+
+G. Search API
+Provide a clean API between frontend and search backend.
+
+The API must include:
+- search endpoint
+- query validation
+- pagination
+- result serialization
+- health endpoint
+- structured error responses
+- request limits/rate protection appropriate to free infrastructure
+
+H. Reliability
+- graceful handling of crawler failures
+- graceful handling of search failures
+- API validation
+- timeouts
+- retry policy
+- structured logs
+- health checks
+- basic metrics
+- reproducible local setup
+
+5. V1.0.0 NON-GOALS
+--------------------------------------------------------------------------------
+The following are explicitly OUT OF SCOPE for V1.0.0:
+- indexing the entire internet,
+- Google-scale infrastructure,
+- real-time indexing of the web,
+- personalized search,
+- user accounts,
+- user profiles,
+- behavioral tracking,
+- advertising platform,
+- payment system,
+- social network,
+- browser extension,
+- native mobile application,
+- AI-generated answer engine as a mandatory feature,
+- large-scale vector/semantic search,
+- distributed crawling across many machines,
+- enterprise-grade multi-region deployment,
+- guaranteed ranking parity with commercial search engines.
+
+These may be considered after V1.0.0.
+
+6. HIGH-LEVEL ARCHITECTURE
+--------------------------------------------------------------------------------
+The system should be organized approximately as:
+
+                         PUBLIC USERS
+                              |
+                              v
+                     +----------------+
+                     | Web Frontend   |
+                     +-------+--------+
+                             |
+                             v
+                     +----------------+
+                     | Search API     |
+                     +-------+--------+
+                             |
+                    +--------+--------+
+                    |                 |
+                    v                 v
+             Query Processing      Ranking
+                    |                 |
+                    +--------+--------+
+                             |
+                             v
+                       Search Index
+                             ^
+                             |
+                       Indexer/Parser
+                             ^
+                             |
+                         Crawler
+                             |
+                             v
+                           Web
+
+Recommended logical modules:
+- frontend
+- search-api
+- crawler
+- parser
+- indexer
+- ranking
+- storage
+- shared configuration/utilities
+- tests
+- documentation
+
+The exact technology may be selected during the architecture phase, but the
+implementation must remain modular and maintainable.
+
+7. DATA FLOW
+--------------------------------------------------------------------------------
+CRAWL:
+Seed URLs
+ -> URL scheduler
+ -> robots.txt check
+ -> HTTP fetch
+ -> response validation
+ -> HTML parser
+ -> metadata/content extraction
+ -> link discovery
+ -> URL normalization/deduplication
+ -> document storage
+ -> index update
+
+SEARCH:
+User query
+ -> API validation
+ -> query normalization
+ -> tokenization
+ -> index lookup
+ -> candidate retrieval
+ -> ranking
+ -> pagination
+ -> result serialization
+ -> frontend rendering
+
+8. INITIAL INFRASTRUCTURE STRATEGY
+--------------------------------------------------------------------------------
+The project must support local development without requiring paid services.
+
+Initial development may run:
+- frontend locally,
+- API locally,
+- crawler locally,
+- index/storage locally.
+
+Public deployment should prefer free tiers and static/serverless/container
+hosting where suitable. The system must not hard-code dependence on a paid cloud
+provider.
+
+Important constraint:
+Free hosting limits may make continuous large-scale crawling impossible.
+Therefore crawling and public search serving should be separable. The crawler
+may run periodically on an available machine/environment while the public
+search API serves the latest successfully built index.
+
+9. SECURITY AND ABUSE PROTECTION
+--------------------------------------------------------------------------------
+The public service must include baseline protection against:
+- oversized queries,
+- malformed requests,
+- excessive request frequency,
+- dangerous URL schemes,
+- crawler abuse,
+- SSRF-like fetch behavior,
+- unsupported content,
+- uncontrolled redirects,
+- oversized responses,
+- resource exhaustion.
+
+The crawler must never blindly fetch arbitrary internal/private network
+addresses. Only appropriate public HTTP/HTTPS targets should be considered.
+
+10. PRIVACY
+--------------------------------------------------------------------------------
+Default principles:
+- no login required,
+- no personal profile,
+- no personalized ranking,
+- no sale of search data,
+- minimize server-side request logging,
+- avoid storing full search queries unless operationally necessary,
+- document what operational logs are retained,
+- use HTTPS in production where the hosting platform provides it.
+
+11. SEARCH QUALITY TARGET
+--------------------------------------------------------------------------------
+V1.0.0 is successful when common queries over the indexed corpus produce
+reasonable, understandable results.
+
+Quality evaluation should include:
+- exact keyword queries,
+- multi-word queries,
+- title-focused queries,
+- common informational queries,
+- technical queries,
+- misspellings where supported,
+- empty queries,
+- nonexistent queries,
+- duplicate-content scenarios.
+
+A small manually curated evaluation dataset should be created before release.
+
+12. TESTING STANDARD
+--------------------------------------------------------------------------------
+Every implementation phase must include appropriate testing.
+
+At minimum:
+- unit tests for core logic,
+- integration tests for component boundaries,
+- API tests,
+- crawler safety tests,
+- indexing/retrieval tests,
+- ranking tests,
+- frontend smoke tests,
+- production build verification where applicable.
+
+Every completed phase must produce a plain-text implementation/test report
+saved in the repository's report directory.
+
+The report should include:
+- phase name,
+- implementation summary,
+- files/modules changed,
+- tests executed,
+- test results,
+- verification gates,
+- known limitations,
+- final status.
+
+13. VERSION CONTROL / CHANGE CONTROL
+--------------------------------------------------------------------------------
+Do not introduce unrelated features during a phase.
+
+Do not modify existing behavior outside the phase scope unless required for
+correctness or explicitly documented.
+
+Every phase should leave the repository in a buildable/testable state.
+
+14. V1.0.0 RELEASE GATES
+--------------------------------------------------------------------------------
+V1.0.0 cannot be considered complete until:
+- crawler works against permitted public pages,
+- robots.txt behavior is verified,
+- parser extracts expected content,
+- index persists and can be loaded,
+- search retrieval works,
+- ranking produces deterministic results,
+- API works,
+- frontend works on desktop and mobile,
+- pagination works,
+- error states work,
+- abuse protections are present,
+- no critical test failures remain,
+- public deployment is verified,
+- documentation is complete,
+- final V1.0.0 test/release report is saved.
+
+15. FUTURE ROADMAP
+--------------------------------------------------------------------------------
+Possible post-V1.0.0 directions:
+V1.1:
+- improved ranking
+- spelling correction
+- autocomplete
+- richer filters
+- better duplicate detection
+
+V1.2:
+- semantic/vector retrieval
+- hybrid lexical + semantic ranking
+
+V1.3:
+- optional AI result summaries
+- related questions
+- query understanding
+
+V1.4:
+- developer-focused ranking
+- documentation/package/Git repository signals
+
+V2.x:
+- distributed crawling
+- sharded indexes
+- larger crawl corpus
+- advanced anti-spam
+- multilingual improvements
+- advanced search operators
+
+16. DEFINITION OF DONE
+--------------------------------------------------------------------------------
+OpenSearch V1.0.0 is DONE only when a person who has never seen the code can
+open the public website, enter a search, receive useful results from the
+project's own index, open those results, navigate pages, and use the system
+without an account.
+
+The system must be a real, independently implemented search pipeline and not
+merely a frontend wrapper around another search engine.
+================================================================================

@@ -1,0 +1,873 @@
+================================================================================
+PROJECT — OPENSEARCH
+VERSION — V1.0.0
+FILE — PHASE ROADMAP
+================================================================================
+
+IMPLEMENTATION RULE
+--------------------------------------------------------------------------------
+Implement phases sequentially. Do not skip a phase unless its verification
+requirements are already demonstrably satisfied.
+
+Every phase must:
+1. Implement only its defined scope.
+2. Preserve existing functionality.
+3. Avoid unnecessary UI changes.
+4. Run appropriate tests after implementation.
+5. Fix failures caused by the phase before declaring completion.
+6. Generate and save a .txt implementation/test report in the repository.
+7. Leave the project buildable and testable.
+8. Clearly state PASS/FAIL for each verification gate.
+
+Recommended report path:
+    report/PHASE_<number>_<short_name>_REPORT.txt
+
+================================================================================
+MILESTONE 1 — PROJECT FOUNDATION
+================================================================================
+
+PHASE 1 — Repository & Project Initialization
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Create the initial OpenSearch repository and establish a clean structure.
+
+IMPLEMENT:
+- initialize repository,
+- define frontend/backend/service boundaries,
+- create base directories,
+- configure package management,
+- establish environment configuration,
+- add README,
+- add report directory,
+- add basic development scripts,
+- add .gitignore,
+- define coding conventions.
+
+DO NOT:
+- implement crawler,
+- implement search ranking,
+- add unnecessary UI features.
+
+VERIFY:
+- project installs successfully,
+- basic commands execute,
+- directory structure is correct,
+- no secrets are committed.
+
+OUTPUT:
+A clean, reproducible project foundation.
+
+
+PHASE 2 — Configuration & Shared Infrastructure
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Create centralized configuration and shared utilities.
+
+IMPLEMENT:
+- environment configuration,
+- development/production configuration separation,
+- typed configuration where appropriate,
+- logging foundation,
+- common error types,
+- common utility layer,
+- application constants,
+- configurable limits and timeouts.
+
+VERIFY:
+- configuration loads correctly,
+- invalid configuration fails safely,
+- logging works,
+- tests pass.
+
+
+PHASE 3 — Storage Foundation
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Create persistent storage for crawled documents and search metadata.
+
+IMPLEMENT:
+- document model,
+- URL metadata,
+- crawl metadata,
+- index metadata,
+- persistence abstraction,
+- local development storage,
+- CRUD/update behavior required by later phases.
+
+The storage layer must be replaceable so V1.0.0 is not permanently tied to one
+database technology.
+
+VERIFY:
+- documents can be created/read/updated,
+- persistence survives restart,
+- invalid data is rejected,
+- storage tests pass.
+
+================================================================================
+MILESTONE 2 — CRAWLER FOUNDATION
+================================================================================
+
+PHASE 4 — URL Model, Normalization & Queue
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Build the crawler's URL-management foundation.
+
+IMPLEMENT:
+- URL validation,
+- HTTP/HTTPS filtering,
+- URL normalization,
+- fragment removal,
+- duplicate detection,
+- crawl queue,
+- queue persistence where needed,
+- crawl limits.
+
+VERIFY:
+- equivalent URLs normalize consistently,
+- invalid schemes are rejected,
+- duplicates are prevented,
+- queue behavior is tested.
+
+
+PHASE 5 — HTTP Fetcher
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Safely download permitted public web resources.
+
+IMPLEMENT:
+- HTTP client,
+- timeouts,
+- status handling,
+- redirects,
+- content-size limits,
+- content-type validation,
+- retry policy,
+- user-agent configuration,
+- structured fetch errors.
+
+SECURITY:
+- reject private/internal targets,
+- reject unsupported schemes,
+- prevent uncontrolled downloads.
+
+VERIFY:
+- successful pages fetch,
+- failed pages are handled,
+- timeout works,
+- oversized/unsupported responses are rejected,
+- redirect behavior is tested.
+
+
+PHASE 6 — Robots.txt & Crawl Policy
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Make crawling responsible and policy-aware.
+
+IMPLEMENT:
+- robots.txt retrieval,
+- robots parsing,
+- allowed/disallowed path checks,
+- crawl-delay handling where practical,
+- robots cache,
+- failure behavior,
+- configurable crawler identity.
+
+VERIFY:
+- disallowed URLs are skipped,
+- allowed URLs are crawled,
+- robots failures do not crash the crawler,
+- tests cover representative robots rules.
+
+
+PHASE 7 — HTML Parsing & Content Extraction
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Convert downloaded HTML into clean searchable documents.
+
+IMPLEMENT:
+- HTML parsing,
+- title extraction,
+- meta description extraction,
+- headings,
+- visible text,
+- links,
+- canonical URL,
+- language detection where practical,
+- removal of scripts/styles/navigation noise where possible.
+
+VERIFY:
+- known HTML fixtures produce expected output,
+- malformed HTML does not crash the parser,
+- empty pages are handled,
+- extracted links are normalized.
+
+
+PHASE 8 — Crawl Orchestrator
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Connect fetching, robots policy, parsing, queueing, and storage into a
+working crawler.
+
+IMPLEMENT:
+- seed loading,
+- crawl loop,
+- scheduling,
+- link discovery,
+- deduplication,
+- retry behavior,
+- crawl limits,
+- crawl statistics,
+- graceful shutdown/resume where practical.
+
+VERIFY:
+- a controlled website corpus can be crawled,
+- pages are stored,
+- discovered links enter the queue,
+- duplicate pages are not repeatedly processed,
+- crawler terminates according to configured limits.
+
+================================================================================
+MILESTONE 3 — SEARCH INDEX
+================================================================================
+
+PHASE 9 — Document Processing Pipeline
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Prepare stored documents for indexing.
+
+IMPLEMENT:
+- text normalization,
+- tokenization,
+- stop-word strategy if used,
+- punctuation handling,
+- field separation,
+- title/headings/body weighting metadata,
+- document ID assignment.
+
+VERIFY:
+- identical content produces consistent tokens,
+- multilingual/non-ASCII text does not crash processing,
+- empty documents are handled.
+
+
+PHASE 10 — Inverted Index
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Build the core searchable index.
+
+IMPLEMENT:
+- term dictionary,
+- posting lists,
+- document frequency,
+- term frequency,
+- field information,
+- index persistence,
+- add/update/remove document operations.
+
+VERIFY:
+- documents can be indexed,
+- terms retrieve expected documents,
+- index can be saved and reloaded,
+- update/remove behavior works.
+
+
+PHASE 11 — Index Builder & Rebuild Pipeline
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Create a reliable process for converting crawled documents into a usable
+search index.
+
+IMPLEMENT:
+- full index build,
+- incremental update capability where practical,
+- deterministic build behavior,
+- index version metadata,
+- corruption/error handling,
+- build statistics.
+
+VERIFY:
+- a test corpus builds successfully,
+- rebuilt index produces equivalent expected results,
+- incomplete builds do not silently replace a valid index.
+
+================================================================================
+MILESTONE 4 — QUERY & RANKING
+================================================================================
+
+PHASE 12 — Query Processing
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Turn user text into safe searchable queries.
+
+IMPLEMENT:
+- validation,
+- length limits,
+- normalization,
+- tokenization,
+- phrase handling where supported,
+- empty query behavior,
+- malformed query handling.
+
+VERIFY:
+- normal queries work,
+- empty/oversized queries are handled,
+- special characters cannot crash the system.
+
+
+PHASE 13 — Candidate Retrieval
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Retrieve relevant documents efficiently from the index.
+
+IMPLEMENT:
+- term lookup,
+- posting-list retrieval,
+- candidate merging,
+- basic boolean/intersection behavior where useful,
+- result limits,
+- retrieval abstraction.
+
+VERIFY:
+- exact terms retrieve expected documents,
+- multi-term queries retrieve candidates,
+- missing terms return safe empty results.
+
+
+PHASE 14 — Ranking Engine
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Create the first real relevance-ranking system.
+
+IMPLEMENT:
+- BM25 or equivalent lexical ranking,
+- title boost,
+- heading boost,
+- body relevance,
+- phrase/exact-match boost where supported,
+- sensible URL/domain signal,
+- duplicate penalty,
+- optional freshness signal.
+
+Ranking must be deterministic and testable.
+
+VERIFY:
+- highly relevant pages rank above weak matches,
+- title matches receive appropriate weighting,
+- ranking is stable,
+- ranking tests cover known expected orderings.
+
+
+PHASE 15 — Result Generation & Snippets
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Turn ranked documents into user-friendly search results.
+
+IMPLEMENT:
+- title,
+- canonical/display URL,
+- domain,
+- snippet generation,
+- query-term highlighting where appropriate,
+- pagination metadata,
+- safe HTML/text escaping.
+
+VERIFY:
+- snippets are readable,
+- missing metadata has fallbacks,
+- unsafe content is escaped,
+- pagination metadata is correct.
+
+================================================================================
+MILESTONE 5 — SEARCH API
+================================================================================
+
+PHASE 16 — Search API Foundation
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Expose the search engine through a stable HTTP API.
+
+IMPLEMENT:
+- API application,
+- routing,
+- request validation,
+- response schemas,
+- error handling,
+- health endpoint,
+- API configuration.
+
+VERIFY:
+- API starts,
+- health endpoint works,
+- malformed requests return structured errors.
+
+
+PHASE 17 — Search Endpoint
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Expose actual search functionality.
+
+IMPLEMENT:
+- query parameter/body handling,
+- candidate retrieval,
+- ranking,
+- pagination,
+- result serialization,
+- response metadata.
+
+VERIFY:
+- search requests return expected results,
+- pagination works,
+- empty results work,
+- errors are handled cleanly.
+
+
+PHASE 18 — API Security, Limits & Reliability
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Protect the public search API from basic abuse and resource exhaustion.
+
+IMPLEMENT:
+- request-size limits,
+- query-length limits,
+- rate limiting suitable for free hosting,
+- timeout controls,
+- safe error responses,
+- CORS policy,
+- security headers where appropriate,
+- structured request logging with privacy minimization.
+
+VERIFY:
+- excessive requests are controlled,
+- oversized input is rejected,
+- CORS behavior is intentional,
+- API does not expose secrets or stack traces.
+
+================================================================================
+MILESTONE 6 — PUBLIC WEB APPLICATION
+================================================================================
+
+PHASE 19 — Search UI Foundation
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Create a clean public search interface.
+
+IMPLEMENT:
+- application shell,
+- search input,
+- search button,
+- responsive layout,
+- loading state,
+- empty state,
+- error state.
+
+DESIGN:
+Keep the interface simple, fast, accessible, and search-focused.
+
+
+PHASE 20 — Search Results UI
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Display API results clearly.
+
+IMPLEMENT:
+- result cards/list,
+- title,
+- URL/domain,
+- snippet,
+- pagination,
+- result count when available,
+- external result links,
+- loading/error handling.
+
+VERIFY:
+- API data renders correctly,
+- long URLs do not break layout,
+- empty results are understandable,
+- pagination works.
+
+
+PHASE 21 — Responsive & Accessibility Hardening
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Make the search interface usable by ordinary users across devices.
+
+IMPLEMENT:
+- mobile layout,
+- desktop layout,
+- keyboard navigation,
+- visible focus states,
+- semantic controls,
+- accessible labels,
+- readable typography,
+- responsive spacing.
+
+VERIFY:
+- desktop browser smoke test,
+- mobile viewport smoke test,
+- keyboard-only basic navigation,
+- no critical layout overflow.
+
+================================================================================
+MILESTONE 7 — END-TO-END INTEGRATION
+================================================================================
+
+PHASE 22 — Full Crawl → Index → Search Integration
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Connect the complete pipeline.
+
+IMPLEMENT:
+Crawler
+ -> storage
+ -> parser
+ -> indexer
+ -> index
+ -> query processor
+ -> retrieval
+ -> ranking
+ -> API
+ -> frontend
+
+VERIFY:
+- crawl a controlled corpus,
+- build/load index,
+- perform real searches,
+- results shown in frontend,
+- complete pipeline works after restart.
+
+
+PHASE 23 — Seed Corpus & Initial Public Index
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Create a useful initial index for V1.0.0.
+
+IMPLEMENT:
+- curated seed list,
+- crawl configuration,
+- safe crawl limits,
+- initial crawl process,
+- index build process,
+- quality checks,
+- duplicate checks.
+
+The initial corpus should favor publicly accessible, useful websites and
+should remain within available free infrastructure resources.
+
+VERIFY:
+- crawl completes without critical failures,
+- index contains meaningful documents,
+- representative searches return results,
+- no obvious crawler-policy violations.
+
+
+PHASE 24 — Search Quality Evaluation
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Measure whether the search engine is genuinely useful.
+
+IMPLEMENT:
+Create a small evaluation dataset containing:
+- informational queries,
+- navigational queries,
+- technical queries,
+- multi-word queries,
+- exact-title queries,
+- no-result queries,
+- duplicate-content cases.
+
+Evaluate:
+- relevance,
+- ordering,
+- snippets,
+- empty results,
+- response consistency.
+
+Document known ranking weaknesses instead of hiding them.
+
+VERIFY:
+- evaluation dataset runs reproducibly,
+- major ranking bugs are fixed,
+- remaining limitations are documented.
+
+================================================================================
+MILESTONE 8 — SECURITY, RELIABILITY & PRIVACY
+================================================================================
+
+PHASE 25 — Crawler Security Hardening
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Harden the crawler against dangerous or resource-intensive targets.
+
+IMPLEMENT:
+- SSRF protections,
+- private-network rejection,
+- scheme validation,
+- response-size limits,
+- redirect limits,
+- timeout enforcement,
+- content-type restrictions,
+- malformed-response handling.
+
+VERIFY:
+- private/internal addresses rejected,
+- redirect loops stop,
+- oversized responses stop,
+- crawler remains stable under malformed input.
+
+
+PHASE 26 — Search/API Reliability Hardening
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Ensure public search remains stable under expected failures.
+
+IMPLEMENT:
+- graceful index-loading failure,
+- API exception boundaries,
+- health checks,
+- timeout handling,
+- controlled degradation,
+- structured error logging,
+- startup validation.
+
+VERIFY:
+- API survives invalid requests,
+- missing/corrupt optional data is handled safely,
+- health status reflects meaningful failures.
+
+
+PHASE 27 — Privacy & Data-Minimization Review
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Verify that the implementation matches the privacy-first project principle.
+
+AUDIT:
+- request logs,
+- stored search queries,
+- cookies,
+- analytics,
+- identifiers,
+- IP handling,
+- error telemetry,
+- third-party scripts.
+
+IMPLEMENT only what is necessary for V1.0.0 operation.
+
+VERIFY:
+- no unnecessary user profiling,
+- no hidden analytics,
+- privacy behavior is documented,
+- production configuration matches the documented policy.
+
+================================================================================
+MILESTONE 9 — PERFORMANCE & FREE INFRASTRUCTURE
+================================================================================
+
+PHASE 28 — Search Performance Optimization
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Make search responsive within free infrastructure constraints.
+
+IMPLEMENT:
+- efficient index loading,
+- query optimization,
+- result limits,
+- caching only where privacy-compatible,
+- avoid unnecessary database calls,
+- frontend request optimization.
+
+VERIFY:
+- representative queries complete within an acceptable response time,
+- memory usage is reasonable,
+- no unnecessary repeated work.
+
+
+PHASE 29 — Crawler Efficiency & Resource Controls
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Prevent the crawler from consuming uncontrolled resources.
+
+IMPLEMENT:
+- configurable crawl limits,
+- concurrency controls,
+- politeness delay,
+- queue limits,
+- retry budgets,
+- crawl checkpoints where practical,
+- crawl statistics.
+
+VERIFY:
+- crawler respects configured limits,
+- concurrency is bounded,
+- retry storms cannot occur,
+- crawl can stop cleanly.
+
+
+PHASE 30 — Free Deployment Preparation
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Prepare the project for public deployment without assuming paid resources.
+
+IMPLEMENT:
+- production environment configuration,
+- build scripts,
+- deployment documentation,
+- environment-variable documentation,
+- health endpoint usage,
+- index deployment/update procedure,
+- free-tier resource awareness.
+
+VERIFY:
+- production builds succeed,
+- deployment process is reproducible,
+- no local-only assumptions remain.
+
+================================================================================
+MILESTONE 10 — PRODUCTION RELEASE
+================================================================================
+
+PHASE 31 — Production Deployment
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Deploy the public search engine using available zero-cost infrastructure.
+
+IMPLEMENT:
+- frontend deployment,
+- API deployment,
+- index/storage deployment strategy,
+- HTTPS,
+- production configuration,
+- basic monitoring/health verification.
+
+IMPORTANT:
+Do not introduce paid infrastructure merely to satisfy the phase. If a free
+provider imposes a limitation, document it and design around it where possible.
+
+VERIFY:
+- public website opens,
+- search works from the public environment,
+- API is reachable,
+- index is available,
+- HTTPS works,
+- production errors are reviewed.
+
+
+PHASE 32 — Cross-Environment Testing
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Verify that the public release works for ordinary users.
+
+TEST:
+- desktop browser,
+- mobile viewport/browser,
+- slow network simulation where practical,
+- empty queries,
+- long queries,
+- no-result queries,
+- common searches,
+- multiple result pages,
+- external result links,
+- API failure behavior.
+
+VERIFY:
+No critical user-facing issue remains.
+
+
+PHASE 33 — Final Security & Release Audit
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Perform the final V1.0.0 audit.
+
+CHECK:
+- secrets,
+- dependency vulnerabilities,
+- crawler safety,
+- API abuse protection,
+- privacy behavior,
+- error exposure,
+- robots compliance,
+- resource limits,
+- production configuration,
+- documentation.
+
+VERIFY:
+All critical/high-risk issues are resolved or explicitly accepted and
+documented.
+
+
+PHASE 34 — V1.0.0 Final Validation & Release Report
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Perform complete end-to-end validation and formally close V1.0.0.
+
+RUN:
+- full automated test suite,
+- crawler tests,
+- parser tests,
+- index tests,
+- ranking tests,
+- API tests,
+- frontend tests/smoke tests,
+- production smoke tests,
+- search-quality evaluation,
+- security checks.
+
+CREATE:
+A final report:
+report/PHASE_34_V1_0_0_FINAL_RELEASE_REPORT.txt
+
+The report must contain:
+- implementation summary,
+- complete milestone/phase status,
+- test commands,
+- test results,
+- production verification,
+- known limitations,
+- remaining technical debt,
+- V1.0.0 release decision.
+
+FINAL STATUS:
+V1.0.0 may be marked COMPLETE only if all critical release gates pass.
+
+================================================================================
+V1.0.0 PHASE COUNT
+================================================================================
+
+Milestone 1 — Project Foundation                  Phases 1–3
+Milestone 2 — Crawler Foundation                  Phases 4–8
+Milestone 3 — Search Index                        Phases 9–11
+Milestone 4 — Query & Ranking                     Phases 12–15
+Milestone 5 — Search API                          Phases 16–18
+Milestone 6 — Public Web Application              Phases 19–21
+Milestone 7 — End-to-End Integration              Phases 22–24
+Milestone 8 — Security, Reliability & Privacy     Phases 25–27
+Milestone 9 — Performance & Free Infrastructure   Phases 28–30
+Milestone 10 — Production Release                 Phases 31–34
+
+TOTAL: 34 PHASES
+
+================================================================================
+V1.0.0 DEFINITION OF DONE
+================================================================================
+The project is complete when:
+
+[ ] A public user can access the search website.
+[ ] A user can search without an account.
+[ ] The project has its own crawler.
+[ ] The project has its own index.
+[ ] The project has its own retrieval/ranking pipeline.
+[ ] Search results come from the project's own index.
+[ ] Results include useful titles, URLs and snippets.
+[ ] Pagination works.
+[ ] Crawler respects robots.txt and safety limits.
+[ ] API has baseline abuse protection.
+[ ] Privacy/data-minimization requirements are verified.
+[ ] Desktop and mobile layouts work.
+[ ] Automated tests pass.
+[ ] Production smoke tests pass.
+[ ] Search-quality evaluation is completed.
+[ ] Documentation is complete.
+[ ] Every phase has its required report.
+[ ] Final V1.0.0 release report is saved.
+[ ] No critical unresolved release blocker remains.
+
+================================================================================
