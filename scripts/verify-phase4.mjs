@@ -44,16 +44,6 @@ function check(label, condition, detail = '') {
   }
 }
 
-async function checkThrows(label, fn) {
-  try {
-    await fn();
-    console.log(`  ${FAIL} ${label}: expected an error but none was thrown`);
-    failed++;
-  } catch {
-    console.log(`  ${PASS} ${label}`);
-    passed++;
-  }
-}
 
 function norm(url) {
   const r = normalizeUrl(url);
@@ -293,6 +283,7 @@ async function verifyQueue() {
   const r3 = await q.enqueue('https://example.com/c', 1, 'https://example.com/');
   check('first enqueue returns QUEUED', r1.code === ENQUEUE_RESULT.QUEUED);
   check('second enqueue returns QUEUED', r2.code === ENQUEUE_RESULT.QUEUED);
+  check('third enqueue returns QUEUED', r3.code === ENQUEUE_RESULT.QUEUED);
   check('size is 3 after 3 enqueues', (await q.size()) === 3);
 
   const peeked = await q.peek();

@@ -58,7 +58,35 @@ export const CRAWLER_LIMITS = {
   MAX_URL_LENGTH: 2_048,
   /** Maximum number of entries in the persistent crawl queue. */
   MAX_QUEUE_SIZE: 100_000,
+  // ── Phase 5: HTTP Fetcher ──────────────────────────────────────────────
+  /** Maximum number of HTTP redirects to follow per request. */
+  DEFAULT_MAX_REDIRECTS: 5,
+  /** Hard ceiling on redirect count; config values above this are clamped. */
+  MAX_REDIRECTS_CEILING: 10,
+  /** Maximum retry attempts for transient errors (not counting the initial attempt). */
+  DEFAULT_MAX_RETRIES: 2,
+  /** Hard ceiling on retry count. */
+  MAX_RETRIES_CEILING: 5,
+  /** Initial retry backoff delay in milliseconds (doubles on each retry). */
+  DEFAULT_RETRY_BACKOFF_MS: 1_000,
+  /** Maximum backoff delay cap, regardless of retry count. */
+  MAX_RETRY_BACKOFF_MS: 30_000,
 } as const;
+
+/**
+ * Content-type prefixes that the fetcher accepts as web documents.
+ * Comparison is done with startsWith, so "text/html" matches "text/html; charset=utf-8".
+ * Rejection of all other content types is intentional and documented.
+ */
+export const ALLOWED_CONTENT_TYPE_PREFIXES = [
+  'text/html',
+  'text/plain',
+  'application/xhtml+xml',
+  'application/xml',
+  'text/xml',
+] as const;
+
+export type AllowedContentTypePrefix = (typeof ALLOWED_CONTENT_TYPE_PREFIXES)[number];
 
 // Search & Query Operational Limits
 export const SEARCH_LIMITS = {

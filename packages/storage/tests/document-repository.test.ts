@@ -7,9 +7,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 
-import { ConflictError, NotFoundError, ValidationError, StorageError } from '@opensearch/shared';
+import { ConflictError, NotFoundError, ValidationError } from '@opensearch/shared';
 import { JsonStorageAdapter } from '../src/adapters/json-adapter.js';
-import { CRAWL_STATUS, INDEX_STATUS } from '../src/models.js';
+import { INDEX_STATUS } from '../src/models.js';
 
 function makeTempDir(): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'opensearch-test-'));
