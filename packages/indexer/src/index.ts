@@ -1,18 +1,66 @@
 /**
  * @opensearch/indexer
- * Indexer Boundary Scaffolding (Phase 1)
- * Document processing, inverted index, and index building
- * are strictly scheduled for Milestone 3 (Phases 9-11).
+ * Phase 9: Document Processing Pipeline — Complete Implementation
  */
 
-import { ServiceBoundaryInfo } from '@opensearch/shared';
+// ── Pipeline Types ──────────────────────────────────────────
+export type {
+  FieldName,
+  TokenPosition,
+  Token,
+  FieldWeightConfig,
+  ProcessedField,
+  DocumentTermSummary,
+  ProcessedDocument,
+  DocumentProcessorOptions,
+  RawDocumentInput,
+  DocumentProcessor,
+} from './pipeline/pipeline-types.js';
 
-export const INDEXER_MODULE_INFO: ServiceBoundaryInfo = {
-  moduleName: '@opensearch/indexer',
-  purpose: 'Document tokenization, inverted index management, and index persistence',
-  currentPhaseScope: 'Phase 1: Boundary initialization only. Implementation starts in Milestone 3.',
-};
+// ── Text Normalizer ─────────────────────────────────────────
+export { normalizeText, foldDiacritics, stripPunctuation } from './pipeline/normalizer.js';
+export type { TextNormalizeOptions } from './pipeline/normalizer.js';
 
-export function getIndexerModuleInfo(): ServiceBoundaryInfo {
-  return INDEXER_MODULE_INFO;
-}
+// ── Stop Words ──────────────────────────────────────────────
+export { DEFAULT_STOP_WORDS, isStopWord } from './pipeline/stop-words.js';
+
+// ── Tokenizer ───────────────────────────────────────────────
+export { tokenize } from './pipeline/tokenizer.js';
+export type { TokenizerOptions } from './pipeline/tokenizer.js';
+
+// ── Field Weights ───────────────────────────────────────────
+export { DEFAULT_FIELD_WEIGHTS, getFieldWeight } from './pipeline/field-weights.js';
+
+// ── Document Processor ──────────────────────────────────────
+export {
+  DefaultDocumentProcessor,
+  createDocumentProcessor,
+} from './pipeline/document-processor.js';
+
+// ── Phase 10: Inverted Index ─────────────────────────────────
+export type {
+  Posting,
+  PostingList,
+  IndexedDocumentMeta,
+  IndexStats,
+  SerializedIndexPayload,
+  InvertedIndexOptions,
+  InvertedIndex,
+} from './index/index-types.js';
+
+export { MemoryInvertedIndex } from './index/inverted-index.js';
+export { createInvertedIndex } from './index/index-factory.js';
+
+// ── Phase 11: Index Builder & Rebuild Pipeline ───────────────
+export type {
+  IndexBuildOptions,
+  IndexBuildStats,
+  IndexBuildSummary,
+  IndexBuilder,
+} from './builder/builder-types.js';
+
+export { DefaultIndexBuilder } from './builder/index-builder.js';
+export type { IndexBuilderOptions } from './builder/index-builder.js';
+
+export { createIndexBuilder } from './builder/builder-factory.js';
+export type { IndexBuilderFactoryOptions } from './builder/builder-factory.js';

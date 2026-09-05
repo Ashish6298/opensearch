@@ -101,7 +101,10 @@ async function verifyDocumentRepository(storageDir) {
   const byUrl = await adapter.documents.findByUrl(url);
   check('findByUrl returns document', byUrl !== null && byUrl.id === doc.id);
 
-  check('findById returns null for unknown id', await adapter.documents.findById('nope') === null);
+  check(
+    'findById returns null for unknown id',
+    (await adapter.documents.findById('nope')) === null,
+  );
 
   const updated = await adapter.documents.update(doc.id, {
     indexStatus: INDEX_STATUS.INDEXED,
@@ -112,9 +115,12 @@ async function verifyDocumentRepository(storageDir) {
   check('update preserves URL', updated.url === url);
 
   const indexed = await adapter.documents.findByIndexStatus(INDEX_STATUS.INDEXED);
-  check('findByIndexStatus returns indexed doc', indexed.some(d => d.id === doc.id));
+  check(
+    'findByIndexStatus returns indexed doc',
+    indexed.some(d => d.id === doc.id),
+  );
 
-  check('count is 1', await adapter.documents.count() === 1);
+  check('count is 1', (await adapter.documents.count()) === 1);
 
   await adapter.close();
 }
@@ -139,7 +145,10 @@ async function verifyUrlRepository(storageDir) {
   });
 
   check('UrlRecord created', rec.urlHash === hash);
-  check('discoveredAt is set (ms timestamp)', typeof rec.discoveredAt === 'number' && rec.discoveredAt > 0);
+  check(
+    'discoveredAt is set (ms timestamp)',
+    typeof rec.discoveredAt === 'number' && rec.discoveredAt > 0,
+  );
   check('attemptCount starts at 0', rec.attemptCount === 0);
 
   const byHash = await adapter.urls.findByHash(hash);
@@ -161,7 +170,7 @@ async function verifyUrlRepository(storageDir) {
   const pending = await adapter.urls.findByCrawlStatus(CRAWL_STATUS.PENDING);
   check('findByCrawlStatus PENDING returns empty after update', pending.length === 0);
 
-  check('count is 1', await adapter.urls.count() === 1);
+  check('count is 1', (await adapter.urls.count()) === 1);
 
   await adapter.close();
 }
@@ -202,7 +211,7 @@ async function verifyCrawlRepository(storageDir) {
   const byHash = await adapter.crawls.findByUrlHash(hash);
   check('findByUrlHash works', byHash.length === 1);
 
-  check('count is 1', await adapter.crawls.count() === 1);
+  check('count is 1', (await adapter.crawls.count()) === 1);
 
   await adapter.close();
 }
@@ -212,7 +221,7 @@ async function verifyIndexMetadata(storageDir) {
   const adapter = new JsonStorageAdapter({ storageDir });
   await adapter.initialize();
 
-  check('findActive returns null initially', await adapter.indexMetadata.findActive() === null);
+  check('findActive returns null initially', (await adapter.indexMetadata.findActive()) === null);
 
   const meta = await adapter.indexMetadata.create({
     version: '1.0.0-dev',
@@ -226,7 +235,10 @@ async function verifyIndexMetadata(storageDir) {
     lastRebuildAt: null,
   });
 
-  check('IndexMetadata created with buildId', typeof meta.buildId === 'string' && meta.buildId.length > 0);
+  check(
+    'IndexMetadata created with buildId',
+    typeof meta.buildId === 'string' && meta.buildId.length > 0,
+  );
   check('startedAt is set', typeof meta.startedAt === 'string');
 
   const updated = await adapter.indexMetadata.update(meta.buildId, {
@@ -240,7 +252,10 @@ async function verifyIndexMetadata(storageDir) {
   check('update sets documentCount', updated.documentCount === 150);
 
   const active = await adapter.indexMetadata.findActive();
-  check('findActive returns the ready+active record', active !== null && active.buildId === meta.buildId);
+  check(
+    'findActive returns the ready+active record',
+    active !== null && active.buildId === meta.buildId,
+  );
 
   const list = await adapter.indexMetadata.list();
   check('list returns all records', list.length === 1);
@@ -257,7 +272,8 @@ async function verifyPersistence(storageDir) {
   const w = new JsonStorageAdapter({ storageDir });
   await w.initialize();
   const doc = await w.documents.create({
-    url, urlHash: hash,
+    url,
+    urlHash: hash,
     title: 'Persistence Test',
     description: '',
     headings: '',
@@ -271,8 +287,7 @@ async function verifyPersistence(storageDir) {
   await w.close();
 
   // Check files on disk
-  check('documents.json exists on disk',
-    fs.existsSync(path.join(storageDir, 'documents.json')));
+  check('documents.json exists on disk', fs.existsSync(path.join(storageDir, 'documents.json')));
 
   // Read (fresh adapter, same dir)
   const r = new JsonStorageAdapter({ storageDir });
@@ -291,9 +306,17 @@ async function verifyHealth(storageDir) {
   const url = 'https://health.example.com/';
   const hash = urlHash(url);
   await adapter.documents.create({
-    url, urlHash: hash, title: 'H', description: '', headings: '',
-    bodyText: 'x', language: null, contentType: 'text/html',
-    contentLength: 1, httpStatus: 200, outboundLinks: [],
+    url,
+    urlHash: hash,
+    title: 'H',
+    description: '',
+    headings: '',
+    bodyText: 'x',
+    language: null,
+    contentType: 'text/html',
+    contentLength: 1,
+    httpStatus: 200,
+    outboundLinks: [],
   });
 
   const h = await adapter.health();
@@ -312,36 +335,75 @@ async function verifyValidation() {
   await adapter.initialize();
 
   const base = {
-    url: 'https://val.example.com/', urlHash: urlHash('https://val.example.com/'),
-    title: 'V', description: '', headings: '', bodyText: 'body',
-    language: null, contentType: 'text/html', contentLength: 1,
-    httpStatus: 200, outboundLinks: [],
+    url: 'https://val.example.com/',
+    urlHash: urlHash('https://val.example.com/'),
+    title: 'V',
+    description: '',
+    headings: '',
+    bodyText: 'body',
+    language: null,
+    contentType: 'text/html',
+    contentLength: 1,
+    httpStatus: 200,
+    outboundLinks: [],
   };
 
-  await checkThrows('Rejects javascript: URL scheme',
-    () => adapter.documents.create({ ...base, url: 'javascript:alert(1)', urlHash: urlHash('javascript:alert(1)') }));
+  await checkThrows('Rejects javascript: URL scheme', () =>
+    adapter.documents.create({
+      ...base,
+      url: 'javascript:alert(1)',
+      urlHash: urlHash('javascript:alert(1)'),
+    }),
+  );
 
-  await checkThrows('Rejects invalid httpStatus (999)',
-    () => adapter.documents.create({ ...base, url: 'https://v2.com', urlHash: urlHash('https://v2.com'), httpStatus: 999 }));
+  await checkThrows('Rejects invalid httpStatus (999)', () =>
+    adapter.documents.create({
+      ...base,
+      url: 'https://v2.com',
+      urlHash: urlHash('https://v2.com'),
+      httpStatus: 999,
+    }),
+  );
 
-  await checkThrows('Rejects non-array outboundLinks',
-    () => adapter.documents.create({ ...base, url: 'https://v3.com', urlHash: urlHash('https://v3.com'), outboundLinks: 'bad' }));
+  await checkThrows('Rejects non-array outboundLinks', () =>
+    adapter.documents.create({
+      ...base,
+      url: 'https://v3.com',
+      urlHash: urlHash('https://v3.com'),
+      outboundLinks: 'bad',
+    }),
+  );
 
-  await checkThrows('Rejects UrlRecord with ftp: scheme',
-    () => adapter.urls.create({
-      url: 'ftp://bad.example.com', urlHash: urlHash('ftp://bad.example.com'),
-      domain: 'bad.example.com', scheme: 'ftp',
-      crawlStatus: CRAWL_STATUS.PENDING, lastHttpStatus: null,
-      referrerUrl: null, depth: 0,
-    }));
+  await checkThrows('Rejects UrlRecord with ftp: scheme', () =>
+    adapter.urls.create({
+      url: 'ftp://bad.example.com',
+      urlHash: urlHash('ftp://bad.example.com'),
+      domain: 'bad.example.com',
+      scheme: 'ftp',
+      crawlStatus: CRAWL_STATUS.PENDING,
+      lastHttpStatus: null,
+      referrerUrl: null,
+      depth: 0,
+    }),
+  );
 
-  await checkThrows('Rejects CrawlRecord with invalid status',
-    () => adapter.crawls.create({
-      url: 'https://val.example.com/', urlHash: urlHash('https://val.example.com/'),
-      status: 'invalid', httpStatus: 200, contentType: null, responseBytes: null,
-      durationMs: null, startedAt: new Date().toISOString(), completedAt: null,
-      errorMessage: null, redirectChain: [], finalUrl: null, documentId: null,
-    }));
+  await checkThrows('Rejects CrawlRecord with invalid status', () =>
+    adapter.crawls.create({
+      url: 'https://val.example.com/',
+      urlHash: urlHash('https://val.example.com/'),
+      status: 'invalid',
+      httpStatus: 200,
+      contentType: null,
+      responseBytes: null,
+      durationMs: null,
+      startedAt: new Date().toISOString(),
+      completedAt: null,
+      errorMessage: null,
+      redirectChain: [],
+      finalUrl: null,
+      documentId: null,
+    }),
+  );
 
   await adapter.close();
   fs.rmSync(dir, { recursive: true, force: true });

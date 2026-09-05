@@ -15,7 +15,7 @@ import {
   SEARCH_LIMITS,
   API_LIMITS,
 } from '../constants.js';
-import { readEnum, readInt, readString } from './env.js';
+import { readBoolean, readEnum, readInt, readString } from './env.js';
 import { AppConfig } from './types.js';
 
 export * from './types.js';
@@ -101,6 +101,52 @@ export function loadConfig(sourceEnv: Record<string, string | undefined> = proce
   const crawlerUserAgent = readString(sourceEnv, {
     envKey: 'CRAWLER_USER_AGENT',
     defaultValue: CRAWLER_LIMITS.DEFAULT_USER_AGENT,
+  });
+  const crawlerMaxRedirects = readInt(sourceEnv, {
+    envKey: 'CRAWLER_MAX_REDIRECTS',
+    defaultValue: CRAWLER_LIMITS.DEFAULT_MAX_REDIRECTS,
+    min: 0,
+    max: CRAWLER_LIMITS.MAX_REDIRECTS_CEILING,
+  });
+  const crawlerMaxRetries = readInt(sourceEnv, {
+    envKey: 'CRAWLER_MAX_RETRIES',
+    defaultValue: CRAWLER_LIMITS.DEFAULT_MAX_RETRIES,
+    min: 0,
+    max: CRAWLER_LIMITS.MAX_RETRIES_CEILING,
+  });
+  const crawlerRetryBackoffMs = readInt(sourceEnv, {
+    envKey: 'CRAWLER_RETRY_BACKOFF_MS',
+    defaultValue: CRAWLER_LIMITS.DEFAULT_RETRY_BACKOFF_MS,
+    min: 100,
+    max: CRAWLER_LIMITS.MAX_RETRY_BACKOFF_MS,
+  });
+  // Phase 6 Robots Configuration
+  const crawlerRobotsEnabled = readBoolean(sourceEnv, {
+    envKey: 'CRAWLER_ROBOTS_ENABLED',
+    defaultValue: true,
+  });
+  const crawlerRobotsCacheTtlMs = readInt(sourceEnv, {
+    envKey: 'CRAWLER_ROBOTS_CACHE_TTL_MS',
+    defaultValue: CRAWLER_LIMITS.DEFAULT_ROBOTS_CACHE_TTL_MS,
+    min: CRAWLER_LIMITS.MIN_ROBOTS_CACHE_TTL_MS,
+    max: CRAWLER_LIMITS.MAX_ROBOTS_CACHE_TTL_MS,
+  });
+  const crawlerRobotsMaxCacheSize = readInt(sourceEnv, {
+    envKey: 'CRAWLER_ROBOTS_MAX_CACHE_SIZE',
+    defaultValue: CRAWLER_LIMITS.DEFAULT_ROBOTS_MAX_CACHE_SIZE,
+    min: 10,
+  });
+  const crawlerRobotsMaxBytes = readInt(sourceEnv, {
+    envKey: 'CRAWLER_ROBOTS_MAX_BYTES',
+    defaultValue: CRAWLER_LIMITS.DEFAULT_ROBOTS_MAX_BYTES,
+    min: 1024,
+    max: CRAWLER_LIMITS.MAX_ROBOTS_BYTES_CEILING,
+  });
+  const crawlerRobotsMaxCrawlDelayMs = readInt(sourceEnv, {
+    envKey: 'CRAWLER_ROBOTS_MAX_CRAWL_DELAY_MS',
+    defaultValue: CRAWLER_LIMITS.DEFAULT_ROBOTS_MAX_CRAWL_DELAY_MS,
+    min: 0,
+    max: CRAWLER_LIMITS.MAX_ROBOTS_CRAWL_DELAY_CEILING,
   });
 
   // Search Configuration
@@ -202,6 +248,14 @@ export function loadConfig(sourceEnv: Record<string, string | undefined> = proce
       maxPageBytes: crawlerMaxPageBytes,
       politenessDelayMs: crawlerPolitenessDelayMs,
       userAgent: crawlerUserAgent,
+      maxRedirects: crawlerMaxRedirects,
+      maxRetries: crawlerMaxRetries,
+      retryBackoffMs: crawlerRetryBackoffMs,
+      robotsEnabled: crawlerRobotsEnabled,
+      robotsCacheTtlMs: crawlerRobotsCacheTtlMs,
+      robotsMaxCacheSize: crawlerRobotsMaxCacheSize,
+      robotsMaxBytes: crawlerRobotsMaxBytes,
+      robotsMaxCrawlDelayMs: crawlerRobotsMaxCrawlDelayMs,
     },
     search: {
       minQueryLength: searchMinQueryLength,
@@ -247,6 +301,14 @@ export function sanitizeConfigForLogging(config: AppConfig): Record<string, unkn
       maxPages: config.crawler.maxPages,
       politenessDelayMs: config.crawler.politenessDelayMs,
       userAgent: config.crawler.userAgent,
+      maxRedirects: config.crawler.maxRedirects,
+      maxRetries: config.crawler.maxRetries,
+      retryBackoffMs: config.crawler.retryBackoffMs,
+      robotsEnabled: config.crawler.robotsEnabled,
+      robotsCacheTtlMs: config.crawler.robotsCacheTtlMs,
+      robotsMaxCacheSize: config.crawler.robotsMaxCacheSize,
+      robotsMaxBytes: config.crawler.robotsMaxBytes,
+      robotsMaxCrawlDelayMs: config.crawler.robotsMaxCrawlDelayMs,
     },
     search: config.search,
     api: {

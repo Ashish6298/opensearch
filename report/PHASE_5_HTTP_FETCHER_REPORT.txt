@@ -1,0 +1,98 @@
+OPENSEARCH V1.0.0 — MILESTONE 2: CRAWLER FOUNDATION
+PHASE 5: HTTP FETCHER — COMPLETION REPORT
+Generated: 2026-09-05
+═══════════════════════════════════════════════════════════════════════════════
+
+## PHASE OBJECTIVE
+
+Build a secure, reliable HTTP fetcher capable of downloading permitted public
+web resources for the crawler while strictly controlling network access and
+resource consumption. Implement a strongly typed HTTP fetcher abstraction and
+concrete NodeFetcher implementation behind a replaceable HttpFetcher interface;
+accept only normalized and validated URLs from Phase 4; validate all redirect targets
+against SSRF risks; enforce strict configurable limits for timeouts, redirects,
+retries, content-type filtering, and response body size (stream aborted if size
+exceeds limit); emit custom User-Agent headers and integrate with the shared
+logging and configuration system.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## SCOPE COMPLIANCE
+
+IMPLEMENTED (per PHASE.txt Phase 5):
+  [x] HTTP fetcher abstraction (HttpFetcher interface, FetchTarget, FetchResult)
+  [x] Concrete implementation using Node.js built-in Fetch API + AbortController
+  [x] Timeout handling (configurable timeoutMs, AbortSignal integration)
+  [x] Status code handling (detailed success/failure classification)
+  [x] Redirect management (manual redirect validation up to maxRedirects)
+  [x] SSRF guard on all redirect and initial targets (IPv4/IPv6 private ranges, cloud metadata, local TLDs)
+  [x] Content-type filtering (text/html, application/xhtml+xml, text/plain, etc.)
+  [x] Response body size limits (streaming reader cancellation without buffering excess bytes)
+  [x] Retry policy with exponential backoff on transient network and 5xx errors
+  [x] User-Agent header transmission and custom header support
+  [x] Configuration integration (maxRedirects, maxRetries, retryBackoffMs in shared AppConfig)
+  [x] Fetcher factory (createHttpFetcher / createFetcher)
+
+NOT IMPLEMENTED (deferred to subsequent phases):
+  — Robots.txt handling and compliance (Phase 6)
+  — HTML parsing and content extraction (Phase 7)
+  — Crawl orchestration and scheduling (Phase 8)
+  — Indexing and BM25 ranking (Milestone 3)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## FILES CREATED / MODIFIED
+
+### Created:
+1. `packages/crawler/src/fetcher/fetcher-types.ts`
+   - `FetchTarget`: input specification
+   - `FetchSuccess`: structured success metadata (finalUrl, statusCode, contentType, body, contentLength, durationMs, redirectCount, redirectChain, retryCount)
+   - `FetchFailure`: structured error record (code, message, statusCode, contentType, finalUrl, redirectCount, retryCount, durationMs, retryable)
+   - `FETCH_ERROR_CODE`: typed error constants
+   - `HttpFetcher`: replaceable interface contract
+
+2. `packages/crawler/src/fetcher/ssrf-guard.ts`
+   - Syntactic and DNS-based SSRF protection
+   - IPv4 loopback (127.0.0.0/8), RFC-1918 private subnets (10/8, 172.16/12, 192.168/16), link-local (169.254/16), CGNAT (100.64/10)
+   - IPv6 loopback (::1), unique-local (fc00::/7, fd00::/7), link-local (fe80::/10), IPv4-mapped addresses
+   - Internal domain endings (.internal, .local, .lan, .corp, .home.arpa, .private)
+   - DNS resolution IP verification (`dnsCheckHost`, `ssrfCheck`)
+
+3. `packages/crawler/src/fetcher/node-fetcher.ts`
+   - Concrete `NodeFetcher` implementation
+   - Manual redirect handling loop with SSRF validation on every step
+   - Chunked streaming body reader with immediate abort when `maxPageBytes` is exceeded
+   - Retry loop with configurable exponential backoff
+
+4. `packages/crawler/src/fetcher/fetcher-factory.ts`
+   - `createHttpFetcher` and `createFetcher` factory functions wired to `AppConfig`
+
+5. `packages/crawler/tests/ssrf-guard.test.ts`
+   - Unit test suite for private IP detection, host validation, and DNS SSRF checking
+
+6. `packages/crawler/tests/node-fetcher.test.ts`
+   - Test suite for fetcher pre-flight checks, SSRF blocks, error codes, and factory integration
+
+7. `scripts/verify-phase5.mjs`
+   - Comprehensive Phase 5 standalone verification script
+
+### Modified:
+1. `packages/shared/src/constants.ts`
+   - Added `DEFAULT_MAX_REDIRECTS`, `DEFAULT_MAX_RETRIES`, `DEFAULT_RETRY_BACKOFF_MS`, `ALLOWED_CONTENT_TYPE_PREFIXES`
+2. `packages/shared/src/config/types.ts` & `packages/shared/src/config/index.ts`
+   - Added Phase 5 crawler configuration fields to `CrawlerConfig` and `loadConfig`
+3. `packages/crawler/src/index.ts`
+   - Exported Phase 5 types, fetcher classes, SSRF functions, and factories
+4. `package.json`
+   - Added `"verify:phase5"` script
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## VERIFICATION & TEST SUMMARY
+
+- `npm run typecheck`: PASSED (0 errors)
+- `npm run lint`: PASSED (0 errors, 0 warnings)
+- `npm test`: PASSED (16 test files, 199 tests)
+- `npm run verify:phase5`: PASSED (35/35 checks)
+
+Phase 5 is fully implemented, verified, and ready for Phase 6.

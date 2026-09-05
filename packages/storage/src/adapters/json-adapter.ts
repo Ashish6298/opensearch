@@ -245,7 +245,12 @@ class JsonDocumentRepository implements DocumentRepository {
         context: { id },
       });
     }
-    const updated: DocumentRecord = { ...existing, ...updates, id: existing.id, updatedAt: nowIso() };
+    const updated: DocumentRecord = {
+      ...existing,
+      ...updates,
+      id: existing.id,
+      updatedAt: nowIso(),
+    };
     this.col.update(id, updated);
     return updated;
   }
@@ -342,7 +347,12 @@ class JsonUrlRepository implements UrlRepository {
         context: { urlHash },
       });
     }
-    const updated: UrlRecord = { ...existing, ...updates, urlHash: existing.urlHash, url: existing.url };
+    const updated: UrlRecord = {
+      ...existing,
+      ...updates,
+      urlHash: existing.urlHash,
+      url: existing.url,
+    };
     this.col.update(urlHash, updated);
     return updated;
   }
@@ -427,7 +437,9 @@ class JsonIndexMetadataRepository implements IndexMetadataRepository {
   private col: JsonCollection<IndexMetadataRecord>;
 
   constructor(storageDir: string) {
-    this.col = new JsonCollection<IndexMetadataRecord>(path.join(storageDir, 'index-metadata.json'));
+    this.col = new JsonCollection<IndexMetadataRecord>(
+      path.join(storageDir, 'index-metadata.json'),
+    );
   }
 
   load(): void {

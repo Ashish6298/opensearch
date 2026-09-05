@@ -54,7 +54,56 @@ export const CRAWLER_LIMITS = {
   DEFAULT_POLITENESS_DELAY_MS: 1_000,
   MIN_POLITENESS_DELAY_MS: 200,
   DEFAULT_USER_AGENT: 'OpenSearchBot/1.0 (+https://github.com/Ashish6298/opensearch)',
+  /** Maximum length of any URL accepted by the crawler (characters). */
+  MAX_URL_LENGTH: 2_048,
+  /** Maximum number of entries in the persistent crawl queue. */
+  MAX_QUEUE_SIZE: 100_000,
+  // ── Phase 5: HTTP Fetcher ──────────────────────────────────────────────
+  /** Maximum number of HTTP redirects to follow per request. */
+  DEFAULT_MAX_REDIRECTS: 5,
+  /** Hard ceiling on redirect count; config values above this are clamped. */
+  MAX_REDIRECTS_CEILING: 10,
+  /** Maximum retry attempts for transient errors (not counting the initial attempt). */
+  DEFAULT_MAX_RETRIES: 2,
+  /** Hard ceiling on retry count. */
+  MAX_RETRIES_CEILING: 5,
+  /** Initial retry backoff delay in milliseconds (doubles on each retry). */
+  DEFAULT_RETRY_BACKOFF_MS: 1_000,
+  /** Maximum backoff delay cap, regardless of retry count. */
+  MAX_RETRY_BACKOFF_MS: 30_000,
+  // ── Phase 6: Robots.txt & Crawl Policy ──────────────────────────────────
+  /** Default robots cache TTL: 24 hours in milliseconds. */
+  DEFAULT_ROBOTS_CACHE_TTL_MS: 24 * 60 * 60 * 1000,
+  /** Minimum robots cache TTL: 5 minutes in milliseconds. */
+  MIN_ROBOTS_CACHE_TTL_MS: 5 * 60 * 1000,
+  /** Maximum robots cache TTL: 7 days in milliseconds. */
+  MAX_ROBOTS_CACHE_TTL_MS: 7 * 24 * 60 * 60 * 1000,
+  /** Default max robots response size (512 KB). */
+  DEFAULT_ROBOTS_MAX_BYTES: 512 * 1024,
+  /** Hard ceiling on robots response size (2 MB). */
+  MAX_ROBOTS_BYTES_CEILING: 2 * 1024 * 1024,
+  /** Maximum cache capacity (number of origins). */
+  DEFAULT_ROBOTS_MAX_CACHE_SIZE: 5_000,
+  /** Default maximum acceptable crawl delay in milliseconds (30 seconds). */
+  DEFAULT_ROBOTS_MAX_CRAWL_DELAY_MS: 30_000,
+  /** Hard cap on acceptable crawl delay in milliseconds (60 seconds). */
+  MAX_ROBOTS_CRAWL_DELAY_CEILING: 60_000,
 } as const;
+
+/**
+ * Content-type prefixes that the fetcher accepts as web documents.
+ * Comparison is done with startsWith, so "text/html" matches "text/html; charset=utf-8".
+ * Rejection of all other content types is intentional and documented.
+ */
+export const ALLOWED_CONTENT_TYPE_PREFIXES = [
+  'text/html',
+  'text/plain',
+  'application/xhtml+xml',
+  'application/xml',
+  'text/xml',
+] as const;
+
+export type AllowedContentTypePrefix = (typeof ALLOWED_CONTENT_TYPE_PREFIXES)[number];
 
 // Search & Query Operational Limits
 export const SEARCH_LIMITS = {

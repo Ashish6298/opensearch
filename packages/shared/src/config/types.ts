@@ -23,6 +23,23 @@ export interface CrawlerConfig {
   maxPageBytes: number;
   politenessDelayMs: number;
   userAgent: string;
+  /** Maximum number of HTTP redirects to follow per request (Phase 5) */
+  maxRedirects: number;
+  /** Maximum retry attempts for transient fetch failures (Phase 5) */
+  maxRetries: number;
+  /** Initial retry backoff delay in milliseconds (Phase 5) */
+  retryBackoffMs: number;
+  // ── Phase 6: Robots.txt & Policy ──────────────────────────────────────────
+  /** Whether robots.txt checking is enabled. Default true. */
+  robotsEnabled: boolean;
+  /** TTL for cached robots.txt policies in milliseconds. */
+  robotsCacheTtlMs: number;
+  /** Maximum cache size (number of origins). */
+  robotsMaxCacheSize: number;
+  /** Max response size for robots.txt files (bytes). */
+  robotsMaxBytes: number;
+  /** Maximum allowable crawl-delay from robots.txt in milliseconds. */
+  robotsMaxCrawlDelayMs: number;
 }
 
 export interface SearchConfig {

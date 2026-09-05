@@ -1,0 +1,117 @@
+================================================================================
+OPENSEARCH V1.0.0 — PHASE 11: INDEX BUILDER & REBUILD PIPELINE REPORT
+================================================================================
+Timestamp: 2026-09-05T23:52:00+05:30
+Phase Status: COMPLETED
+Verification Result: PASS (100% checks passed)
+Overall Suite: 259 Vitest Unit/Integration Tests PASS, All 11 Phase Verification Suites PASS
+
+--------------------------------------------------------------------------------
+1. EXECUTIVE SUMMARY & OBJECTIVES ACHIEVED
+--------------------------------------------------------------------------------
+Phase 11 implements the robust, production-grade Index Builder and Rebuild Pipeline
+in @opensearch/indexer. It connects stored crawled documents in the DocumentRepository
+(Phase 3) through the Document Processing Pipeline (Phase 9) and persists them into
+the structured Inverted Index (Phase 10), completing Milestone 3: Search Index.
+
+Key achievements:
+- Full Index Build: Ingests documents in configurable batches from storage, parses
+  and extracts tokens with field weights, generates term dictionary and posting lists,
+  and persists to disk.
+- Incremental Update Capability: Detects and processes documents in PENDING or STALE
+  status without requiring a full re-indexing cycle, cloning active index postings
+  and merging new document terms cleanly.
+- Deterministic Build Behavior: Verified that identical crawled corpora produce
+  identical term dictionary structures, term frequencies, and posting offsets.
+- Staging Directory Isolation & Atomic Swaps: Builds execute into isolated staging
+  folders (<indexDir>/builds/<buildId>). The active index is only activated in
+  storage metadata after complete validation and flush.
+- Robust Corruption & Error Handling: Simulated disk I/O and batch parsing failures
+  prove that broken builds do not overwrite active indices and staging data is
+  purged cleanly.
+- Index Version Metadata & Statistics: Integrates with IndexMetadataRecord to track
+  build IDs, versions, document counts, total unique terms, duration, and status.
+- Zero Regressions: All test suites from Phase 1 through Phase 11 continue to pass
+  with zero errors.
+
+--------------------------------------------------------------------------------
+2. COMPONENT ARCHITECTURE & IMPLEMENTATION DETAILS
+--------------------------------------------------------------------------------
+Phase 11 added the following modules in `packages/indexer/src/builder/`:
+
+1. `builder-types.ts`
+   - `IndexBuildOptions`: Configures build mode ('full' | 'incremental'), versionLabel,
+     batchSize, targetDir, and force flags.
+   - `IndexBuildStats`: Tracks buildId, version, mode, documentsExamined,
+     documentsIndexed, documentsSkipped, termsIndexed, postingsCount, avgDocLength,
+     startedAt, completedAt, durationMs, and status.
+   - `IndexBuildSummary`: Summary object returned upon build completion.
+   - `IndexBuilder`: Interface defining `build()`, `getActiveIndex()`,
+     `getActiveMetadata()`, and `loadActiveIndex()`.
+
+2. `index-builder.ts` (`DefaultIndexBuilder`)
+   - Manages the end-to-end build lifecycle.
+   - Creates a new `IndexMetadataRecord` with status 'building'.
+   - Staging build directory isolation: Writes into `<indexDir>/builds/<buildId>`.
+   - Incremental mode: Pre-populates the staged index with active index postings.
+   - Batch document fetching from `DocumentRepository` via `storage.documents.list`
+     or `findByIndexStatus`.
+   - Text normalization and tokenization through `DocumentProcessor`.
+   - Serializes index to disk (`index-data.json`) via `MemoryInvertedIndex.save()`.
+   - Atomic metadata swap: Switches previous active index to inactive/stale and
+     activates the new index build in `storage.indexMetadata`.
+   - Updates document index status to `INDEX_STATUS.INDEXED` with `lastIndexedAt`
+     and `indexVersion`.
+   - Error handling: Catches exceptions, records failure in metadata, preserves
+     active index intact, and purges staging directory.
+   - `loadActiveIndex()`: Automatically locates the active index build on disk
+     or triggers an initial build on first startup.
+
+3. `builder-factory.ts`
+   - Factory function `createIndexBuilder(options)` exposing standard initialization.
+
+4. `index.ts` (Package root exports)
+   - Re-exports `IndexBuilder`, `IndexBuildOptions`, `IndexBuildStats`,
+     `IndexBuildSummary`, `DefaultIndexBuilder`, and `createIndexBuilder`.
+
+--------------------------------------------------------------------------------
+3. TEST & VERIFICATION SUMMARY
+--------------------------------------------------------------------------------
+A. Automated Unit & Integration Tests (Vitest)
+   - Test File: `packages/indexer/tests/index-builder.test.ts`
+   - Results: 4/4 Tests PASS
+   - Full Test Suite: 25 test files, 259 tests PASS, 0 failed.
+
+B. Standalone Verification Suite
+   - Script: `scripts/verify-phase11.mjs` (`npm run verify:phase11`)
+   - Checks Executed: 25 individual assertion checks across 5 functional areas:
+     1. Full Index Build Pipeline (11 checks) - PASS
+     2. Incremental Index Update Capability (5 checks) - PASS
+     3. Deterministic Build Behavior (2 checks) - PASS
+     4. Corruption / Error Handling & Staging Isolation (4 checks) - PASS
+     5. Index Version Metadata & Persistence Reload (3 checks) - PASS
+   - Results: 25 passed, 0 failed.
+
+C. Full Sequential Workspace Verification Pipeline
+   - `npm run verify:phase1`  — Project Foundation & Monorepo Structure: PASS
+   - `npm run verify:phase2`  — Configuration, Logger, Errors & Types: PASS
+   - `npm run verify:phase3`  — JSON Storage Foundation & Repositories: PASS
+   - `npm run verify:phase4`  — URL Model, Normalization & Queue: PASS
+   - `npm run verify:phase5`  — HTTP Fetcher & SSRF Guard: PASS
+   - `npm run verify:phase6`  — Robots.txt Parser & Policy Service: PASS
+   - `npm run verify:phase7`  — HTML Parser & Content Extraction: PASS
+   - `npm run verify:phase8`  — Crawl Orchestrator: PASS
+   - `npm run verify:phase9`  — Document Processing Pipeline: PASS
+   - `npm run verify:phase10` — Inverted Index Core: PASS
+   - `npm run verify:phase11` — Index Builder & Rebuild Pipeline: PASS
+
+--------------------------------------------------------------------------------
+4. READINESS FOR NEXT PHASE
+--------------------------------------------------------------------------------
+Milestone 3 (Search Index) is now 100% complete across Phase 9, Phase 10, and Phase 11.
+The storage, document processing, inverted index, and index rebuild pipelines are
+fully verified, deterministic, and isolated.
+
+The project is READY to proceed to Milestone 4 — Search Engine Core:
+Phase 12 — Query Parser & Execution Engine.
+================================================================================

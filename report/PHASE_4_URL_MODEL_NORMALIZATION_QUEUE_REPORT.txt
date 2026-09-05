@@ -1,0 +1,391 @@
+OPENSEARCH V1.0.0 — MILESTONE 2: CRAWLER FOUNDATION
+PHASE 4: URL MODEL, NORMALIZATION & QUEUE — COMPLETION REPORT
+Generated: 2026-09-05
+═══════════════════════════════════════════════════════════════════════════════
+
+## PHASE OBJECTIVE
+
+Build the crawler's URL-management foundation: typed URL model, deterministic
+normalization, stable fingerprinting, and a persistent FIFO crawl queue with
+cross-restart deduplication. No HTTP fetching, HTML parsing, or robots.txt
+handling is included — those belong to Phases 5-7.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## SCOPE COMPLIANCE
+
+IMPLEMENTED (per PHASE.txt Phase 4):
+  [x] URL validation (accept http/https, reject dangerous/unsupported schemes)
+  [x] HTTP/HTTPS filtering
+  [x] URL normalization (deterministic, documented rules)
+  [x] Fragment removal
+  [x] Duplicate detection (seen-set across restarts)
+  [x] Crawl queue (FIFO, persistent, typed interface)
+  [x] Queue persistence (atomic JSON files, survives restart)
+  [x] Crawl limits (MAX_URL_LENGTH, MAX_QUEUE_SIZE added to shared constants)
+
+NOT IMPLEMENTED (correct for Phase 4):
+  — HTTP fetching (Phase 5)
+  — Robots.txt handling (Phase 6)
+  — HTML parsing / content extraction (Phase 7)
+  — Crawl orchestration / scheduling (Phase 8)
+  — BM25 ranking, search, indexing
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## FILES CREATED
+
+packages/crawler/src/url/url-model.ts
+  Core typed domain objects:
+  • ParsedCrawlUrl — result of successful validation (href, protocol,
+    hostname, host, pathname, search, port, originalUrl)
+  • CrawlQueueEntry — unit of work (normalizedUrl, urlHash, depth,
+    discoveredFrom, enqueuedAt)
+  • ENQUEUE_RESULT — enum constants (QUEUED, DUPLICATE_SKIPPED,
+    QUEUE_FULL, INVALID_URL)
+  • EnqueueOutcome — return type of CrawlQueue.enqueue()
+  • UrlValidationResult — tagged union (ok:true|false)
+
+packages/crawler/src/url/url-validator.ts
+  URL validation gate. Accepts only http: and https:. Rejects:
+  • Non-string, empty, whitespace-only input
+  • Unsupported schemes: javascript:, data:, file:, ftp:, blob:, mailto:,
+    tel:, about:, chrome:, ws:, wss:
+  • Malformed URLs that fail WHATWG URL parse
+  • URLs exceeding CRAWLER_LIMITS.MAX_URL_LENGTH (2048 chars)
+  • Private/loopback hosts: 127.x (loopback), 10.x (RFC-1918 class A),
+    192.168.x (RFC-1918 class C), 172.16-31.x (RFC-1918 class B),
+    169.254.x (link-local/APIPA), 100.64-127.x (CGNAT), localhost, ::1
+
+packages/crawler/src/url/url-normalizer.ts
+  Deterministic URL normalizer. Rules (applied in order):
+    1. WHATWG URL parse (rejects malformed input)
+    2. Lowercase scheme and hostname (WHATWG handles this automatically)
+    3. Remove default ports: :80 for http, :443 for https
+    4. Fragment removal — always strip #hash (fragments are client-side,
+       not server-side resource identifiers)
+    5. Path normalization:
+       a. Resolve . and .. segments (WHATWG URL handles this)
+       b. Collapse consecutive // → /
+       c. Ensure path starts with /
+       d. Remove trailing slash on non-root paths (/ preserved for root)
+    6. Query string: sort parameters alphabetically by key (stable sort);
+       within same key, original order preserved; empty ? removed
+    7. Query values are preserved exactly — different values = different URLs
+    What is NOT done (documented):
+       - DNS resolution / CNAME following
+       - Stripping tracking params (utm_*, fbclid)
+       - HTTP→HTTPS upgrade (done at crawl time in Phase 5)
+       - www/non-www canonicalization (requires domain config)
+
+packages/crawler/src/url/url-fingerprint.ts
+  SHA-256 hex fingerprinting:
+  • computeUrlHash(normalizedUrl) — 64-char lowercase hex, deterministic
+  • computeRawUrlHash(rawUrl) — convenience wrapper, returns null on error
+  Fingerprint is computed on the NORMALIZED URL, not raw input.
+  Compatible with UrlRecord.urlHash field in Phase 3 storage layer.
+
+packages/crawler/src/queue/queue-types.ts
+  CrawlQueue interface:
+    enqueue(rawUrl, depth, discoveredFrom) → EnqueueOutcome
+    dequeue() → CrawlQueueEntry | null   (FIFO)
+    peek()    → CrawlQueueEntry | null   (non-destructive)
+    contains(urlHash) → boolean          (seen-set check)
+    size()    → number                   (pending only)
+    isEmpty() → boolean
+    clear()   → void                     (clears queue, NOT seen-set)
+    close()   → void                     (flush + release)
+  Also exports: QueueStats interface
+
+packages/crawler/src/queue/persistent-queue.ts
+  PersistentCrawlQueue — concrete FIFO implementation:
+  Persistence:
+    Two files in persistenceDir:
+    - queue.json  — ordered array of CrawlQueueEntry (pending only)
+    - seen.json   — flat array of urlHash strings (includes dequeued)
+    Atomic writes: write-to-.tmp-then-rename (crash-safe)
+  Deduplication:
+    seen-set is an in-memory Set<string> (urlHash) rebuilt on initialize().
+    Includes hashes of dequeued entries. Cross-restart dedup is correct.
+  Validation on enqueue:
+    → validateUrl (scheme, format, private-host check)
+    → normalizeUrl (canonical form)
+    → computeUrlHash (identity key)
+    → seen-set check
+    → capacity check
+  FIFO ordering:
+    In-memory array; push to end, shift from front, persisted on every
+    enqueue/dequeue/clear.
+  Initialization guard:
+    All repository accessors throw StorageError if called before
+    initialize().
+  Capacity:
+    Enforces maxQueueSize (default: CRAWLER_LIMITS.MAX_QUEUE_SIZE = 100,000).
+    Returns QUEUE_FULL without throwing.
+
+packages/crawler/src/queue/queue-factory.ts
+  createCrawlQueue(options: { config: AppConfig, logger? }) — wires the
+  Phase 2 typed configuration (crawlerDataDir, maxPages) to
+  PersistentCrawlQueue. Application code depends on CrawlQueue interface.
+
+packages/crawler/src/index.ts  [UPDATED]
+  Full Phase 4 public API exports replacing Phase 1 boundary stub.
+  Exports: all URL types, ENQUEUE_RESULT, validateUrl, normalizeUrl,
+  NormalizeResult, computeUrlHash, computeRawUrlHash, CrawlQueue,
+  QueueStats, PersistentCrawlQueue, PersistentCrawlQueueOptions,
+  createCrawlQueue, CrawlQueueFactoryOptions.
+
+packages/crawler/tests/url-validator.test.ts   [NEW — 46 tests]
+  Covers: accepted http/https URLs, all unsupported schemes (11 cases),
+  malformed URLs, null/non-string input, length limit, private/loopback
+  hosts (9 cases), reason string on rejection.
+
+packages/crawler/tests/url-normalizer.test.ts  [NEW — 37 tests]
+  Covers: scheme+host casing, default port removal, fragment removal,
+  path normalization (trailing slash, dot segments, double slashes),
+  query sorting, empty query removal, semantic equivalence detection,
+  preserving different query values as distinct resources.
+
+packages/crawler/tests/url-fingerprint.test.ts [NEW — 8 tests]
+  Covers: hash format (64-char hex), determinism, uniqueness, lowercase,
+  computeRawUrlHash success/failure, canonically equivalent raw URLs.
+
+packages/crawler/tests/crawl-queue.test.ts     [NEW — 29 tests]
+  Covers: FIFO order, peek non-destructive, deduplication (same URL,
+  semantically equivalent, different fragments, dequeued URL), different
+  query values accepted, contains(), clear() preserves seen-set, invalid
+  URL handling (all rejected codes), size/isEmpty, null dequeue/peek,
+  capacity limit, persistence across restart, nested dir creation,
+  entry field correctness (normalizedUrl, urlHash, depth, discoveredFrom,
+  enqueuedAt).
+
+scripts/verify-phase4.mjs  [NEW — 101 checks]
+  11 verification suites:
+  1. URL Validation (24 checks)
+  2. URL Normalization (20 checks)
+  3. Equivalent URL Detection (7 checks)
+  4. URL Fingerprinting (5 checks)
+  5. CrawlQueue — FIFO & Core Operations (13 checks)
+  6. CrawlQueue — Deduplication (10 checks)
+  7. CrawlQueue — Invalid URL Handling (6 checks)
+  8. CrawlQueue — Capacity Limit (2 checks)
+  9. CrawlQueue — Entry Field Correctness (7 checks)
+  10. CrawlQueue — Persistence Across Restart (6 checks)
+  11. CrawlQueue — Initialization Guard (1 check)
+
+report/PHASE_4_URL_MODEL_NORMALIZATION_QUEUE_REPORT.txt  [THIS FILE]
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## FILES MODIFIED
+
+packages/shared/src/constants.ts
+  Added to CRAWLER_LIMITS:
+  • MAX_URL_LENGTH: 2_048  — maximum URL length in characters
+  • MAX_QUEUE_SIZE: 100_000 — maximum crawl queue capacity
+
+package.json
+  Added: "verify:phase4": "node ./scripts/verify-phase4.mjs"
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## URL VALIDATION RULES
+
+Accepted:
+  • scheme: http: or https: only
+  • parseable by WHATWG URL specification
+  • URL length ≤ 2048 characters
+  • host is not a private/loopback address
+
+Rejected:
+  • Non-string, empty, or whitespace-only input
+  • Unsupported schemes (javascript:, data:, file:, ftp:, blob:, mailto:,
+    tel:, about:, chrome:, ws:, wss:, and any other non-http/https scheme)
+  • URLs that fail WHATWG URL parse (malformed)
+  • URLs > 2048 characters
+  • Private IPv4 ranges (127.x, 10.x, 192.168.x, 172.16-31.x, 169.254.x,
+    100.64-127.x, 0.x, 255.x)
+  • Loopback hostnames (localhost, ::1, [::1])
+
+Note: DNS resolution is NOT performed at validation time. A hostname like
+"internal.corp.example.com" may resolve to a private IP at crawl time
+but pass validation here. Full SSRF protection via DNS is Phase 5's concern.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## NORMALIZATION RULES
+
+Input → Canonical Output:
+
+  HTTP://Example.COM/         → http://example.com/
+  https://example.com:443/    → https://example.com/
+  http://example.com:80/path  → http://example.com/path
+  http://example.com:8080/    → http://example.com:8080/       (preserved)
+  https://example.com/page#s  → https://example.com/page       (frag removed)
+  https://example.com/path/   → https://example.com/path       (trailing /)
+  https://example.com         → https://example.com/           (root /)
+  https://example.com/a/./b   → https://example.com/a/b        (dot segment)
+  https://example.com/a/../b  → https://example.com/b          (dotdot)
+  https://example.com//a//b   → https://example.com/a/b        (double slash)
+  https://example.com/?b=2&a=1 → https://example.com/?a=1&b=2  (sorted)
+  https://example.com/?id=1  ≠  https://example.com/?id=2      (values preserved)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## DUPLICATE DETECTION STRATEGY
+
+Identity: SHA-256(normalizedUrl) — 64-char hex string
+Storage: In-memory Set<string> (seen-set), serialized to seen.json on disk
+Lifetime: seen-set includes dequeued entries — once seen, always seen
+Cross-restart: seen.json loaded on initialize(), seen-set rebuilt from disk
+Semantics: http://example.com/ and HTTP://EXAMPLE.COM:80/ hash to the same
+           value after normalization → correctly deduped
+           https://example.com/?id=1 ≠ https://example.com/?id=2 → NOT deduped
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## QUEUE ARCHITECTURE & SEMANTICS
+
+Type: FIFO (first-in, first-out) — guaranteed by array push/shift
+Persistence: queue.json (pending entries) + seen.json (seen-set)
+Atomic writes: write to .tmp, then rename — crash-safe on all major OS
+Capacity: configurable maxQueueSize, default 100,000
+           QUEUE_FULL returned (not thrown) when at capacity
+Dedup: seen-set checked before every enqueue
+Enqueue result codes:
+  QUEUED            — accepted and added to queue
+  DUPLICATE_SKIPPED — urlHash already in seen-set
+  QUEUE_FULL        — pending count at maxQueueSize
+  INVALID_URL       — failed validation or normalization
+  (invalid URLs do NOT pollute the seen-set)
+Empty queue: dequeue/peek return null, never throw
+Initialization: initialize() required before any operation; all methods
+                throw StorageError if called pre-initialize
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## CRAWL LIMITS & CONFIGURATION
+
+New constants in @opensearch/shared:
+  CRAWLER_LIMITS.MAX_URL_LENGTH = 2_048  (characters)
+  CRAWLER_LIMITS.MAX_QUEUE_SIZE = 100_000 (entries)
+
+Existing limits used by Phase 4:
+  CRAWLER_LIMITS.DEFAULT_MAX_PAGES — used as default maxQueueSize in factory
+
+Config integration:
+  createCrawlQueue(options) accepts AppConfig and uses:
+  • config.storage.crawlerDataDir — persistence directory
+  • config.crawler.maxPages — maximum queue capacity
+  • config.logging.level / format — logger configuration
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## PACKAGE / DEPENDENCY DECISIONS
+
+Dependency graph (no cycles):
+  @opensearch/shared ← @opensearch/storage ← @opensearch/crawler
+
+Note: @opensearch/crawler does NOT depend on @opensearch/storage directly.
+The queue uses its own lightweight file persistence (JSON files) rather than
+the storage adapter from Phase 3. This keeps the crawler package lean and
+avoids coupling the URL queue to document storage concepts.
+
+No new external npm dependencies were added. All Phase 4 functionality uses:
+  • Node.js built-ins: node:crypto, node:fs, node:path, node:os
+  • @opensearch/shared: constants, logger, errors, safeJsonParse
+  • WHATWG URL API (built into Node.js ≥ 10)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## COMMANDS EXECUTED
+
+npm run typecheck        → tsc -b (composite project build check)
+npm run build            → all workspaces built
+npm test                 → vitest run
+npm run lint             → eslint .
+npm run format:check     → prettier --check .
+npm run format           → prettier --write .
+npm run verify:phase1    → regression check
+npm run verify:phase2    → regression check
+npm run verify:phase3    → regression check
+node scripts/verify-phase4.mjs → Phase 4 end-to-end verification
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## VERIFICATION RESULTS
+
+TypeScript typecheck (tsc -b):    PASS — 0 errors
+Build (all workspaces):           PASS — 0 errors
+Format check (prettier):          PASS — all files formatted
+Lint (eslint):                    PASS — 0 errors, 4 warnings (pre-existing)
+Unit tests (vitest run):          PASS — 169/169 tests
+  • packages/crawler/tests/url-validator.test.ts:   46/46
+  • packages/crawler/tests/url-normalizer.test.ts:  37/37
+  • packages/crawler/tests/url-fingerprint.test.ts:  8/8
+  • packages/crawler/tests/crawl-queue.test.ts:     29/29
+  • All prior Phase 1-3 tests:                      49/49
+Phase 1 regression (verify:phase1): PASS
+Phase 2 regression (verify:phase2): PASS
+Phase 3 regression (verify:phase3): PASS — 46/46 checks
+Phase 4 verification script:        PASS — 101/101 checks
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## ISSUES ENCOUNTERED AND RESOLUTIONS
+
+Issue 1: WHATWG URL parse behavior for "https:///path"
+  The test initially expected validateUrl('https:///path') to return ok:false
+  because visually there is no hostname. However, the WHATWG URL spec
+  parses this as hostname="path", host="path" — making it a valid URL.
+  Resolution: Updated the test case to use 'https://' (truly invalid) which
+  does throw during WHATWG URL parse, correctly returning ok:false.
+
+Issue 2: Verification script dedup test had http/https scheme mismatch
+  The dedup verification suite enqueued 'https://example.com/' but then
+  tested 'HTTP://EXAMPLE.COM:80/' for deduplication. These have different
+  schemes (https vs http) and thus different normalized forms and hashes.
+  Resolution: Changed the initial enqueue to use 'http://example.com/'
+  so the uppercase+port80 equivalence test correctly deduplicates.
+
+Issue 3: Format check failed on verify-phase4.mjs after creation
+  Resolution: Ran `npm run format` which reformatted the file.
+  All subsequent format:check passes.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## KNOWN LIMITATIONS / TECHNICAL DEBT
+
+1. DNS-based SSRF protection: The private-host check is purely syntactic
+   (IP pattern matching + hostname name matching). A hostname like
+   "internal.corp.example.com" that resolves to 10.x will pass validation
+   here. Full SSRF protection requires DNS resolution at fetch time (Phase 5).
+
+2. No URL scheme upgrade: http → https upgrade is not performed during
+   normalization. This is intentional — we cannot know if HTTPS is available
+   without making an HTTP request. Phase 5 can record the final URL after
+   redirects.
+
+3. Tracking parameter stripping: utm_source, utm_medium, fbclid, etc. are
+   preserved in the normalized URL. Stripping them would be an optional
+   enhancement that could incorrectly merge distinct session URLs. This can
+   be added as a configurable filter in a future phase.
+
+4. seen.json grows unbounded: The seen-set serializes all ever-seen URL
+   hashes. For a long-running crawler at scale this grows without limit.
+   A future phase can implement LRU eviction or a Bloom filter.
+
+5. Single-process safety only: The queue is not designed for concurrent
+   multi-process access to the same directory. Multi-process coordination
+   is out of scope for V1.0.0.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PHASE 4 — COMPLETED
+READY FOR NEXT PHASE: YES
+
+All required verification gates pass. The repository is clean, buildable,
+testable, and all existing functionality from Phases 1-3 is preserved.
+Phase 5 (HTTP Fetcher) may proceed.
+
+═══════════════════════════════════════════════════════════════════════════════

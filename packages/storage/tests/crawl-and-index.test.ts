@@ -110,7 +110,10 @@ describe('Crawl Repository', () => {
 
   it('should reject crawl with invalid status', async () => {
     await expect(
-      adapter.crawls.create({ ...BASE_CRAWL, status: 'invalid-status' as typeof CRAWL_STATUS.SUCCESS }),
+      adapter.crawls.create({
+        ...BASE_CRAWL,
+        status: 'invalid-status' as typeof CRAWL_STATUS.SUCCESS,
+      }),
     ).rejects.toThrow(ValidationError);
   });
 

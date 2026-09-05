@@ -23,7 +23,15 @@
     "clean": "node ./scripts/clean.mjs",
     "verify:phase1": "node ./scripts/verify-phase1.mjs",
     "verify:phase2": "node ./scripts/verify-phase2.mjs",
-    "verify:phase3": "node ./scripts/verify-phase3.mjs"
+    "verify:phase3": "node ./scripts/verify-phase3.mjs",
+    "verify:phase4": "node ./scripts/verify-phase4.mjs",
+    "verify:phase5": "node ./scripts/verify-phase5.mjs",
+    "verify:phase6": "node ./scripts/verify-phase6.mjs",
+    "verify:phase7": "node ./scripts/verify-phase7.mjs",
+    "verify:phase8": "node ./scripts/verify-phase8.mjs",
+    "verify:phase9": "node ./scripts/verify-phase9.mjs",
+    "verify:phase10": "node ./scripts/verify-phase10.mjs",
+    "verify:phase11": "node ./scripts/verify-phase11.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.20.0",
