@@ -50,3 +50,17 @@ export type {
 
 export { MemoryInvertedIndex } from './index/inverted-index.js';
 export { createInvertedIndex } from './index/index-factory.js';
+
+// ── Phase 11: Index Builder & Rebuild Pipeline ───────────────
+export type {
+  IndexBuildOptions,
+  IndexBuildStats,
+  IndexBuildSummary,
+  IndexBuilder,
+} from './builder/builder-types.js';
+
+export { DefaultIndexBuilder } from './builder/index-builder.js';
+export type { IndexBuilderOptions } from './builder/index-builder.js';
+
+export { createIndexBuilder } from './builder/builder-factory.js';
+export type { IndexBuilderFactoryOptions } from './builder/builder-factory.js';
