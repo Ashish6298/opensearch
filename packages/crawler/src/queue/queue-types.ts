@@ -19,6 +19,11 @@ export { ENQUEUE_RESULT } from '../url/url-model.js';
 
 export interface CrawlQueue {
   /**
+   * Initializes the queue and underlying storage directories.
+   */
+  initialize(): Promise<void>;
+
+  /**
    * Enqueue a raw (un-normalized) URL at the given depth.
    *
    * Internally: validates → normalizes → deduplicates → persists.
@@ -64,6 +69,11 @@ export interface CrawlQueue {
    * Does NOT clear the seen-set — already-seen URLs remain deduped.
    */
   clear(): Promise<void>;
+
+  /**
+   * Returns queue statistics (pending count, seen count, max size).
+   */
+  stats(): QueueStats;
 
   /**
    * Flush any pending writes and release resources.

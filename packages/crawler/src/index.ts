@@ -3,6 +3,7 @@
  * Phase 4: URL Model, Normalization & Queue — Complete Implementation
  * Phase 5: HTTP Fetcher — Complete Implementation
  * Phase 6: Robots.txt & Crawl Policy — Complete Implementation
+ * Phase 7: HTML Parsing & Content Extraction — Complete Implementation
  */
 
 // ── URL Model ────────────────────────────────────────────────
@@ -100,3 +101,32 @@ export type { RobotsPolicyServiceOptions } from './robots/robots-policy-service.
 
 export { createRobotsPolicyEvaluator } from './robots/robots-factory.js';
 export type { RobotsPolicyFactoryOptions } from './robots/robots-factory.js';
+
+// ── Phase 7: HTML Parsing & Content Extraction ────────────────
+export type {
+  HeadingItem,
+  ExtractedLink,
+  ExtractedDocument,
+  HtmlParserOptions,
+  HtmlParser,
+} from './parser/parser-types.js';
+
+export { decodeHtmlEntities, stripHtmlNoiseTags, cleanVisibleText } from './parser/text-cleaner.js';
+export { extractBaseHref, extractOutboundLinks } from './parser/link-extractor.js';
+export { DefaultHtmlParser } from './parser/html-parser.js';
+export { createHtmlParser } from './parser/parser-factory.js';
+
+// ── Phase 8: Crawl Orchestrator ──────────────────────────────
+export type {
+  CrawlRunOptions,
+  CrawlRunStats,
+  ProcessedPageOutcome,
+  CrawlSummary,
+  CrawlOrchestrator,
+} from './orchestrator/orchestrator-types.js';
+
+export { DefaultCrawlOrchestrator } from './orchestrator/crawl-orchestrator.js';
+export type { CrawlOrchestratorOptions } from './orchestrator/crawl-orchestrator.js';
+
+export { createCrawlOrchestrator } from './orchestrator/orchestrator-factory.js';
+export type { CrawlOrchestratorFactoryOptions } from './orchestrator/orchestrator-factory.js';

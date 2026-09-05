@@ -1,0 +1,113 @@
+OPENSEARCH V1.0.0 — MILESTONE 2: CRAWLER FOUNDATION
+PHASE 8: CRAWL ORCHESTRATOR — COMPLETION REPORT
+Generated: 2026-09-05
+═══════════════════════════════════════════════════════════════════════════════
+
+## PHASE OBJECTIVE
+
+Connect fetching (Phase 5), robots policy evaluation (Phase 6), HTML parsing &
+content extraction (Phase 7), queue management (Phase 4), and document / url / crawl
+metadata storage (Phase 3) into an end-to-end working crawl orchestrator.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## SCOPE COMPLIANCE
+
+IMPLEMENTED (per PHASE.txt Phase 8):
+  [x] Seed loading & validation with persistent queue integration
+  [x] Crawl loop (dequeuing items in FIFO order, multi-depth exploration)
+  [x] Politeness scheduling (domain-aware delay and robots.txt crawl-delay compliance)
+  [x] Robots.txt policy enforcement (skipping disallowed paths and logging decisions)
+  [x] HTTP resource fetching via HttpFetcher abstraction
+  [x] HTML parsing & content extraction via HtmlParser
+  [x] Link discovery, normalization, filtering, and persistent queue insertion
+  [x] Deduplication (in-memory & disk-backed seen-set, avoiding repeated processing)
+  [x] Document persistence (DocumentRecord stored with title, description, headings, bodyText, outboundLinks)
+  [x] URL metadata tracking (UrlRecord state updates: pending -> in_progress -> success/failed/disallowed)
+  [x] Crawl event history logging (CrawlRecord created per fetch event)
+  [x] Retry handling & transient failure logging
+  [x] Crawl limits (maxPages, maxDepth, external cancellation signal)
+  [x] Live statistics tracking (CrawlRunStats)
+  [x] Graceful shutdown / abort handling with AbortSignal
+  [x] Orchestrator factory (`createCrawlOrchestrator`)
+
+NOT IMPLEMENTED (deferred to subsequent phases):
+  — Milestone 3: Indexing Foundation & Pipeline (Phase 9-11)
+  — Milestone 4: Search Engine Core & Ranking (Phase 12-14)
+  — Milestone 5: Search API & Web UI (Phase 15-18)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## ARCHITECTURAL DESIGN & INTEGRATION
+
+1. `packages/crawler/src/orchestrator/orchestrator-types.ts`
+   - `CrawlRunOptions`: seeds, maxPages, maxDepth, politenessDelayMs, userAgent, signal
+   - `CrawlRunStats`: live tracking of pagesFetched, pagesStored, fetchErrors, robotsDisallowed, linksDiscovered, duplicatesSkipped, queuePending, durationMs
+   - `ProcessedPageOutcome`: outcome of single page crawl operation
+   - `CrawlSummary`: final run status, statistics snapshot, and completion message
+   - `CrawlOrchestrator`: primary contract interface (initialize, addSeeds, start, stop, getStats, close)
+
+2. `packages/crawler/src/orchestrator/crawl-orchestrator.ts`
+   - `DefaultCrawlOrchestrator`: full lifecycle crawler implementation:
+     • Initializes queue and storage adapters
+     • Validates and seeds URLs
+     • Enforces robots.txt policy prior to network requests
+     • Applies domain-level politeness delays
+     • Coordinates HTTP fetch via HttpFetcher
+     • Parses clean searchable documents with HtmlParser
+     • Persists DocumentRecord, UrlRecord, and CrawlRecord into StorageAdapter
+     • Extracts outbound links and recursively queues within maxDepth limits
+     • Tracks metrics and handles graceful stopping via AbortController/signal
+
+3. `packages/crawler/src/orchestrator/orchestrator-factory.ts`
+   - `createCrawlOrchestrator`: factory creating configured CrawlOrchestrator instances
+
+4. `packages/crawler/src/index.ts`
+   - Re-exports Phase 8 orchestrator types, DefaultCrawlOrchestrator, and createCrawlOrchestrator
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## VERIFICATION & TEST RESULTS
+
+Automated Unit & Integration Tests:
+  - `packages/crawler/tests/crawl-orchestrator.test.ts` (6 tests passing)
+  - Full suite: 20 test files, 233 tests passing, 0 failures (Vitest)
+
+Phase Verification Scripts Executed:
+  - `npm run verify:phase1`: PASSED (all project structure checks)
+  - `npm run verify:phase2`: PASSED (configuration, logger, errors)
+  - `npm run verify:phase3`: PASSED (storage repositories & models)
+  - `npm run verify:phase4`: PASSED (URL validation, normalization, fingerprinting, queue)
+  - `npm run verify:phase5`: PASSED (HTTP fetcher & SSRF protection)
+  - `npm run verify:phase6`: PASSED (robots.txt parser & policy service)
+  - `npm run verify:phase7`: PASSED (HTML parser & content extraction)
+  - `npm run verify:phase8`: PASSED (19/19 checks passed):
+    • Orchestrator initializes without error
+    • Seed deduplication on initial load works
+    • Seed URL recorded in UrlRepository with PENDING status
+    • Crawl run completed successfully on controlled mock corpus
+    • Fetched exactly 3 allowed pages
+    • Stored 3 documents in DocumentRepository
+    • Disallowed 1 page via robots.txt
+    • Skipped duplicate links during traversal
+    • Home document persisted with canonical URL
+    • Title, description, headings, body text extracted correctly
+    • Outbound links recorded
+    • Index status initialized to PENDING
+    • Disallowed URL marked with DISALLOWED status in UrlRepository
+    • Crawl event records logged for all fetched pages
+    • Max pages limit halts crawler as expected
+    • Orchestrator closes and flushes state cleanly
+
+Code Quality & Build Validation:
+  - `npm run format:check`: PASSED (All files formatted with Prettier)
+  - `npm run lint`: PASSED (0 errors)
+  - `npm run typecheck`: PASSED (Clean TypeScript compilation with `tsc -b`)
+  - `npm run build`: PASSED (All workspaces built successfully)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## PHASE 8 STATUS & READINESS FOR NEXT PHASE
+
+PHASE 8 STATUS: COMPLETED
+READY FOR NEXT PHASE (Phase 9 — Document Ingestion & Storage Pipeline): YES
