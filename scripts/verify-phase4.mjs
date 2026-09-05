@@ -44,7 +44,6 @@ function check(label, condition, detail = '') {
   }
 }
 
-
 function norm(url) {
   const r = normalizeUrl(url);
   if (!r.ok) return null;

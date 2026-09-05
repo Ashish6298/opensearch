@@ -19,14 +19,10 @@
  * Exit 1 = one or more checks failed
  */
 
-import http from 'node:http';
 import {
   NodeFetcher,
   createHttpFetcher,
   FETCH_ERROR_CODE,
-  isPrivateHostname,
-  isPrivateIpv4,
-  isPrivateIpv6,
   isPrivateOrLoopbackIp,
   validateTargetHostSync,
 } from '../packages/crawler/dist/index.js';
@@ -77,7 +73,10 @@ function verifySsrfGuard() {
   check('detects fd00::/7 unique-local', isPrivateOrLoopbackIp('fd12:3456:789a::1'));
   check('detects fe80::/10 link-local', isPrivateOrLoopbackIp('fe80::1'));
   check('detects ::ffff:127.0.0.1 IPv4-mapped loopback', isPrivateOrLoopbackIp('::ffff:127.0.0.1'));
-  check('detects ::ffff:192.168.1.1 IPv4-mapped private', isPrivateOrLoopbackIp('::ffff:192.168.1.1'));
+  check(
+    'detects ::ffff:192.168.1.1 IPv4-mapped private',
+    isPrivateOrLoopbackIp('::ffff:192.168.1.1'),
+  );
 
   // Hostname checks
   check('blocks localhost', !validateTargetHostSync('localhost').allowed);
@@ -100,30 +99,51 @@ async function verifyFetcherPreflight() {
 
   // Rejects localhost
   const r1 = await fetcher.fetch({ url: 'http://localhost:8080/page' });
-  check('rejects localhost with SSRF_REJECTED', !r1.ok && r1.code === FETCH_ERROR_CODE.SSRF_REJECTED);
+  check(
+    'rejects localhost with SSRF_REJECTED',
+    !r1.ok && r1.code === FETCH_ERROR_CODE.SSRF_REJECTED,
+  );
 
   // Rejects 127.0.0.1
   const r2 = await fetcher.fetch({ url: 'http://127.0.0.1/test' });
-  check('rejects 127.0.0.1 with SSRF_REJECTED', !r2.ok && r2.code === FETCH_ERROR_CODE.SSRF_REJECTED);
+  check(
+    'rejects 127.0.0.1 with SSRF_REJECTED',
+    !r2.ok && r2.code === FETCH_ERROR_CODE.SSRF_REJECTED,
+  );
 
   // Rejects 10.0.0.1
   const r3 = await fetcher.fetch({ url: 'http://10.0.0.1/admin' });
-  check('rejects 10.0.0.1 with SSRF_REJECTED', !r3.ok && r3.code === FETCH_ERROR_CODE.SSRF_REJECTED);
+  check(
+    'rejects 10.0.0.1 with SSRF_REJECTED',
+    !r3.ok && r3.code === FETCH_ERROR_CODE.SSRF_REJECTED,
+  );
 
   // Rejects 169.254.169.254
   const r4 = await fetcher.fetch({ url: 'http://169.254.169.254/latest' });
-  check('rejects metadata IP with SSRF_REJECTED', !r4.ok && r4.code === FETCH_ERROR_CODE.SSRF_REJECTED);
+  check(
+    'rejects metadata IP with SSRF_REJECTED',
+    !r4.ok && r4.code === FETCH_ERROR_CODE.SSRF_REJECTED,
+  );
 
   // Rejects invalid URLs
   const r5 = await fetcher.fetch({ url: 'not-a-url' });
-  check('rejects malformed string with INVALID_TARGET', !r5.ok && r5.code === FETCH_ERROR_CODE.INVALID_TARGET);
+  check(
+    'rejects malformed string with INVALID_TARGET',
+    !r5.ok && r5.code === FETCH_ERROR_CODE.INVALID_TARGET,
+  );
 
   // Rejects non-HTTP schemes
   const r6 = await fetcher.fetch({ url: 'ftp://example.com/file' });
-  check('rejects ftp scheme with INVALID_TARGET', !r6.ok && r6.code === FETCH_ERROR_CODE.INVALID_TARGET);
+  check(
+    'rejects ftp scheme with INVALID_TARGET',
+    !r6.ok && r6.code === FETCH_ERROR_CODE.INVALID_TARGET,
+  );
 
   const r7 = await fetcher.fetch({ url: 'file:///etc/passwd' });
-  check('rejects file scheme with INVALID_TARGET', !r7.ok && r7.code === FETCH_ERROR_CODE.INVALID_TARGET);
+  check(
+    'rejects file scheme with INVALID_TARGET',
+    !r7.ok && r7.code === FETCH_ERROR_CODE.INVALID_TARGET,
+  );
 }
 
 // ── Suite 3: FetcherFactory & Config Wiring ─────────────────────────────────
@@ -174,13 +194,15 @@ async function main() {
     console.log('═══════════════════════════════════════════════════════════════════\n');
     process.exit(0);
   } else {
-    console.log(`  \u001b[31mFAILED ${failed}/${passed + failed} checks (${passed} passed)\u001b[0m`);
+    console.log(
+      `  \u001b[31mFAILED ${failed}/${passed + failed} checks (${passed} passed)\u001b[0m`,
+    );
     console.log('═══════════════════════════════════════════════════════════════════\n');
     process.exit(1);
   }
 }
 
-main().catch((err) => {
+main().catch(err => {
   console.error('Unhandled error during Phase 5 verification:', err);
   process.exit(1);
 });

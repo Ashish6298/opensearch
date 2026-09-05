@@ -1,0 +1,93 @@
+OPENSEARCH V1.0.0 — MILESTONE 2: CRAWLER FOUNDATION
+PHASE 6: ROBOTS.TXT & CRAWL POLICY — COMPLETION REPORT
+Generated: 2026-09-05
+═══════════════════════════════════════════════════════════════════════════════
+
+## PHASE OBJECTIVE
+
+Make crawling responsible and policy-aware by implementing standards-compliant
+`robots.txt` retrieval, RFC 9309 parsing, policy evaluation, crawl-delay
+handling, origin-keyed caching, safe failure behavior, and configurable crawler
+identity.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## SCOPE COMPLIANCE
+
+IMPLEMENTED (per PHASE.txt Phase 6):
+  [x] Robots.txt retrieval through the Phase 5 HTTP fetcher with full SSRF protection
+  [x] Canonical robots URL derivation (scheme://host:port/robots.txt)
+  [x] RFC 9309 standards-compliant parser supporting:
+      - Line-by-line parsing and comment stripping (# ...)
+      - User-agent record grouping and multi-agent directives
+      - Disallow and Allow directives
+      - Empty Disallow (allow all / reset restrictions)
+      - Path prefix, wildcard '*', and end-anchor '$' matching
+      - Longest-match rule precedence (Allow wins on equal match length)
+      - Crawl-delay directive parsing with numeric validation and clamping
+      - Sitemap directive extraction
+  [x] Configurable crawler identity matching ('opensearchbot', exact token, wildcard fallback)
+  [x] Origin-keyed in-memory LRU cache with configurable TTL and size limits
+  [x] In-flight request de-duplication (concurrency guard per origin)
+  [x] Failure semantics:
+      - 404/410 absent robots.txt -> full access granted (ALLOWED_ROBOTS_404_OR_ABSENT)
+      - Network/timeout/fetch failures -> safe fallback (ALLOWED_ON_FETCH_ERROR)
+      - Malformed files / syntax warnings -> graceful fallback (ignored lines)
+  [x] Factory integration (createRobotsPolicyEvaluator wired to AppConfig)
+
+NOT IMPLEMENTED (deferred to subsequent phases):
+  — HTML parsing and content extraction (Phase 7)
+  — Crawl orchestration and scheduling (Phase 8)
+  — Document indexing and BM25 ranking (Milestone 3)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## ARCHITECTURAL DESIGN & INTEGRATION
+
+1. `packages/crawler/src/robots/robots-types.ts`
+   - `RobotsRule`: type, pattern, patternLength
+   - `RobotsUserAgentGroup`: userAgents, rules, crawlDelaySeconds
+   - `ParsedRobotsTxt`: groups, sitemaps, rawLengthBytes, hasSyntaxWarnings
+   - `RobotsPolicyDecision`: allowed, reason, matchedPattern, matchedType, matchedUserAgent, crawlDelayMs, origin, cached
+   - `RobotsPolicyEvaluator`: main interface contract
+
+2. `packages/crawler/src/robots/robots-parser.ts`
+   - RFC 9309 parsing engine
+   - `matchPathPattern`: evaluates prefixes, wildcards, and anchors
+   - `findMatchingUserAgentGroup`: selects specific crawler token over wildcard
+   - `evaluatePathRules`: applies longest-match and Allow-precedence logic
+
+3. `packages/crawler/src/robots/robots-cache.ts`
+   - `MemoryRobotsCache`: LRU-bounded map keyed by canonical origin with TTL expiry
+
+4. `packages/crawler/src/robots/robots-fetcher.ts`
+   - Constructs `scheme://host:port/robots.txt`
+   - Delegates download to `HttpFetcher` (ensuring Phase 5 SSRF, timeout, redirects, and size limits apply)
+
+5. `packages/crawler/src/robots/robots-policy-service.ts`
+   - Coordinates retrieval, caching, de-duplication, and evaluation
+
+6. `packages/crawler/src/robots/robots-factory.ts`
+   - `createRobotsPolicyEvaluator` instantiating dependencies from `AppConfig`
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## VERIFICATION & REGRESSION RESULTS
+
+Commands executed:
+  1. `npm run format:check` -> PASSED (All files use Prettier style)
+  2. `npm run lint`         -> PASSED (0 errors, 0 warnings)
+  3. `npm run typecheck`    -> PASSED (0 TypeScript errors across monorepo)
+  4. `npm run build`        -> PASSED (All workspace packages compiled)
+  5. `npm test`             -> PASSED (18 test files, 220 tests passed)
+  6. `npm run verify:phase1` -> PASSED
+  7. `npm run verify:phase2` -> PASSED
+  8. `npm run verify:phase3` -> PASSED
+  9. `npm run verify:phase4` -> PASSED (102/102 checks)
+ 10. `npm run verify:phase5` -> PASSED (35/35 checks)
+ 11. `npm run verify:phase6` -> PASSED (32/32 checks)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PHASE 6 — COMPLETED
+READY FOR NEXT PHASE: YES

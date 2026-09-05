@@ -71,6 +71,23 @@ export const CRAWLER_LIMITS = {
   DEFAULT_RETRY_BACKOFF_MS: 1_000,
   /** Maximum backoff delay cap, regardless of retry count. */
   MAX_RETRY_BACKOFF_MS: 30_000,
+  // ── Phase 6: Robots.txt & Crawl Policy ──────────────────────────────────
+  /** Default robots cache TTL: 24 hours in milliseconds. */
+  DEFAULT_ROBOTS_CACHE_TTL_MS: 24 * 60 * 60 * 1000,
+  /** Minimum robots cache TTL: 5 minutes in milliseconds. */
+  MIN_ROBOTS_CACHE_TTL_MS: 5 * 60 * 1000,
+  /** Maximum robots cache TTL: 7 days in milliseconds. */
+  MAX_ROBOTS_CACHE_TTL_MS: 7 * 24 * 60 * 60 * 1000,
+  /** Default max robots response size (512 KB). */
+  DEFAULT_ROBOTS_MAX_BYTES: 512 * 1024,
+  /** Hard ceiling on robots response size (2 MB). */
+  MAX_ROBOTS_BYTES_CEILING: 2 * 1024 * 1024,
+  /** Maximum cache capacity (number of origins). */
+  DEFAULT_ROBOTS_MAX_CACHE_SIZE: 5_000,
+  /** Default maximum acceptable crawl delay in milliseconds (30 seconds). */
+  DEFAULT_ROBOTS_MAX_CRAWL_DELAY_MS: 30_000,
+  /** Hard cap on acceptable crawl delay in milliseconds (60 seconds). */
+  MAX_ROBOTS_CRAWL_DELAY_CEILING: 60_000,
 } as const;
 
 /**
