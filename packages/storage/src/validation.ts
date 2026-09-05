@@ -44,17 +44,20 @@ function requireValidUrl(url: string, field: string): void {
     });
   }
   if (url.length > STORAGE_LIMITS.MAX_URL_LENGTH) {
-    throw new ValidationError(`${field} exceeds maximum length of ${STORAGE_LIMITS.MAX_URL_LENGTH}`, {
-      code: 'URL_TOO_LONG',
-      context: { field, length: url.length },
-    });
+    throw new ValidationError(
+      `${field} exceeds maximum length of ${STORAGE_LIMITS.MAX_URL_LENGTH}`,
+      {
+        code: 'URL_TOO_LONG',
+        context: { field, length: url.length },
+      },
+    );
   }
   const sanitized = sanitizeUrl(url);
   if (sanitized === null) {
-    throw new ValidationError(
-      `${field} is not a valid HTTP/HTTPS URL: "${url.slice(0, 100)}"`,
-      { code: 'INVALID_URL_SCHEME', context: { field } },
-    );
+    throw new ValidationError(`${field} is not a valid HTTP/HTTPS URL: "${url.slice(0, 100)}"`, {
+      code: 'INVALID_URL_SCHEME',
+      context: { field },
+    });
   }
 }
 
@@ -88,17 +91,26 @@ export function validateCreateDocumentInput(input: CreateDocumentInput): void {
   requireNonEmpty(input.urlHash, 'urlHash');
 
   if (typeof input.title !== 'string') {
-    throw new ValidationError('title must be a string', { code: 'INVALID_FIELD', context: { field: 'title' } });
-  }
-  if (input.title.length > STORAGE_LIMITS.MAX_TITLE_LENGTH) {
-    throw new ValidationError(`title exceeds maximum length of ${STORAGE_LIMITS.MAX_TITLE_LENGTH}`, {
-      code: 'FIELD_TOO_LONG',
+    throw new ValidationError('title must be a string', {
+      code: 'INVALID_FIELD',
       context: { field: 'title' },
     });
   }
+  if (input.title.length > STORAGE_LIMITS.MAX_TITLE_LENGTH) {
+    throw new ValidationError(
+      `title exceeds maximum length of ${STORAGE_LIMITS.MAX_TITLE_LENGTH}`,
+      {
+        code: 'FIELD_TOO_LONG',
+        context: { field: 'title' },
+      },
+    );
+  }
 
   if (typeof input.description !== 'string') {
-    throw new ValidationError('description must be a string', { code: 'INVALID_FIELD', context: { field: 'description' } });
+    throw new ValidationError('description must be a string', {
+      code: 'INVALID_FIELD',
+      context: { field: 'description' },
+    });
   }
   if (input.description.length > STORAGE_LIMITS.MAX_DESCRIPTION_LENGTH) {
     throw new ValidationError(`description exceeds maximum length`, {
@@ -108,7 +120,10 @@ export function validateCreateDocumentInput(input: CreateDocumentInput): void {
   }
 
   if (typeof input.bodyText !== 'string') {
-    throw new ValidationError('bodyText must be a string', { code: 'INVALID_FIELD', context: { field: 'bodyText' } });
+    throw new ValidationError('bodyText must be a string', {
+      code: 'INVALID_FIELD',
+      context: { field: 'bodyText' },
+    });
   }
   if (Buffer.byteLength(input.bodyText, 'utf8') > STORAGE_LIMITS.MAX_BODY_TEXT_BYTES) {
     throw new StorageError('bodyText exceeds maximum size limit', {
@@ -117,7 +132,10 @@ export function validateCreateDocumentInput(input: CreateDocumentInput): void {
   }
 
   if (typeof input.headings !== 'string') {
-    throw new ValidationError('headings must be a string', { code: 'INVALID_FIELD', context: { field: 'headings' } });
+    throw new ValidationError('headings must be a string', {
+      code: 'INVALID_FIELD',
+      context: { field: 'headings' },
+    });
   }
 
   if (typeof input.contentType !== 'string' || !isNonEmptyString(input.contentType)) {
@@ -148,9 +166,12 @@ export function validateCreateDocumentInput(input: CreateDocumentInput): void {
     });
   }
   if (input.outboundLinks.length > STORAGE_LIMITS.MAX_OUTBOUND_LINKS) {
-    throw new ValidationError(`outboundLinks exceeds maximum count of ${STORAGE_LIMITS.MAX_OUTBOUND_LINKS}`, {
-      code: 'TOO_MANY_LINKS',
-    });
+    throw new ValidationError(
+      `outboundLinks exceeds maximum count of ${STORAGE_LIMITS.MAX_OUTBOUND_LINKS}`,
+      {
+        code: 'TOO_MANY_LINKS',
+      },
+    );
   }
 }
 

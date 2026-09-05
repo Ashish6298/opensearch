@@ -54,6 +54,10 @@ export const CRAWLER_LIMITS = {
   DEFAULT_POLITENESS_DELAY_MS: 1_000,
   MIN_POLITENESS_DELAY_MS: 200,
   DEFAULT_USER_AGENT: 'OpenSearchBot/1.0 (+https://github.com/Ashish6298/opensearch)',
+  /** Maximum length of any URL accepted by the crawler (characters). */
+  MAX_URL_LENGTH: 2_048,
+  /** Maximum number of entries in the persistent crawl queue. */
+  MAX_QUEUE_SIZE: 100_000,
 } as const;
 
 // Search & Query Operational Limits

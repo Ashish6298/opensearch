@@ -121,15 +121,19 @@ describe('Document Repository', () => {
   });
 
   it('should throw NotFoundError when updating a non-existent document', async () => {
-    await expect(
-      adapter.documents.update('no-such-id', { title: 'new title' }),
-    ).rejects.toThrow(NotFoundError);
+    await expect(adapter.documents.update('no-such-id', { title: 'new title' })).rejects.toThrow(
+      NotFoundError,
+    );
   });
 
   it('should return correct count', async () => {
     expect(await adapter.documents.count()).toBe(0);
     await adapter.documents.create(BASE_DOCUMENT);
-    await adapter.documents.create({ ...BASE_DOCUMENT, url: 'https://example.com/p2', urlHash: urlHash('https://example.com/p2') });
+    await adapter.documents.create({
+      ...BASE_DOCUMENT,
+      url: 'https://example.com/p2',
+      urlHash: urlHash('https://example.com/p2'),
+    });
     expect(await adapter.documents.count()).toBe(2);
   });
 
@@ -170,17 +174,32 @@ describe('Document Repository', () => {
 
     // Missing/empty title (allowed as empty string but must be string)
     await expect(
-      adapter.documents.create({ ...BASE_DOCUMENT, url: 'https://a.com', urlHash: urlHash('https://a.com'), title: 123 as unknown as string }),
+      adapter.documents.create({
+        ...BASE_DOCUMENT,
+        url: 'https://a.com',
+        urlHash: urlHash('https://a.com'),
+        title: 123 as unknown as string,
+      }),
     ).rejects.toThrow(ValidationError);
 
     // Invalid httpStatus
     await expect(
-      adapter.documents.create({ ...BASE_DOCUMENT, url: 'https://b.com', urlHash: urlHash('https://b.com'), httpStatus: 999 }),
+      adapter.documents.create({
+        ...BASE_DOCUMENT,
+        url: 'https://b.com',
+        urlHash: urlHash('https://b.com'),
+        httpStatus: 999,
+      }),
     ).rejects.toThrow(ValidationError);
 
     // outboundLinks not an array
     await expect(
-      adapter.documents.create({ ...BASE_DOCUMENT, url: 'https://c.com', urlHash: urlHash('https://c.com'), outboundLinks: 'not-array' as unknown as string[] }),
+      adapter.documents.create({
+        ...BASE_DOCUMENT,
+        url: 'https://c.com',
+        urlHash: urlHash('https://c.com'),
+        outboundLinks: 'not-array' as unknown as string[],
+      }),
     ).rejects.toThrow(ValidationError);
   });
 

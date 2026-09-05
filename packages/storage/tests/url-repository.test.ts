@@ -107,7 +107,12 @@ describe('URL Repository', () => {
 
   it('should find URLs by crawl status', async () => {
     await adapter.urls.create(BASE_URL);
-    const u2 = { ...BASE_URL, url: 'https://example.com/about', urlHash: hashOf('https://example.com/about'), depth: 1 };
+    const u2 = {
+      ...BASE_URL,
+      url: 'https://example.com/about',
+      urlHash: hashOf('https://example.com/about'),
+      depth: 1,
+    };
     const u2rec = await adapter.urls.create(u2);
     await adapter.urls.update(u2rec.urlHash, { crawlStatus: CRAWL_STATUS.SUCCESS });
 

@@ -1,18 +1,34 @@
 /**
  * @opensearch/crawler
- * Crawler Boundary Scaffolding (Phase 1)
- * URL queue, fetcher, robots.txt, HTML parsing, and crawl orchestrator
- * are strictly scheduled for Milestone 2 (Phases 4-8).
+ * Phase 4: URL Model, Normalization & Queue — Complete Implementation
  */
 
-import { ServiceBoundaryInfo } from '@opensearch/shared';
+// ── URL Model ────────────────────────────────────────────────
+export type {
+  ParsedCrawlUrl,
+  CrawlQueueEntry,
+  EnqueueOutcome,
+  UrlValidationResult,
+} from './url/url-model.js';
+export { ENQUEUE_RESULT } from './url/url-model.js';
 
-export const CRAWLER_MODULE_INFO: ServiceBoundaryInfo = {
-  moduleName: '@opensearch/crawler',
-  purpose: 'Polite, safe, policy-aware web discovery and fetching',
-  currentPhaseScope: 'Phase 1: Boundary initialization only. Implementation starts in Milestone 2.',
-};
+// ── URL Validation ───────────────────────────────────────────
+export { validateUrl } from './url/url-validator.js';
 
-export function getCrawlerModuleInfo(): ServiceBoundaryInfo {
-  return CRAWLER_MODULE_INFO;
-}
+// ── URL Normalization ────────────────────────────────────────
+export { normalizeUrl } from './url/url-normalizer.js';
+export type { NormalizeResult } from './url/url-normalizer.js';
+
+// ── URL Fingerprinting ───────────────────────────────────────
+export { computeUrlHash, computeRawUrlHash } from './url/url-fingerprint.js';
+
+// ── Queue Abstraction ────────────────────────────────────────
+export type { CrawlQueue, QueueStats } from './queue/queue-types.js';
+
+// ── Persistent Queue Implementation ─────────────────────────
+export { PersistentCrawlQueue } from './queue/persistent-queue.js';
+export type { PersistentCrawlQueueOptions } from './queue/persistent-queue.js';
+
+// ── Queue Factory ─────────────────────────────────────────────
+export { createCrawlQueue } from './queue/queue-factory.js';
+export type { CrawlQueueFactoryOptions } from './queue/queue-factory.js';
