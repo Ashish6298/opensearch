@@ -1,0 +1,119 @@
+OPENSEARCH V1.0.0 — MILESTONE 3: SEARCH INDEX
+PHASE 9: DOCUMENT PROCESSING PIPELINE — COMPLETION REPORT
+Generated: 2026-09-05
+═══════════════════════════════════════════════════════════════════════════════
+
+## PHASE OBJECTIVE
+
+Prepare stored crawled documents (`DocumentRecord`) for indexing by implementing a
+robust, deterministic text normalization, tokenization, stop-word strategy,
+field separation, and field weighting metadata pipeline.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## SCOPE COMPLIANCE
+
+IMPLEMENTED (per PHASE.txt Phase 9):
+  [x] Unicode canonical normalization (NFC/NFKC) and case folding
+  [x] Diacritics and accent folding (e.g. 'café' -> 'cafe', 'München' -> 'munchen')
+  [x] Control character removal and punctuation stripping
+  [x] Unicode-aware word boundary tokenization with character offsets and sequential term positions
+  [x] Stop-words strategy with curated default English dictionary and customizable lookup (`isStopWord`)
+  [x] Token filtering (min/max token lengths, lowercasing, stop-words)
+  [x] Field separation (`title`, `headings`, `description`, `body`)
+  [x] Field boost weighting metadata (`DEFAULT_FIELD_WEIGHTS`: title: 3.0, headings: 2.0, description: 1.5, body: 1.0)
+  [x] Document-level term dictionary aggregation with term frequencies per field and weighted scores
+  [x] Document ID assignment and metadata extraction
+  [x] Resilient, safe error handling (never throws on empty, whitespace, or multilingual documents)
+  [x] Document processor factory (`createDocumentProcessor`)
+
+NOT IMPLEMENTED (deferred to subsequent phases):
+  — Inverted Index construction, posting lists, document/term frequencies (Phase 10)
+  — Index Builder & Persistence (Phase 11)
+  — Search Engine Core & Ranking (Phases 12-14)
+  — Search API & Web UI (Phases 15-18)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## ARCHITECTURAL DESIGN & INTEGRATION
+
+1. `packages/indexer/src/pipeline/pipeline-types.ts`
+   - `TokenPosition`, `Token`: captures normalized term, sequential position, startOffset, and endOffset
+   - `FieldWeightConfig`: typed weight map for title, headings, description, and body fields
+   - `ProcessedField`: field name, weight, total token count, token array, and term frequencies map
+   - `DocumentTermSummary`: aggregated term statistics across all document fields
+   - `ProcessedDocument`: full structured representation ready for index insertion
+   - `DocumentProcessor`: primary pipeline interface (process, tokenizeText, normalizeTerm)
+
+2. `packages/indexer/src/pipeline/normalizer.ts`
+   - `normalizeText`: applies Unicode normalization, control char stripping, accent folding, and case folding
+   - `foldDiacritics`: strips combining diacritical marks in range \u0300-\u036f
+   - `stripPunctuation`: replaces punctuation and symbols with spaces
+
+3. `packages/indexer/src/pipeline/stop-words.ts`
+   - `DEFAULT_STOP_WORDS`: immutable Set of standard English stop words
+   - `isStopWord`: constant-time lookup helper supporting custom word sets
+
+4. `packages/indexer/src/pipeline/tokenizer.ts`
+   - `tokenize`: extracts tokens via Unicode word boundary regex (`[\p{L}\p{N}]+`), computes offsets, applies length/stop-word filters
+
+5. `packages/indexer/src/pipeline/field-weights.ts`
+   - `DEFAULT_FIELD_WEIGHTS` and `getFieldWeight` helper
+
+6. `packages/indexer/src/pipeline/document-processor.ts`
+   - `DefaultDocumentProcessor`: transforms `DocumentRecord` or raw document inputs into `ProcessedDocument`
+   - `createDocumentProcessor`: factory creating configured processor instances
+
+7. `packages/indexer/src/index.ts`
+   - Re-exports all pipeline types, functions, classes, and factories
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## VERIFICATION & TEST RESULTS
+
+Automated Unit & Integration Tests:
+  - `packages/indexer/tests/normalizer.test.ts` (6 tests passing)
+  - `packages/indexer/tests/tokenizer.test.ts` (6 tests passing)
+  - `packages/indexer/tests/document-processor.test.ts` (5 tests passing)
+  - Full repository test suite: 23 test files, 250 tests passing, 0 failures (Vitest)
+
+Phase Verification Scripts Executed:
+  - `npm run verify:phase1`: PASSED
+  - `npm run verify:phase2`: PASSED
+  - `npm run verify:phase3`: PASSED
+  - `npm run verify:phase4`: PASSED
+  - `npm run verify:phase5`: PASSED
+  - `npm run verify:phase6`: PASSED
+  - `npm run verify:phase7`: PASSED
+  - `npm run verify:phase8`: PASSED
+  - `npm run verify:phase9`: PASSED (29/29 checks passed):
+    • Case folding converts uppercase to lowercase
+    • Accent folding strips accents from Latin characters
+    • German umlauts and eszett handled cleanly
+    • Control characters stripped without destroying tokens
+    • Punctuation stripped while preserving word separation
+    • Multilingual non-ASCII text handled safely
+    • Token stream emits ordered array with positions & character offsets
+    • Stop words removed when removeStopWords is true
+    • Search terms preserved in filtered tokens
+    • isStopWord identifies stop words correctly
+    • Title, headings, description, and body boosts applied
+    • ProcessedDocument preserves document ID, URL, and hash
+    • Term dictionary records occurrences across multiple fields
+    • Weighted score computes field count * field boost correctly
+    • Identical document produces deterministic token count and term dictionary
+    • Empty documents handled cleanly without throwing
+    • Multilingual non-ASCII document parsed and tokenized safely
+
+Code Quality & Build Validation:
+  - `npm run format:check`: PASSED (All files formatted with Prettier)
+  - `npm run lint`: PASSED (0 errors)
+  - `npm run typecheck`: PASSED (Clean TypeScript compilation with `tsc -b`)
+  - `npm run build`: PASSED (All workspaces built successfully)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+## PHASE 9 STATUS & READINESS FOR NEXT PHASE
+
+PHASE 9 STATUS: COMPLETED
+READY FOR NEXT PHASE (Phase 10 — Inverted Index): YES
