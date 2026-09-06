@@ -1,6 +1,6 @@
 /**
  * @opensearch/api
- * Search API Application Boundary (Milestone 5 / Phase 16: Search API Foundation)
+ * Search API Application Boundary (Milestone 5 / Phase 16 & 17: Search Endpoint)
  * Consumes typed configuration and structured logger from @opensearch/shared.
  */
 
@@ -18,10 +18,16 @@ export const API_SERVICE_INFO: ServiceBoundaryInfo = {
   moduleName: '@opensearch/api',
   purpose: 'Public HTTP Search API providing search endpoints, validation, and health checks',
   currentPhaseScope:
-    'Phase 16: Search API Foundation — Server, Routing, Middlewares, Validation, and Health.',
+    'Phase 17: Search Endpoint — Query parsing, candidate retrieval, BM25 ranking, snippets, pagination.',
 };
 
-export type { ApiApplicationContext, ApiAppContext, ApiServerOptions } from './types.js';
+export type {
+  ApiApplicationContext,
+  ApiAppContext,
+  ApiServerOptions,
+  SearchServices,
+  SearchApiResponse,
+} from './types.js';
 export type {
   ApiRequest,
   ApiResponse,
@@ -37,7 +43,7 @@ export {
   createSecurityHeadersMiddleware,
   createLoggingMiddleware,
 } from './middlewares.js';
-export { handleApiRoot, handleHealthCheck, handleSystemStatus } from './routes.js';
+export { handleApiRoot, handleHealthCheck, handleSystemStatus, handleSearch } from './routes.js';
 export { ApiServer, createApiServer } from './server.js';
 
 export function createApiContext(overrides?: Record<string, string | undefined>): ApiAppContext {
@@ -54,7 +60,7 @@ export function getApiStatus(): SystemStatus {
   return {
     name: PROJECT_NAME,
     version: PROJECT_VERSION,
-    phase: 'Phase 16: Search API Foundation',
+    phase: 'Phase 17: Search Endpoint',
     status: 'ok',
     timestamp: new Date().toISOString(),
   };

@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@opensearch/shared": "*",
+    "@opensearch/indexer": "*",
     "@opensearch/ranking": "*",
     "@opensearch/storage": "*"
   }

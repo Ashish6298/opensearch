@@ -1,11 +1,18 @@
 /**
- * @opensearch/api — HTTP Server Application (Phase 16)
+ * @opensearch/api — HTTP Server Application (Phase 16 & 17)
  *
  * Coordinates server lifecycle, router configuration, middleware pipelines,
- * and graceful startup/shutdown.
+ * search engine service wiring, and graceful startup/shutdown.
  */
 
 import { createServer, Server } from 'node:http';
+import { createInvertedIndex, InvertedIndex } from '@opensearch/indexer';
+import {
+  createCandidateRetriever,
+  createQueryParser,
+  createRankingEngine,
+  createResultGenerator,
+} from '@opensearch/ranking';
 import { AppConfig, createLogger, loadConfig, Logger } from '@opensearch/shared';
 import {
   createCorsMiddleware,
@@ -13,14 +20,15 @@ import {
   createSecurityHeadersMiddleware,
 } from './middlewares.js';
 import { Router } from './router.js';
-import { handleApiRoot, handleHealthCheck, handleSystemStatus } from './routes.js';
-import { ApiAppContext, ApiServerOptions } from './types.js';
+import { handleApiRoot, handleHealthCheck, handleSearch, handleSystemStatus } from './routes.js';
+import { ApiAppContext, ApiServerOptions, SearchServices } from './types.js';
 
 export class ApiServer {
   private readonly config: AppConfig;
   private readonly logger: Logger;
   private readonly router: Router;
   private readonly startTime: number;
+  private readonly services: SearchServices;
   private server: Server | null = null;
 
   constructor(options: ApiServerOptions = {}) {
@@ -34,6 +42,9 @@ export class ApiServer {
     this.router = new Router();
     this.startTime = Date.now();
 
+    // Wire or initialize search subsystem services
+    this.services = options.services ?? this.initializeSearchServices(options.index);
+
     this.setupMiddlewares(options.corsOrigin ?? this.config.api.corsOrigin);
     this.setupRoutes();
   }
@@ -42,11 +53,41 @@ export class ApiServer {
     return this.router;
   }
 
+  getServices(): SearchServices {
+    return this.services;
+  }
+
   getContext(): ApiAppContext {
     return {
       config: this.config,
       logger: this.logger,
       startTime: this.startTime,
+      services: this.services,
+    };
+  }
+
+  private initializeSearchServices(customIndex?: InvertedIndex): SearchServices {
+    const index = customIndex ?? createInvertedIndex({ indexDir: this.config.storage.indexDir });
+    const queryParser = createQueryParser({
+      maxQueryLength: this.config.search.maxQueryLength,
+      minQueryLength: this.config.search.minQueryLength,
+    });
+    const candidateRetriever = createCandidateRetriever(index, {
+      defaultMaxCandidates: this.config.search.maxCandidates,
+    });
+    const rankingEngine = createRankingEngine(index);
+    const resultGenerator = createResultGenerator({
+      pagination: {
+        pageSize: this.config.search.defaultPageSize,
+      },
+    });
+
+    return {
+      index,
+      queryParser,
+      candidateRetriever,
+      rankingEngine,
+      resultGenerator,
     };
   }
 
@@ -60,6 +101,8 @@ export class ApiServer {
     this.router.get('/', handleApiRoot);
     this.router.get('/health', handleHealthCheck);
     this.router.get('/api/v1/status', handleSystemStatus);
+    this.router.get('/api/v1/search', handleSearch);
+    this.router.post('/api/v1/search', handleSearch);
   }
 
   /**

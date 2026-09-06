@@ -104,10 +104,7 @@ async function runVerification() {
 
     // 5. Middlewares & Security Headers
     console.log(`\n${HEAD} 5. Middlewares & Security Headers`);
-    check(
-      'CORS header present',
-      healthRes.headers.get('access-control-allow-origin') !== null,
-    );
+    check('CORS header present', healthRes.headers.get('access-control-allow-origin') !== null);
     check(
       'X-Content-Type-Options: nosniff present',
       healthRes.headers.get('x-content-type-options') === 'nosniff',

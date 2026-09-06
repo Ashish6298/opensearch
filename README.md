@@ -96,6 +96,7 @@ opensearch/
 ### Milestone 5 — Search API (Phases 16–18)
 
 - **Phase 16 (Search API Foundation)**: Stable HTTP REST API application (`apps/api`) built on native Node.js HTTP primitives, parameterized router with path parameter extraction, modular middleware pipeline (CORS, security headers, request logging), structured JSON error payloads, system discovery endpoint (`GET /`), and detailed health check with memory and uptime telemetry (`GET /health`).
+- **Phase 17 (Search Endpoint)**: Full search endpoint exposed over HTTP (`GET /api/v1/search` and `POST /api/v1/search`) connecting safe query parsing, inverted index candidate retrieval, BM25 relevance ranking, contextual snippet generation, keyword highlighting, pagination controls, parameter validation, and response performance metadata.
 
 ---
 
@@ -126,7 +127,7 @@ npm install
 | `npm run lint`           | Runs ESLint across all TypeScript and JavaScript files                           |
 | `npm run format:check`   | Verifies code formatting with Prettier                                           |
 | `npm run format`         | Automatically formats code with Prettier                                         |
-| `npm run test`           | Runs the automated test suite via Vitest (310 tests passing)                     |
+| `npm run test`           | Runs the automated test suite via Vitest (312 tests passing)                     |
 | `npm run clean`          | Removes compiled distribution directories                                        |
 | `npm run verify:phase1`  | Runs the automated verification suite for Phase 1                                |
 | `npm run verify:phase2`  | Runs the automated verification suite for Phase 2                                |
@@ -144,6 +145,7 @@ npm install
 | `npm run verify:phase14` | Runs the automated verification suite for Phase 14                               |
 | `npm run verify:phase15` | Runs the automated verification suite for Phase 15                               |
 | `npm run verify:phase16` | Runs the automated verification suite for Phase 16                               |
+| `npm run verify:phase17` | Runs the automated verification suite for Phase 17                               |
 
 ---
 

@@ -1,11 +1,20 @@
 /**
- * @opensearch/api — HTTP Server & Routing Types (Phase 16)
+ * @opensearch/api — HTTP Server & Routing Types (Phase 16 & 17)
  *
  * Defines contracts, request/response models, routing signatures,
- * validation schemas, and context for the HTTP Search API service.
+ * validation schemas, search endpoints, and context for the HTTP Search API service.
  */
 
 import { IncomingMessage, ServerResponse } from 'node:http';
+import { InvertedIndex } from '@opensearch/indexer';
+import {
+  CandidateRetriever,
+  QueryParser,
+  RankingEngine,
+  ResultGenerator,
+  SearchResultItem,
+  PaginationMeta,
+} from '@opensearch/ranking';
 import { AppConfig, Logger, SystemStatus } from '@opensearch/shared';
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'OPTIONS' | 'HEAD' | string;
@@ -64,10 +73,19 @@ export interface RouteDefinition {
   handler: RouteHandler;
 }
 
+export interface SearchServices {
+  index: InvertedIndex;
+  queryParser: QueryParser;
+  candidateRetriever: CandidateRetriever;
+  rankingEngine: RankingEngine;
+  resultGenerator: ResultGenerator;
+}
+
 export interface ApiAppContext {
   config: AppConfig;
   logger: Logger;
   startTime: number;
+  services?: SearchServices;
 }
 
 export interface HealthCheckResponse extends SystemStatus {
@@ -75,6 +93,25 @@ export interface HealthCheckResponse extends SystemStatus {
   memoryUsageMb: number;
   environment: string;
   routesAvailable: string[];
+  totalDocumentsIndexed?: number;
+}
+
+export interface SearchApiResponse {
+  query: {
+    raw: string;
+    normalized: string;
+    terms: string[];
+    phrases: string[];
+    negatedTerms: string[];
+  };
+  results: SearchResultItem[];
+  pagination: PaginationMeta;
+  meta: {
+    totalHits: number;
+    candidateCount: number;
+    durationMs: number;
+    timestamp: string;
+  };
 }
 
 export interface ApiServerOptions {
@@ -83,4 +120,8 @@ export interface ApiServerOptions {
   port?: number;
   host?: string;
   corsOrigin?: string;
+  services?: SearchServices;
+  index?: InvertedIndex;
 }
+
+export type ApiApplicationContext = ApiAppContext;
