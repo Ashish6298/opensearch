@@ -22,22 +22,22 @@ The goal of V1.0.0 is **not** to rival Google-scale data centers, but to establi
 
 ## 2. Current Development Status
 
-- **Current Milestone**: **Milestone 5 — Search API** (COMPLETED)
-- **Completed Phases**: **Phase 1 through Phase 18 (ALL PASSED)**
-- **Next Phase**: **Milestone 6: Public Web Application — Phase 19: Search UI Foundation**
+- **Current Milestone**: **Milestone 6 — Public Web Application** (In Progress)
+- **Completed Phases**: **Phase 1 through Phase 19 (ALL PASSED)**
+- **Next Phase**: **Phase 20: Search Results UI**
 
-| Milestone        | Scope                                            | Status                                       |
-| :--------------- | :----------------------------------------------- | :------------------------------------------- |
-| **Milestone 1**  | Project Foundation (Phases 1–3)                  | **COMPLETED** (Phases 1, 2, 3 Passed)        |
-| **Milestone 2**  | Crawler Foundation (Phases 4–8)                  | **COMPLETED** (Phases 4, 5, 6, 7, 8 Passed)  |
-| **Milestone 3**  | Search Index (Phases 9–11)                       | **COMPLETED** (Phases 9, 10, 11 Passed)      |
-| **Milestone 4**  | Query & Ranking (Phases 12–15)                   | **COMPLETED** (Phases 12, 13, 14, 15 Passed) |
-| **Milestone 5**  | Search API (Phases 16–18)                        | **COMPLETED** (Phases 16, 17, 18 Passed)     |
-| **Milestone 6**  | Public Web Application (Phases 19–21)            | Scheduled (Phase 19 Next)                    |
-| **Milestone 7**  | End-to-End Integration (Phases 22–24)            | Scheduled                                    |
-| **Milestone 8**  | Security, Reliability & Privacy (Phases 25–27)   | Scheduled                                    |
-| **Milestone 9**  | Performance & Free Infrastructure (Phases 28–30) | Scheduled                                    |
-| **Milestone 10** | Production Release (Phases 31–34)                | Scheduled                                    |
+| Milestone        | Scope                                            | Status                                           |
+| :--------------- | :----------------------------------------------- | :----------------------------------------------- |
+| **Milestone 1**  | Project Foundation (Phases 1–3)                  | **COMPLETED** (Phases 1, 2, 3 Passed)            |
+| **Milestone 2**  | Crawler Foundation (Phases 4–8)                  | **COMPLETED** (Phases 4, 5, 6, 7, 8 Passed)      |
+| **Milestone 3**  | Search Index (Phases 9–11)                       | **COMPLETED** (Phases 9, 10, 11 Passed)          |
+| **Milestone 4**  | Query & Ranking (Phases 12–15)                   | **COMPLETED** (Phases 12, 13, 14, 15 Passed)     |
+| **Milestone 5**  | Search API (Phases 16–18)                        | **COMPLETED** (Phases 16, 17, 18 Passed)         |
+| **Milestone 6**  | Public Web Application (Phases 19–21)            | **In Progress** (Phase 19 Passed; Phase 20 Next) |
+| **Milestone 7**  | End-to-End Integration (Phases 22–24)            | Scheduled                                        |
+| **Milestone 8**  | Security, Reliability & Privacy (Phases 25–27)   | Scheduled                                        |
+| **Milestone 9**  | Performance & Free Infrastructure (Phases 28–30) | Scheduled                                        |
+| **Milestone 10** | Production Release (Phases 31–34)                | Scheduled                                        |
 
 ---
 
@@ -99,6 +99,10 @@ opensearch/
 - **Phase 17 (Search Endpoint)**: Full search endpoint exposed over HTTP (`GET /api/v1/search` and `POST /api/v1/search`) connecting safe query parsing, inverted index candidate retrieval, BM25 relevance ranking, contextual snippet generation, keyword highlighting, pagination controls, parameter validation, and response performance metadata.
 - **Phase 18 (API Security, Limits & Reliability)**: Rate limiting via in-memory sliding-window counter per IP address (`X-RateLimit-*`, `Retry-After`, `429 Too Many Requests`), request timeout controls (`504 Gateway Timeout` via `TimeoutError`), request payload limit enforcement (64KB `413 Payload Too Large`), search query length capping (200 chars `400 Bad Request`), strict defensive security headers (`CSP`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`), safe zero-leak error responses, and privacy-minimizing structured logging (IP anonymization).
 
+### Milestone 6 — Public Web Application (Phases 19–21)
+
+- **Phase 19 (Search UI Foundation)**: Clean, fast, accessible public web search frontend (`apps/web`), semantic HTML5 application shell, responsive mobile/desktop design tokens (`style.css`), accessible search box with clear button and length validation, reactive state containers (home hero, loading skeleton with progress bar, empty state with search tips, error state with retry), and embedded zero-external-dependency Node.js HTTP `WebServer`.
+
 ---
 
 ## 5. Getting Started
@@ -128,7 +132,7 @@ npm install
 | `npm run lint`           | Runs ESLint across all TypeScript and JavaScript files                           |
 | `npm run format:check`   | Verifies code formatting with Prettier                                           |
 | `npm run format`         | Automatically formats code with Prettier                                         |
-| `npm run test`           | Runs the automated test suite via Vitest (321 tests passing)                     |
+| `npm run test`           | Runs the automated test suite via Vitest (328 tests passing)                     |
 | `npm run clean`          | Removes compiled distribution directories                                        |
 | `npm run verify:phase1`  | Runs the automated verification suite for Phase 1                                |
 | `npm run verify:phase2`  | Runs the automated verification suite for Phase 2                                |
@@ -148,6 +152,7 @@ npm install
 | `npm run verify:phase16` | Runs the automated verification suite for Phase 16                               |
 | `npm run verify:phase17` | Runs the automated verification suite for Phase 17                               |
 | `npm run verify:phase18` | Runs the automated verification suite for Phase 18                               |
+| `npm run verify:phase19` | Runs the automated verification suite for Phase 19                               |
 
 ---
 
