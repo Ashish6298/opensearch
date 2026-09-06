@@ -22,9 +22,9 @@ The goal of V1.0.0 is **not** to rival Google-scale data centers, but to establi
 
 ## 2. Current Development Status
 
-- **Current Milestone**: **Milestone 8 — Security, Reliability & Privacy** (In Progress)
-- **Completed Phases**: **Phase 1 through Phase 26 (ALL PASSED)**
-- **Next Phase**: **Phase 27: Privacy Minimization & Zero-Leak Audit**
+- **Current Milestone**: **Milestone 9 — Performance & Free Infrastructure**
+- **Completed Phases**: **Phase 1 through Phase 27 (ALL PASSED)**
+- **Next Phase**: **Phase 28: Search Performance Optimization**
 
 | Milestone        | Scope                                            | Status                                           |
 | :--------------- | :----------------------------------------------- | :----------------------------------------------- |
@@ -35,8 +35,8 @@ The goal of V1.0.0 is **not** to rival Google-scale data centers, but to establi
 | **Milestone 5**  | Search API (Phases 16–18)                        | **COMPLETED** (Phases 16, 17, 18 Passed)         |
 | **Milestone 6**  | Public Web Application (Phases 19–21)            | **COMPLETED** (Phases 19, 20, 21 Passed)         |
 | **Milestone 7**  | End-to-End Integration (Phases 22–24)            | **COMPLETED** (Phases 22, 23, 24 Passed)         |
-| **Milestone 8**  | Security, Reliability & Privacy (Phases 25–27)   | **In Progress** (Phases 25, 26 Passed; Phase 27 Next) |
-| **Milestone 9**  | Performance & Free Infrastructure (Phases 28–30) | Scheduled                                        |
+| **Milestone 8**  | Security, Reliability & Privacy (Phases 25–27)   | **COMPLETED** (Phases 25, 26, 27 Passed)         |
+| **Milestone 9**  | Performance & Free Infrastructure (Phases 28–30) | **In Progress** (Phase 28 Next)                  |
 | **Milestone 10** | Production Release (Phases 31–34)                | Scheduled                                        |
 
 ---
@@ -115,6 +115,7 @@ opensearch/
 
 - **Phase 25 (Crawler Security Hardening)**: Defensive crawler security layer (`CrawlerSecurityValidator`) providing strict scheme whitelisting (`http:`, `https:`), DNS-level SSRF and private-network rejection, streaming body-size limits (`maxPageBytes`), circular redirect loop detection, request timeout controls, MIME type filtering, and resilient malformed HTML parsing.
 - **Phase 26 (Search/API Reliability Hardening)**: Resilient HTTP Search API with startup pre-flight port/config validation, controlled degradation on missing/empty/corrupted index files (returning safe empty results instead of crashing), granular component health diagnostics (`GET /health`), request parameter boundary enforcement, oversized payload rejection (`413 Payload Too Large`), and strict zero-leak exception handling.
+- **Phase 27 (Privacy & Data-Minimization Review)**: Verified privacy-first architecture with IP anonymization (IPv4 /24 truncation and IPv6 /48 masking), zero cookies across all API and web endpoints, zero external CDNs/tracking scripts, zero search query retention database, automatic sensitive field redaction in logging, outbound referrer isolation (`rel="noopener noreferrer"`), and comprehensive public documentation in `docs/PRIVACY.md`.
 
 ---
 

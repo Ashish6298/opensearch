@@ -9,6 +9,7 @@ export * from './errors/index.js';
 export * from './utils/index.js';
 export * from './logger/index.js';
 export * from './config/index.js';
+export * from './privacy/index.js';
 
 export function getProjectIdentity(): { name: string; version: string } {
   return {

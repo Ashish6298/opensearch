@@ -88,6 +88,55 @@ export class WebServer {
       return;
     }
 
+    if (pathname === '/privacy') {
+      const privacyHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="OpenSearch Privacy & Data Minimization Policy. Zero tracking, zero cookies, zero user profiling.">
+  <title>Privacy Policy — OpenSearch</title>
+  <style>
+    ${this.cssCache}
+    .privacy-content { max-width: 780px; margin: 2rem auto; padding: 1rem; line-height: 1.6; }
+    .privacy-content h1, .privacy-content h2 { color: var(--accent-primary, #38bdf8); }
+    .privacy-content table { width: 100%; border-collapse: collapse; margin: 1.5rem 0; }
+    .privacy-content th, .privacy-content td { border: 1px solid #334155; padding: 0.75rem; text-align: left; }
+    .privacy-content th { background: #1e293b; }
+    .back-btn { display: inline-block; margin-bottom: 1rem; color: #38bdf8; text-decoration: none; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="privacy-content">
+    <a href="/" class="back-btn">← Back to Search</a>
+    <h1>OpenSearch Privacy & Data-Minimization Policy</h1>
+    <p>OpenSearch is designed from first principles as an independent, privacy-respecting search engine. We operate under a strict <strong>Zero-Tracking, Zero-Profiling, and Data-Minimization Policy</strong>.</p>
+    
+    <h2>Our Core Privacy Guarantees</h2>
+    <table>
+      <thead>
+        <tr><th>Principle</th><th>Our Commitment</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>No User Accounts</strong></td><td>Zero account system. No registration, login, or identity tracking.</td></tr>
+        <tr><td><strong>Zero Search History Retention</strong></td><td>Queries are processed strictly in-memory and never stored with user identifiers.</td></tr>
+        <tr><td><strong>Zero Cookies</strong></td><td>No HTTP cookies, session tokens, or local storage tracking.</td></tr>
+        <tr><td><strong>IP Anonymization</strong></td><td>IP addresses in operational logs are immediately truncated (IPv4 /24 mask, IPv6 /48 mask).</td></tr>
+        <tr><td><strong>Zero Third-Party Telemetry</strong></td><td>No Google Analytics, tracking pixels, or external scripts.</td></tr>
+        <tr><td><strong>Zero Referrer Leakage</strong></td><td>Outbound result links are protected with rel="noopener noreferrer".</td></tr>
+      </tbody>
+    </table>
+    <p><small>OpenSearch V1.0.0 — Public Independent Search Engine</small></p>
+  </div>
+</body>
+</html>`;
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.setHeader('Content-Length', Buffer.byteLength(privacyHtml));
+      res.end(privacyHtml);
+      return;
+    }
+
     if (pathname === '/style.css') {
       res.statusCode = 200;
       res.setHeader('Content-Type', 'text/css; charset=utf-8');

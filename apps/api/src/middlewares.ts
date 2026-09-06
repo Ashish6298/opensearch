@@ -9,35 +9,16 @@
  * 5. Request Logging: Structured execution logs with privacy minimization (IP anonymization)
  */
 
-import { HTTP_STATUS, TimeoutError } from '@opensearch/shared';
+import { HTTP_STATUS, TimeoutError, anonymizeIpAddress } from '@opensearch/shared';
 import { MemoryRateLimiter } from './rate-limiter.js';
 import { MiddlewareHandler } from './types.js';
 
 /**
  * Anonymizes an IP address for privacy-conscious logging.
- * Replaces the last octet in IPv4 (e.g. 192.168.1.10 -> 192.168.1.0)
- * or truncates host portions in IPv6.
+ * Delegated to central @opensearch/shared anonymizeIpAddress.
  */
 export function anonymizeIp(ip: string): string {
-  if (!ip || ip === 'unknown') return '0.0.0.0';
-
-  // Check IPv4
-  if (ip.includes('.')) {
-    const parts = ip.split('.');
-    if (parts.length === 4) {
-      return `${parts[0]}.${parts[1]}.${parts[2]}.0`;
-    }
-  }
-
-  // Check IPv6
-  if (ip.includes(':')) {
-    const parts = ip.split(':');
-    if (parts.length >= 3) {
-      return `${parts[0]}:${parts[1]}:${parts[2]}::`;
-    }
-  }
-
-  return 'anonymized-ip';
+  return anonymizeIpAddress(ip);
 }
 
 export function createCorsMiddleware(allowedOrigin = '*'): MiddlewareHandler {

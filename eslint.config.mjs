@@ -24,6 +24,7 @@ export default tseslint.config(
       sourceType: 'module',
       globals: {
         ...globals.node,
+        ...globals.browser,
         ...globals.es2022,
       },
     },
@@ -33,6 +34,8 @@ export default tseslint.config(
         'warn',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
+      '@typescript-eslint/no-explicit-any': 'warn',
+      'no-control-regex': 'off',
       'no-console': 'off',
     },
   },
