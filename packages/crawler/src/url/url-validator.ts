@@ -58,11 +58,18 @@ function isPrivateHost(hostname: string): boolean {
   return false;
 }
 
+export interface UrlValidationOptions {
+  allowPrivate?: boolean;
+}
+
 // ============================================================
 // Core validation function
 // ============================================================
 
-export function validateUrl(rawUrl: unknown): UrlValidationResult {
+export function validateUrl(
+  rawUrl: unknown,
+  options: UrlValidationOptions = {},
+): UrlValidationResult {
   // Type check
   if (typeof rawUrl !== 'string' || rawUrl.trim().length === 0) {
     return { ok: false, reason: 'URL must be a non-empty string' };
@@ -103,8 +110,9 @@ export function validateUrl(rawUrl: unknown): UrlValidationResult {
     return { ok: false, reason: 'URL has an empty or missing hostname' };
   }
 
-  // Private/loopback host guard
-  if (isPrivateHost(parsed.hostname)) {
+  // Private/loopback host guard (can be bypassed for local integration testing with allowPrivate)
+  const allowPrivate = options.allowPrivate || process.env.OPENSEARCH_ALLOW_PRIVATE_URLS === 'true';
+  if (!allowPrivate && isPrivateHost(parsed.hostname)) {
     return {
       ok: false,
       reason: `Host "${parsed.hostname}" resolves to a private/loopback address and is not crawlable`,
