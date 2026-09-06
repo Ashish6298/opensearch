@@ -64,3 +64,14 @@ export type { IndexBuilderOptions } from './builder/index-builder.js';
 
 export { createIndexBuilder } from './builder/builder-factory.js';
 export type { IndexBuilderFactoryOptions } from './builder/builder-factory.js';
+
+// ── Phase 23: Corpus Quality & Duplicate Analysis ────────────
+export type {
+  DocumentQualityReport,
+  CorpusQualitySummary,
+} from './builder/quality-checker.js';
+export {
+  computeContentHash,
+  evaluateDocumentQuality,
+  analyzeCorpusQuality,
+} from './builder/quality-checker.js';

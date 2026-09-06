@@ -130,3 +130,11 @@ export type { CrawlOrchestratorOptions } from './orchestrator/crawl-orchestrator
 
 export { createCrawlOrchestrator } from './orchestrator/orchestrator-factory.js';
 export type { CrawlOrchestratorFactoryOptions } from './orchestrator/orchestrator-factory.js';
+
+// ── Phase 23: Seed Corpus ────────────────────────────────────
+export type { SeedCategory, SeedEntry } from './orchestrator/seed-corpus.js';
+export {
+  CURATED_SEED_CORPUS,
+  getCuratedSeedUrls,
+  getAllCuratedSeeds,
+} from './orchestrator/seed-corpus.js';
