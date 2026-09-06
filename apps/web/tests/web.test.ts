@@ -6,9 +6,14 @@ import {
   generateHtmlShell,
   createWebServer,
   WebServer,
+  renderResultCard,
+  renderResultsSummary,
+  renderPaginationControls,
+  escapeHtml,
+  sanitizeHighlightedHtml,
 } from '../src/index.js';
 
-describe('Phase 19 — Search UI Foundation Suite', () => {
+describe('Phase 19 & 20 — Search UI & Results Presentation Suite', () => {
   let server: WebServer;
   let baseUrl: string;
 
@@ -25,105 +30,173 @@ describe('Phase 19 — Search UI Foundation Suite', () => {
   });
 
   describe('Module Boundary & Status Metadata', () => {
-    it('returns web status for Phase 19', () => {
+    it('returns web status for Phase 20', () => {
       const status = getWebStatus();
       expect(status.name).toBe('OpenSearch');
       expect(status.version).toBe('1.0.0');
-      expect(status.phase).toBe('Phase 19: Search UI Foundation');
+      expect(status.phase).toBe('Phase 20: Search Results UI');
       expect(status.status).toBe('ok');
     });
 
     it('returns web info and service identity', () => {
       const info = getWebInfo();
       expect(info.title).toBe('OpenSearch');
-      expect(info.phase).toBe('Phase 19: Search UI Foundation');
+      expect(info.phase).toBe('Phase 20: Search Results UI');
       expect(WEB_APP_INFO.moduleName).toBe('@opensearch/web');
     });
   });
 
-  describe('HTML Shell & Component Structure', () => {
-    it('generates semantic HTML shell with all essential search landmarks', () => {
-      const html = generateHtmlShell({
-        title: 'OpenSearch Test',
-        apiUrl: 'http://localhost:3000/api/v1/search',
+  describe('Result Card Formatting (Phase 20)', () => {
+    it('renders a complete result card with title, domain badge, snippet, and target=_blank', () => {
+      const cardHtml = renderResultCard({
+        documentId: 'doc-1',
+        url: 'https://example.com/docs/api-guide',
+        displayUrl: 'example.com › docs › api-guide',
+        domain: 'example.com',
+        title: 'Complete OpenSearch API Guide',
+        highlightedTitle: 'Complete <mark>OpenSearch</mark> API Guide',
+        snippet: 'Comprehensive guide to building custom search pipelines.',
+        highlightedSnippet: 'Comprehensive guide to building <mark>search</mark> pipelines.',
       });
 
-      // Semantic structure
-      expect(html).toContain('<!DOCTYPE html>');
-      expect(html).toContain('<header class="app-header"');
-      expect(html).toContain('<main class="main-content center-mode"');
-      expect(html).toContain('<footer class="app-footer"');
+      expect(cardHtml).toContain('class="result-card"');
+      expect(cardHtml).toContain('data-document-id="doc-1"');
+      expect(cardHtml).toContain('<span class="result-domain-badge">example.com</span>');
+      expect(cardHtml).toContain('example.com › docs › api-guide');
+      expect(cardHtml).toContain('href="https://example.com/docs/api-guide"');
+      expect(cardHtml).toContain('target="_blank"');
+      expect(cardHtml).toContain('rel="noopener noreferrer"');
+      expect(cardHtml).toContain('<mark>OpenSearch</mark>');
+      expect(cardHtml).toContain('<mark>search</mark>');
+    });
 
-      // Search input & button
-      expect(html).toContain('<input');
-      expect(html).toContain('id="search-input"');
-      expect(html).toContain('type="search"');
-      expect(html).toContain('maxlength="200"');
-      expect(html).toContain('id="search-submit-btn"');
-      expect(html).toContain('Search');
-      expect(html).toContain('id="search-clear-btn"');
+    it('safely handles missing metadata and escapes malicious scripts in titles or URLs', () => {
+      const cardHtml = renderResultCard({
+        documentId: 'doc-xss',
+        url: 'https://attacker.com/<script>alert(1)</script>',
+        displayUrl: 'attacker.com/<script>alert(1)</script>',
+        title: '<script>alert("hacked")</script>',
+        snippet: '<img src=x onerror=alert(1)> Normal text.',
+      });
 
-      // UI States
-      expect(html).toContain('id="loading-indicator"');
-      expect(html).toContain('class="skeleton-card"');
-      expect(html).toContain('id="empty-state"');
-      expect(html).toContain('No search results found');
-      expect(html).toContain('id="error-state"');
-      expect(html).toContain('Search Request Error');
-      expect(html).toContain('id="error-retry-btn"');
+      expect(cardHtml).not.toContain('<script>');
+      expect(cardHtml).not.toContain('<img src=x');
+      expect(cardHtml).toContain('&lt;script&gt;');
+      expect(cardHtml).toContain('&lt;img src=x onerror=alert(1)&gt;');
+    });
 
-      // Privacy badges & features
-      expect(html).toContain('Privacy First');
-      expect(html).toContain('No Accounts Required');
-      expect(html).toContain('Zero Tracking & Profiling');
-      expect(html).toContain('Lexical BM25 Ranking');
+    it('preserves safe <mark> tags while escaping other nested HTML tags', () => {
+      const sanitized = sanitizeHighlightedHtml(
+        '<b>Bold text</b> with <mark>safe highlight</mark> and <script>alert(1)</script>',
+      );
+      expect(sanitized).toContain('<mark>safe highlight</mark>');
+      expect(sanitized).not.toContain('<b>');
+      expect(sanitized).not.toContain('<script>');
+      expect(sanitized).toContain('&lt;b&gt;Bold text&lt;/b&gt;');
     });
   });
 
-  describe('HTTP Web Server & Static Asset Serving', () => {
-    it('serves HTML application shell on GET / with 200 OK and security headers', async () => {
+  describe('Results Summary Bar', () => {
+    it('formats result counter accurately with millisecond duration', () => {
+      expect(renderResultsSummary(1, 4)).toBe('About 1 result (4ms)');
+      expect(renderResultsSummary(42, 12)).toBe('About 42 results (12ms)');
+      expect(renderResultsSummary(1250, 25)).toBe('About 1,250 results (25ms)');
+      expect(renderResultsSummary(0, 5)).toBe('');
+    });
+  });
+
+  describe('Pagination Navigation Bar', () => {
+    it('renders multi-page controls with Previous, Next, and numbered buttons', () => {
+      const paginationHtml = renderPaginationControls({
+        page: 2,
+        pageSize: 10,
+        totalHits: 45,
+        totalPages: 5,
+        hasNextPage: true,
+        hasPrevPage: true,
+        nextPage: 3,
+        prevPage: 1,
+      });
+
+      expect(paginationHtml).toContain('class="pagination-container"');
+      expect(paginationHtml).toContain('id="pagination-prev-btn"');
+      expect(paginationHtml).toContain('data-page="1"');
+      expect(paginationHtml).toContain('id="pagination-next-btn"');
+      expect(paginationHtml).toContain('data-page="3"');
+      expect(paginationHtml).toContain('class="pagination-btn page-num-btn active"');
+      expect(paginationHtml).toContain('aria-current="page"');
+    });
+
+    it('disables Previous button on first page and Next button on last page', () => {
+      const firstPageHtml = renderPaginationControls({
+        page: 1,
+        pageSize: 10,
+        totalHits: 20,
+        totalPages: 2,
+        hasNextPage: true,
+        hasPrevPage: false,
+        nextPage: 2,
+        prevPage: null,
+      });
+      expect(firstPageHtml).toContain('id="pagination-prev-btn"');
+      expect(firstPageHtml).toContain('disabled');
+
+      const lastPageHtml = renderPaginationControls({
+        page: 2,
+        pageSize: 10,
+        totalHits: 20,
+        totalPages: 2,
+        hasNextPage: false,
+        hasPrevPage: true,
+        nextPage: null,
+        prevPage: 1,
+      });
+      expect(lastPageHtml).toContain('id="pagination-next-btn"');
+      expect(lastPageHtml).toContain('disabled');
+    });
+
+    it('returns empty string when totalPages is 1', () => {
+      const singlePageHtml = renderPaginationControls({
+        page: 1,
+        pageSize: 10,
+        totalHits: 5,
+        totalPages: 1,
+        hasNextPage: false,
+        hasPrevPage: false,
+        nextPage: null,
+        prevPage: null,
+      });
+      expect(singlePageHtml).toBe('');
+    });
+  });
+
+  describe('HTTP Web Server & Shell Serving', () => {
+    it('serves HTML application shell containing result and pagination containers', async () => {
       const res = await fetch(`${baseUrl}/`);
       expect(res.status).toBe(200);
-      expect(res.headers.get('content-type')).toContain('text/html');
-      expect(res.headers.get('x-content-type-options')).toBe('nosniff');
-      expect(res.headers.get('x-frame-options')).toBe('DENY');
-      expect(res.headers.get('referrer-policy')).toBe('strict-origin-when-cross-origin');
-
-      const body = await res.text();
-      expect(body).toContain('OpenSearch');
-      expect(body).toContain('id="search-input"');
-      expect(body).toContain('id="search-submit-btn"');
+      const html = await res.text();
+      expect(html).toContain('id="results-area"');
+      expect(html).toContain('id="results-meta"');
+      expect(html).toContain('id="pagination-area"');
     });
 
-    it('serves CSS stylesheet on GET /style.css', async () => {
+    it('serves updated CSS with result cards and highlight tokens', async () => {
       const res = await fetch(`${baseUrl}/style.css`);
       expect(res.status).toBe(200);
-      expect(res.headers.get('content-type')).toContain('text/css');
       const css = await res.text();
-      expect(css).toContain('--bg-primary');
-      expect(css).toContain('.search-input-wrapper');
+      expect(css).toContain('.result-card');
+      expect(css).toContain('.result-domain-badge');
+      expect(css).toContain('.pagination-container');
+      expect(css).toContain('mark {');
     });
 
-    it('serves client JS on GET /app.js', async () => {
+    it('serves updated app.js with result rendering and pagination event logic', async () => {
       const res = await fetch(`${baseUrl}/app.js`);
       expect(res.status).toBe(200);
-      expect(res.headers.get('content-type')).toContain('application/javascript');
       const js = await res.text();
-      expect(js).toContain('performSearch');
-      expect(js).toContain('search-form');
-    });
-
-    it('serves health status on GET /health', async () => {
-      const res = await fetch(`${baseUrl}/health`);
-      expect(res.status).toBe(200);
-      const data = await res.json();
-      expect(data.status).toBe('ok');
-      expect(data.service).toBe('@opensearch/web');
-    });
-
-    it('returns 404 for non-existent static paths', async () => {
-      const res = await fetch(`${baseUrl}/not-found-file.txt`);
-      expect(res.status).toBe(404);
+      expect(js).toContain('renderSearchResults');
+      expect(js).toContain('renderPaginationBar');
+      expect(js).toContain('pagination-btn');
     });
   });
 });

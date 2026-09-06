@@ -1,10 +1,11 @@
 /**
- * OpenSearch — Web HTML Shell Generator (Phase 19)
+ * OpenSearch — Web HTML Shell Generator (Phase 19 & 20)
  *
  * Generates the semantic HTML5 application shell including:
  * - Search header & brand title
  * - Search input box & submit button
  * - State placeholders (Loading skeleton, Empty state, Error state)
+ * - Result list container & pagination area
  * - Accessibility attributes (ARIA landmarks, labels, focus rings)
  */
 
@@ -153,6 +154,7 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
       <!-- Results Area -->
       <div class="results-meta" id="results-meta" aria-live="polite"></div>
       <section class="results-container" id="results-area" aria-label="Search Results"></section>
+      <div id="pagination-area"></div>
     </div>
   </main>
 

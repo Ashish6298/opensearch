@@ -1,8 +1,9 @@
 /**
- * OpenSearch Public Web Client (Phase 19)
+ * OpenSearch Public Web Client (Phase 19 & 20)
  *
- * Provides reactive event handling, state transitions (loading, empty, error, results),
- * accessible keyboard interactions, and API communication.
+ * Provides reactive event handling, search query execution, result card rendering,
+ * query term highlights, multi-page pagination navigation, loading/empty/error states,
+ * and browser URL synchronization.
  */
 
 (function () {
@@ -22,23 +23,27 @@
   const appHeader = document.getElementById('app-header');
   const resultsArea = document.getElementById('results-area');
   const resultsMeta = document.getElementById('results-meta');
+  const paginationArea = document.getElementById('pagination-area');
 
   // Configuration
   const API_ENDPOINT = window.__OPENSEARCH_API_URL__ || '/api/v1/search';
+  const PAGE_SIZE = 10;
 
   // State
   let currentQuery = '';
+  let currentPage = 1;
   let isLoading = false;
 
   function init() {
-    // Check URL parameters for pre-filled query (e.g. ?q=test)
+    // Check URL parameters for pre-filled query and page (e.g. ?q=test&page=2)
     const params = new URLSearchParams(window.location.search);
     const initialQuery = params.get('q') || '';
+    const initialPage = parseInt(params.get('page') || '1', 10) || 1;
 
     if (initialQuery) {
       searchInput.value = initialQuery;
       updateClearButtonVisibility();
-      performSearch(initialQuery);
+      performSearch(initialQuery, initialPage, false);
     } else {
       setUiMode('home');
       searchInput.focus();
@@ -53,11 +58,12 @@
       e.preventDefault();
       const query = searchInput.value.trim();
       if (!query) return;
-      updateUrl(query);
-      performSearch(query);
+      currentPage = 1;
+      updateUrl(query, currentPage);
+      performSearch(query, currentPage);
     });
 
-    // Input events (clear button toggle & input validation)
+    // Input events (clear button toggle)
     searchInput.addEventListener('input', function () {
       updateClearButtonVisibility();
     });
@@ -68,26 +74,46 @@
       updateClearButtonVisibility();
       searchInput.focus();
       setUiMode('home');
-      updateUrl('');
+      updateUrl('', 1);
     });
 
     // Error retry button
     if (errorRetryBtn) {
       errorRetryBtn.addEventListener('click', function () {
         if (currentQuery) {
-          performSearch(currentQuery);
+          performSearch(currentQuery, currentPage);
+        }
+      });
+    }
+
+    // Pagination button clicks (event delegation)
+    if (paginationArea) {
+      paginationArea.addEventListener('click', function (e) {
+        const targetBtn = e.target.closest('.pagination-btn');
+        if (!targetBtn || targetBtn.disabled) return;
+
+        const targetPage = parseInt(targetBtn.getAttribute('data-page') || '1', 10);
+        if (targetPage && targetPage !== currentPage) {
+          currentPage = targetPage;
+          updateUrl(currentQuery, currentPage);
+          performSearch(currentQuery, currentPage);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         }
       });
     }
 
     // Handle browser back/forward history navigation
-    window.addEventListener('popstate', function (event) {
+    window.addEventListener('popstate', function () {
       const params = new URLSearchParams(window.location.search);
       const query = params.get('q') || '';
+      const page = parseInt(params.get('page') || '1', 10) || 1;
+
       searchInput.value = query;
       updateClearButtonVisibility();
+      currentPage = page;
+
       if (query) {
-        performSearch(query, false);
+        performSearch(query, page, false);
       } else {
         setUiMode('home');
       }
@@ -102,14 +128,20 @@
     }
   }
 
-  function updateUrl(query) {
+  function updateUrl(query, page) {
     const url = new URL(window.location.href);
     if (query) {
       url.searchParams.set('q', query);
+      if (page > 1) {
+        url.searchParams.set('page', page.toString());
+      } else {
+        url.searchParams.delete('page');
+      }
     } else {
       url.searchParams.delete('q');
+      url.searchParams.delete('page');
     }
-    window.history.pushState({ q: query }, '', url.toString());
+    window.history.pushState({ q: query, page }, '', url.toString());
   }
 
   function setUiMode(mode) {
@@ -119,6 +151,7 @@
       hideAllStates();
       if (resultsArea) resultsArea.innerHTML = '';
       if (resultsMeta) resultsMeta.textContent = '';
+      if (paginationArea) paginationArea.innerHTML = '';
     } else {
       mainContent.classList.remove('center-mode');
       appHeader.classList.add('has-searched');
@@ -131,18 +164,20 @@
     errorState.classList.remove('active');
   }
 
-  async function performSearch(query, updateState = true) {
+  async function performSearch(query, page = 1, updateState = true) {
     if (isLoading) return;
     currentQuery = query;
+    currentPage = page;
 
-    // Transition UI to search mode
+    // Transition UI to search results mode
     setUiMode('results');
     hideAllStates();
+    if (paginationArea) paginationArea.innerHTML = '';
     loadingIndicator.classList.add('active');
     isLoading = true;
 
     try {
-      const fetchUrl = `${API_ENDPOINT}?q=${encodeURIComponent(query)}`;
+      const fetchUrl = `${API_ENDPOINT}?q=${encodeURIComponent(query)}&page=${page}&pageSize=${PAGE_SIZE}`;
       const res = await fetch(fetchUrl);
 
       if (!res.ok) {
@@ -169,8 +204,9 @@
     hideAllStates();
 
     const hits = data.results || [];
-    const totalHits = data.meta?.totalHits || hits.length;
+    const totalHits = data.meta?.totalHits || 0;
     const durationMs = data.meta?.durationMs || 0;
+    const pagination = data.pagination;
 
     if (hits.length === 0) {
       if (emptyQueryText) {
@@ -179,38 +215,116 @@
       emptyState.classList.add('active');
       if (resultsMeta) resultsMeta.textContent = '';
       if (resultsArea) resultsArea.innerHTML = '';
+      if (paginationArea) paginationArea.innerHTML = '';
       return;
     }
 
     if (resultsMeta) {
-      resultsMeta.textContent = `Found ${totalHits} result${totalHits === 1 ? '' : 's'} (${durationMs}ms)`;
+      const plural = totalHits === 1 ? 'result' : 'results';
+      resultsMeta.textContent = `About ${totalHits.toLocaleString()} ${plural} (${durationMs}ms)`;
     }
 
-    // Results rendering will be enhanced in Phase 20, for Phase 19 we provide clean accessible output
-    let html = '';
+    // Render result cards
+    let resultsHtml = '';
     hits.forEach(item => {
-      const displayTitle = item.highlightedTitle || escapeHtml(item.title) || 'Untitled';
-      const displayUrl = escapeHtml(item.displayUrl || item.url);
-      const snippet = item.highlightedSnippet || escapeHtml(item.snippet || '');
+      const safeUrl = escapeHtml(item.url || '#');
+      const safeDomain = escapeHtml(item.domain || '');
+      const safeDisplayUrl = escapeHtml(item.displayUrl || item.url || '');
 
-      html += `
-        <article class="skeleton-card" style="animation:none;">
-          <a href="${escapeHtml(item.url)}" target="_blank" rel="noopener noreferrer" style="font-weight:600; color:var(--accent-primary); text-decoration:none; font-size:1.1rem;">
-            ${displayTitle}
-          </a>
-          <div style="font-size:0.8rem; color:var(--text-secondary); word-break:break-all;">
-            ${displayUrl}
+      const displayTitle = item.highlightedTitle
+        ? sanitizeHighlightedHtml(item.highlightedTitle)
+        : escapeHtml(item.title) || 'Untitled Document';
+
+      const displaySnippet = item.highlightedSnippet
+        ? sanitizeHighlightedHtml(item.highlightedSnippet)
+        : escapeHtml(item.snippet || 'No description available.');
+
+      resultsHtml += `
+        <article class="result-card" data-document-id="${escapeHtml(item.documentId)}">
+          <div class="result-header">
+            ${safeDomain ? `<span class="result-domain-badge">${safeDomain}</span>` : ''}
+            <cite class="result-url" title="${safeUrl}">${safeDisplayUrl}</cite>
           </div>
-          <p style="font-size:0.9rem; color:var(--text-primary); margin-top:0.25rem;">
-            ${snippet}
+          <h2 class="result-title">
+            <a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="result-link">
+              ${displayTitle}
+            </a>
+          </h2>
+          <p class="result-snippet">
+            ${displaySnippet}
           </p>
         </article>
       `;
     });
 
     if (resultsArea) {
-      resultsArea.innerHTML = html;
+      resultsArea.innerHTML = resultsHtml;
     }
+
+    // Render pagination controls
+    if (paginationArea && pagination) {
+      paginationArea.innerHTML = renderPaginationBar(pagination);
+    }
+  }
+
+  function renderPaginationBar(pagination) {
+    if (!pagination || pagination.totalPages <= 1) {
+      return '';
+    }
+
+    const { page, totalPages, hasPrevPage, hasNextPage, prevPage, nextPage } = pagination;
+
+    let pagesHtml = '';
+    const maxButtons = 5;
+    let startPage = Math.max(1, page - Math.floor(maxButtons / 2));
+    let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+
+    if (endPage - startPage + 1 < maxButtons) {
+      startPage = Math.max(1, endPage - maxButtons + 1);
+    }
+
+    for (let p = startPage; p <= endPage; p++) {
+      const isCurrent = p === page;
+      pagesHtml += `
+        <button
+          type="button"
+          class="pagination-btn ${isCurrent ? 'active' : ''}"
+          data-page="${p}"
+          aria-label="Go to page ${p}"
+          ${isCurrent ? 'aria-current="page" disabled' : ''}
+        >
+          ${p}
+        </button>
+      `;
+    }
+
+    return `
+      <nav class="pagination-container" aria-label="Search Results Pagination">
+        <button
+          type="button"
+          class="pagination-btn pagination-prev"
+          id="pagination-prev-btn"
+          data-page="${prevPage || 1}"
+          ${!hasPrevPage ? 'disabled aria-disabled="true"' : ''}
+          aria-label="Previous page"
+        >
+          ← Previous
+        </button>
+        <div class="pagination-pages">
+          ${pagesHtml}
+        </div>
+        <button
+          type="button"
+          class="pagination-btn pagination-next"
+          id="pagination-next-btn"
+          data-page="${nextPage || totalPages}"
+          ${!hasNextPage ? 'disabled aria-disabled="true"' : ''}
+          aria-label="Next page"
+        >
+          Next →
+        </button>
+      </nav>
+    `;
   }
 
   function showError(msg) {
@@ -221,6 +335,7 @@
     errorState.classList.add('active');
     if (resultsArea) resultsArea.innerHTML = '';
     if (resultsMeta) resultsMeta.textContent = '';
+    if (paginationArea) paginationArea.innerHTML = '';
   }
 
   function escapeHtml(str) {
@@ -231,6 +346,20 @@
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
+  }
+
+  function sanitizeHighlightedHtml(rawText) {
+    if (!rawText) return '';
+    return rawText
+      .split(/(<\/?mark>)/i)
+      .map(token => {
+        const lower = token.toLowerCase();
+        if (lower === '<mark>' || lower === '</mark>') {
+          return lower;
+        }
+        return escapeHtml(token);
+      })
+      .join('');
   }
 
   // Initialize once DOM is ready
