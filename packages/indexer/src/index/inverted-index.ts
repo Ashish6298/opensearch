@@ -56,6 +56,7 @@ export class MemoryInvertedIndex implements InvertedIndex {
       url: doc.url,
       urlHash: doc.urlHash,
       title: doc.title,
+      description: doc.description,
       language: doc.language,
       totalTerms: doc.totalTokens,
       fieldLengths,

@@ -91,6 +91,7 @@ opensearch/
 - **Phase 12 (Query Processing)**: Safe user query parser, character length bounds (`SEARCH_LIMITS.MAX_QUERY_LENGTH = 200`), Unicode NFC / accent / case folding, quoted exact phrase extraction (`"exact phrase"`), negation tokens (`-term` and `NOT term`), non-Latin script parsing (Cyrillic, CJK, Arabic), and empty/malformed query safety.
 - **Phase 13 (Candidate Retrieval)**: High-performance posting lookup, candidate document merging across multiple terms, Boolean retrieval modes (`union`, `intersection`, and `adaptive`), negated term exclusion, positional phrase verification, and candidate limits.
 - **Phase 14 (Ranking Engine)**: Multi-field BM25 relevance scoring ($k_1=1.2, b=0.75$), structural field boosts (Title: 3.0x, Headings: 2.0x, Description: 1.5x, Body: 1.0x), exact quoted phrase boosts (1.5x), full-query term match multipliers (1.25x), URL slug/hostname lexical bonus (+0.35), domain clustering / near-duplicate penalty dampening (0.8x), optional freshness decay signal, and deterministic score explanation breakdowns.
+- **Phase 15 (Result Generation & Snippets)**: Safe search result formatting, keyword density-centered snippet extraction with word boundary alignment, safe HTML escaping against XSS before `<mark>` tag query term highlighting, breadcrumb-style display URLs, title fallbacks, and multi-page pagination metadata calculation.
 
 ---
 
@@ -121,7 +122,7 @@ npm install
 | `npm run lint`           | Runs ESLint across all TypeScript and JavaScript files                           |
 | `npm run format:check`   | Verifies code formatting with Prettier                                           |
 | `npm run format`         | Automatically formats code with Prettier                                         |
-| `npm run test`           | Runs the automated test suite via Vitest (293 tests passing)                     |
+| `npm run test`           | Runs the automated test suite via Vitest (304 tests passing)                     |
 | `npm run clean`          | Removes compiled distribution directories                                        |
 | `npm run verify:phase1`  | Runs the automated verification suite for Phase 1                                |
 | `npm run verify:phase2`  | Runs the automated verification suite for Phase 2                                |
@@ -137,6 +138,7 @@ npm install
 | `npm run verify:phase12` | Runs the automated verification suite for Phase 12                               |
 | `npm run verify:phase13` | Runs the automated verification suite for Phase 13                               |
 | `npm run verify:phase14` | Runs the automated verification suite for Phase 14                               |
+| `npm run verify:phase15` | Runs the automated verification suite for Phase 15                               |
 
 ---
 

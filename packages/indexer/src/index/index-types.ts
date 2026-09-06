@@ -39,6 +39,8 @@ export interface IndexedDocumentMeta {
   urlHash: string;
   /** Document title */
   title: string;
+  /** Document description or summary preview */
+  description?: string;
   /** Detected or declared language */
   language: string | null;
   /** Total number of tokens in the document (document length) */

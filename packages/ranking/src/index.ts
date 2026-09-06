@@ -1,5 +1,5 @@
 /**
- * @opensearch/ranking — Ranking & Query Engine Root (Milestone 4 / Phase 12, 13 & 14)
+ * @opensearch/ranking — Ranking & Query Engine Root (Milestone 4 / Phase 12, 13, 14 & 15)
  */
 
 // ── Phase 12: Query Processing ──────────────────────────────────────────
@@ -57,3 +57,29 @@ export {
   createRankingEngine,
 } from './scorer/ranking-engine.js';
 export type { DefaultRankingEngineOptions } from './scorer/ranking-engine.js';
+
+// ── Phase 15: Result Generation & Snippets ───────────────────────────────
+export type {
+  HighlightTagOptions,
+  SnippetOptions,
+  PaginationOptions,
+  PaginationMeta,
+  SearchResultItem,
+  SearchResultSet,
+  ResultGeneratorOptions,
+  ResultGenerator,
+} from './results/result-types.js';
+
+export { escapeHtml, unescapeHtml, stripHtmlTags } from './results/html-escaper.js';
+
+export {
+  SnippetGenerator,
+  DEFAULT_HIGHLIGHT_TAGS,
+  DEFAULT_SNIPPET_OPTIONS,
+} from './results/snippet-generator.js';
+
+export {
+  DefaultResultGenerator,
+  DEFAULT_PAGINATION,
+  createResultGenerator,
+} from './results/result-generator.js';
