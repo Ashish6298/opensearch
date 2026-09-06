@@ -31,7 +31,9 @@
     "verify:phase8": "node ./scripts/verify-phase8.mjs",
     "verify:phase9": "node ./scripts/verify-phase9.mjs",
     "verify:phase10": "node ./scripts/verify-phase10.mjs",
-    "verify:phase11": "node ./scripts/verify-phase11.mjs"
+    "verify:phase11": "node ./scripts/verify-phase11.mjs",
+    "verify:phase12": "node ./scripts/verify-phase12.mjs",
+    "verify:phase13": "node ./scripts/verify-phase13.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.20.0",

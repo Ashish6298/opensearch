@@ -1,18 +1,36 @@
 /**
- * @opensearch/ranking
- * Ranking Engine Boundary Scaffolding (Phase 1)
- * Query processing, candidate retrieval, BM25 ranking, and snippets
- * are strictly scheduled for Milestone 4 (Phases 12-15).
+ * @opensearch/ranking — Ranking & Query Engine Root (Milestone 4 / Phase 12 & 13)
  */
 
-import { ServiceBoundaryInfo } from '@opensearch/shared';
+// ── Phase 12: Query Processing ──────────────────────────────────────────
+export type {
+  ParsedPhrase,
+  ParsedQuery,
+  QueryParserOptions,
+  QueryParser,
+} from './query/query-types.js';
 
-export const RANKING_MODULE_INFO: ServiceBoundaryInfo = {
-  moduleName: '@opensearch/ranking',
-  purpose: 'Deterministic lexical relevance scoring (BM25, signals, candidate ranking)',
-  currentPhaseScope: 'Phase 1: Boundary initialization only. Implementation starts in Milestone 4.',
-};
+export {
+  normalizeQueryText,
+  foldDiacritics as foldQueryDiacritics,
+} from './query/query-normalizer.js';
+export type { QueryNormalizerOptions } from './query/query-normalizer.js';
 
-export function getRankingModuleInfo(): ServiceBoundaryInfo {
-  return RANKING_MODULE_INFO;
-}
+export { DefaultQueryParser, createQueryParser } from './query/query-parser.js';
+
+// ── Phase 13: Candidate Retrieval ───────────────────────────────────────
+export type {
+  RetrievalMode,
+  TermPostingMatch,
+  CandidateDocument,
+  RetrievalOptions,
+  RetrievalStats,
+  RetrievalResult,
+  CandidateRetriever,
+} from './retrieval/retrieval-types.js';
+
+export {
+  IndexCandidateRetriever,
+  createCandidateRetriever,
+} from './retrieval/candidate-retriever.js';
+export type { IndexCandidateRetrieverOptions } from './retrieval/candidate-retriever.js';

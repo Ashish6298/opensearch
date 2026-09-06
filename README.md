@@ -22,22 +22,22 @@ The goal of V1.0.0 is **not** to rival Google-scale data centers, but to establi
 
 ## 2. Current Development Status
 
-- **Current Milestone**: Milestone 3 — Search Index (**COMPLETED**)
-- **Completed Phases**: **Phase 1 through Phase 11 (ALL PASSED)**
-- **Next Milestone / Phase**: **Milestone 4 — Search Engine Core (Phase 12: Query Parser & Execution Engine)**
+- **Current Milestone**: **Milestone 4 — Query & Ranking** (In Progress)
+- **Completed Phases**: **Phase 1 through Phase 13 (ALL PASSED)**
+- **Next Phase**: **Phase 14: Ranking Engine (BM25 & Signals)**
 
-| Milestone        | Scope                                            | Status                                      |
-| :--------------- | :----------------------------------------------- | :------------------------------------------ |
-| **Milestone 1**  | Project Foundation (Phases 1–3)                  | **COMPLETED** (Phases 1, 2, 3 Passed)       |
-| **Milestone 2**  | Crawler Foundation (Phases 4–8)                  | **COMPLETED** (Phases 4, 5, 6, 7, 8 Passed) |
-| **Milestone 3**  | Search Index (Phases 9–11)                       | **COMPLETED** (Phases 9, 10, 11 Passed)     |
-| **Milestone 4**  | Query & Ranking (Phases 12–15)                   | Up Next (Phase 12: Query Parser)            |
-| **Milestone 5**  | Search API (Phases 16–18)                        | Scheduled                                   |
-| **Milestone 6**  | Public Web Application (Phases 19–21)            | Scheduled                                   |
-| **Milestone 7**  | End-to-End Integration (Phases 22–24)            | Scheduled                                   |
-| **Milestone 8**  | Security, Reliability & Privacy (Phases 25–27)   | Scheduled                                   |
-| **Milestone 9**  | Performance & Free Infrastructure (Phases 28–30) | Scheduled                                   |
-| **Milestone 10** | Production Release (Phases 31–34)                | Scheduled                                   |
+| Milestone        | Scope                                            | Status                                                   |
+| :--------------- | :----------------------------------------------- | :------------------------------------------------------- |
+| **Milestone 1**  | Project Foundation (Phases 1–3)                  | **COMPLETED** (Phases 1, 2, 3 Passed)                    |
+| **Milestone 2**  | Crawler Foundation (Phases 4–8)                  | **COMPLETED** (Phases 4, 5, 6, 7, 8 Passed)              |
+| **Milestone 3**  | Search Index (Phases 9–11)                       | **COMPLETED** (Phases 9, 10, 11 Passed)                  |
+| **Milestone 4**  | Query & Ranking (Phases 12–15)                   | **In Progress** (Phases 12 & 13 Complete; Phase 14 Next) |
+| **Milestone 5**  | Search API (Phases 16–18)                        | Scheduled                                                |
+| **Milestone 6**  | Public Web Application (Phases 19–21)            | Scheduled                                                |
+| **Milestone 7**  | End-to-End Integration (Phases 22–24)            | Scheduled                                                |
+| **Milestone 8**  | Security, Reliability & Privacy (Phases 25–27)   | Scheduled                                                |
+| **Milestone 9**  | Performance & Free Infrastructure (Phases 28–30) | Scheduled                                                |
+| **Milestone 10** | Production Release (Phases 31–34)                | Scheduled                                                |
 
 ---
 
@@ -86,6 +86,11 @@ opensearch/
 - **Inverted Index**: Term dictionary, posting lists with field breakdown and token positions, document frequency (DF), term frequency (TF), and disk persistence.
 - **Index Builder & Rebuild Pipeline**: Batch document indexing from storage, incremental updates for newly crawled/pending documents, deterministic rebuilds, staging isolation (`<indexDir>/builds/<buildId>`), error handling, and index metadata tracking.
 
+### Milestone 4 — Query & Ranking (Phases 12–15)
+
+- **Phase 12 (Query Processing)**: Safe user query parser, character length bounds (`SEARCH_LIMITS.MAX_QUERY_LENGTH = 200`), Unicode NFC / accent / case folding, quoted exact phrase extraction (`"exact phrase"`), negation tokens (`-term` and `NOT term`), non-Latin script parsing (Cyrillic, CJK, Arabic), and empty/malformed query safety.
+- **Phase 13 (Candidate Retrieval)**: High-performance posting lookup, candidate document merging across multiple terms, Boolean retrieval modes (`union`, `intersection`, and `adaptive`), negated term exclusion, positional phrase verification, and candidate limits.
+
 ---
 
 ## 5. Getting Started
@@ -115,7 +120,7 @@ npm install
 | `npm run lint`           | Runs ESLint across all TypeScript and JavaScript files                           |
 | `npm run format:check`   | Verifies code formatting with Prettier                                           |
 | `npm run format`         | Automatically formats code with Prettier                                         |
-| `npm run test`           | Runs the automated test suite via Vitest (259 tests passing)                     |
+| `npm run test`           | Runs the automated test suite via Vitest (284 tests passing)                     |
 | `npm run clean`          | Removes compiled distribution directories                                        |
 | `npm run verify:phase1`  | Runs the automated verification suite for Phase 1                                |
 | `npm run verify:phase2`  | Runs the automated verification suite for Phase 2                                |
@@ -128,6 +133,8 @@ npm install
 | `npm run verify:phase9`  | Runs the automated verification suite for Phase 9                                |
 | `npm run verify:phase10` | Runs the automated verification suite for Phase 10                               |
 | `npm run verify:phase11` | Runs the automated verification suite for Phase 11                               |
+| `npm run verify:phase12` | Runs the automated verification suite for Phase 12                               |
+| `npm run verify:phase13` | Runs the automated verification suite for Phase 13                               |
 
 ---
 
