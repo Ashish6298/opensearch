@@ -139,6 +139,10 @@ export class ApiServer {
   ): Promise<{ port: number; host: string }> {
     const port = portOverride ?? this.config.api.server.port;
     const host = hostOverride ?? this.config.api.server.host;
+
+    // Pre-flight startup validation
+    this.validateStartupConfig(port, host);
+
     const context = this.getContext();
 
     return new Promise((resolve, reject) => {
@@ -162,6 +166,18 @@ export class ApiServer {
         resolve({ port: actualPort, host });
       });
     });
+  }
+
+  private validateStartupConfig(port: number, host: string): void {
+    if (port < 0 || port > 65535 || isNaN(port)) {
+      throw new Error(`Invalid server port configured: ${port}`);
+    }
+    if (!host || typeof host !== 'string') {
+      throw new Error(`Invalid server host configured: "${host}"`);
+    }
+    if (!this.config.storage.indexDir) {
+      this.logger.warn('Index directory not specified in configuration; using defaults');
+    }
   }
 
   /**

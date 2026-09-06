@@ -90,12 +90,23 @@ export interface ApiAppContext {
   rateLimiter?: MemoryRateLimiter;
 }
 
+export interface ComponentHealth {
+  status: 'ok' | 'degraded' | 'error';
+  details?: Record<string, unknown>;
+}
+
 export interface HealthCheckResponse extends SystemStatus {
+  status: 'ok' | 'degraded' | 'error';
   uptimeSeconds: number;
   memoryUsageMb: number;
   environment: string;
   routesAvailable: string[];
   totalDocumentsIndexed?: number;
+  components?: {
+    index: ComponentHealth;
+    rateLimiter: ComponentHealth;
+    memory: ComponentHealth;
+  };
 }
 
 export interface SearchApiResponse {

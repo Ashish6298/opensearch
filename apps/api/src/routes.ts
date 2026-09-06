@@ -17,12 +17,33 @@ export const handleHealthCheck: RouteHandler = (_req, res, context) => {
   const mem = process.memoryUsage();
   const memoryUsageMb = Math.round((mem.heapUsed / 1024 / 1024) * 100) / 100;
   const totalDocumentsIndexed = context.services?.index.getStats().totalDocuments ?? 0;
+  const totalTermsIndexed = context.services?.index.getStats().totalTerms ?? 0;
+
+  // Determine component readiness
+  const isIndexReady = Boolean(context.services?.index);
+  const isIndexEmpty = totalDocumentsIndexed === 0;
+
+  const indexStatus: 'ok' | 'degraded' | 'error' = !isIndexReady
+    ? 'error'
+    : isIndexEmpty
+      ? 'degraded'
+      : 'ok';
+
+  const rateLimiterStatus: 'ok' | 'degraded' | 'error' = context.rateLimiter ? 'ok' : 'degraded';
+  const memoryStatus: 'ok' | 'degraded' | 'error' = memoryUsageMb > 512 ? 'degraded' : 'ok';
+
+  let overallStatus: 'ok' | 'degraded' | 'error' = 'ok';
+  if (indexStatus === 'error') {
+    overallStatus = 'error';
+  } else if (indexStatus === 'degraded' || rateLimiterStatus === 'degraded' || memoryStatus === 'degraded') {
+    overallStatus = 'degraded';
+  }
 
   const response: HealthCheckResponse = {
     name: PROJECT_NAME,
     version: PROJECT_VERSION,
-    phase: 'Phase 18: API Security, Limits & Reliability',
-    status: 'ok',
+    phase: 'Milestone 8 — Security, Reliability & Privacy (Phase 26: Reliability)',
+    status: overallStatus,
     timestamp: new Date().toISOString(),
     uptimeSeconds,
     memoryUsageMb,
@@ -35,9 +56,34 @@ export const handleHealthCheck: RouteHandler = (_req, res, context) => {
       'GET /api/v1/search',
       'POST /api/v1/search',
     ],
+    components: {
+      index: {
+        status: indexStatus,
+        details: {
+          totalDocuments: totalDocumentsIndexed,
+          totalTerms: totalTermsIndexed,
+          empty: isIndexEmpty,
+        },
+      },
+      rateLimiter: {
+        status: rateLimiterStatus,
+        details: {
+          activeEntries: context.rateLimiter?.getStats().activeEntries ?? 0,
+        },
+      },
+      memory: {
+        status: memoryStatus,
+        details: {
+          heapUsedMb: memoryUsageMb,
+          heapTotalMb: Math.round((mem.heapTotal / 1024 / 1024) * 100) / 100,
+          rssMb: Math.round((mem.rss / 1024 / 1024) * 100) / 100,
+        },
+      },
+    },
   };
 
-  res.status(200).json(response);
+  const statusCode = overallStatus === 'error' ? 503 : 200;
+  res.status(statusCode).json(response);
 };
 
 export const handleApiRoot: RouteHandler = (_req, res, context) => {
@@ -57,18 +103,21 @@ export const handleApiRoot: RouteHandler = (_req, res, context) => {
 };
 
 export const handleSystemStatus: RouteHandler = (_req, res, context) => {
+  const totalDocs = context.services?.index.getStats().totalDocuments ?? 0;
+  const status = !context.services ? 'error' : totalDocs === 0 ? 'degraded' : 'ok';
+
   res.status(200).json({
     name: PROJECT_NAME,
     version: PROJECT_VERSION,
-    phase: 'Milestone 5 — Search API (Phase 18: Security & Reliability)',
-    status: 'ok',
+    phase: 'Milestone 8 — Security, Reliability & Privacy (Phase 26: Reliability)',
+    status,
     timestamp: new Date().toISOString(),
     server: {
       host: context.config.api.server.host,
       port: context.config.api.server.port,
     },
     index: {
-      totalDocuments: context.services?.index.getStats().totalDocuments ?? 0,
+      totalDocuments: totalDocs,
       totalTerms: context.services?.index.getStats().totalTerms ?? 0,
     },
   });

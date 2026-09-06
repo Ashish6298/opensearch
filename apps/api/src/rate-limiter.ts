@@ -108,6 +108,24 @@ export class MemoryRateLimiter {
   }
 
   /**
+   * Returns active tracker bucket count.
+   */
+  getActiveCount(): number {
+    return this.buckets.size;
+  }
+
+  /**
+   * Returns rate limiter runtime statistics.
+   */
+  getStats(): { activeEntries: number; maxRequests: number; windowMs: number } {
+    return {
+      activeEntries: this.buckets.size,
+      maxRequests: this.maxRequests,
+      windowMs: this.windowMs,
+    };
+  }
+
+  /**
    * Clears all client buckets and stops background cleanup timer.
    */
   destroy(): void {

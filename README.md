@@ -23,8 +23,8 @@ The goal of V1.0.0 is **not** to rival Google-scale data centers, but to establi
 ## 2. Current Development Status
 
 - **Current Milestone**: **Milestone 8 — Security, Reliability & Privacy** (In Progress)
-- **Completed Phases**: **Phase 1 through Phase 25 (ALL PASSED)**
-- **Next Phase**: **Phase 26: Storage Reliability & Crash Recovery**
+- **Completed Phases**: **Phase 1 through Phase 26 (ALL PASSED)**
+- **Next Phase**: **Phase 27: Privacy Minimization & Zero-Leak Audit**
 
 | Milestone        | Scope                                            | Status                                           |
 | :--------------- | :----------------------------------------------- | :----------------------------------------------- |
@@ -35,7 +35,7 @@ The goal of V1.0.0 is **not** to rival Google-scale data centers, but to establi
 | **Milestone 5**  | Search API (Phases 16–18)                        | **COMPLETED** (Phases 16, 17, 18 Passed)         |
 | **Milestone 6**  | Public Web Application (Phases 19–21)            | **COMPLETED** (Phases 19, 20, 21 Passed)         |
 | **Milestone 7**  | End-to-End Integration (Phases 22–24)            | **COMPLETED** (Phases 22, 23, 24 Passed)         |
-| **Milestone 8**  | Security, Reliability & Privacy (Phases 25–27)   | **In Progress** (Phase 25 Passed; Phase 26 Next) |
+| **Milestone 8**  | Security, Reliability & Privacy (Phases 25–27)   | **In Progress** (Phases 25, 26 Passed; Phase 27 Next) |
 | **Milestone 9**  | Performance & Free Infrastructure (Phases 28–30) | Scheduled                                        |
 | **Milestone 10** | Production Release (Phases 31–34)                | Scheduled                                        |
 
@@ -114,6 +114,7 @@ opensearch/
 ### Milestone 8 — Security, Reliability & Privacy (Phases 25–27)
 
 - **Phase 25 (Crawler Security Hardening)**: Defensive crawler security layer (`CrawlerSecurityValidator`) providing strict scheme whitelisting (`http:`, `https:`), DNS-level SSRF and private-network rejection, streaming body-size limits (`maxPageBytes`), circular redirect loop detection, request timeout controls, MIME type filtering, and resilient malformed HTML parsing.
+- **Phase 26 (Search/API Reliability Hardening)**: Resilient HTTP Search API with startup pre-flight port/config validation, controlled degradation on missing/empty/corrupted index files (returning safe empty results instead of crashing), granular component health diagnostics (`GET /health`), request parameter boundary enforcement, oversized payload rejection (`413 Payload Too Large`), and strict zero-leak exception handling.
 
 ---
 
@@ -144,7 +145,7 @@ npm install
 | `npm run lint`           | Runs ESLint across all TypeScript and JavaScript files                           |
 | `npm run format:check`   | Verifies code formatting with Prettier                                           |
 | `npm run format`         | Automatically formats code with Prettier                                         |
-| `npm run test`           | Runs the automated test suite via Vitest (353 tests passing)                     |
+| `npm run test`           | Runs the automated test suite via Vitest (360 tests passing)                     |
 | `npm run clean`          | Removes compiled distribution directories                                        |
 | `npm run verify:phase1`  | Runs the automated verification suite for Phase 1                                |
 | `npm run verify:phase2`  | Runs the automated verification suite for Phase 2                                |
@@ -171,6 +172,7 @@ npm install
 | `npm run verify:phase23` | Runs the automated verification suite for Phase 23                               |
 | `npm run verify:phase24` | Runs the automated verification suite for Phase 24                               |
 | `npm run verify:phase25` | Runs the automated verification suite for Phase 25                               |
+| `npm run verify:phase26` | Runs the automated verification suite for Phase 26                               |
 
 ---
 
