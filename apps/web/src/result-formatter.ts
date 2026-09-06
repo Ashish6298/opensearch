@@ -80,13 +80,13 @@ export function renderResultCard(item: FormattedResultItem): string {
     : escapeHtml(item.snippet || 'No description available.');
 
   return `
-    <article class="result-card" data-document-id="${escapeHtml(item.documentId)}">
+    <article class="result-card" data-document-id="${escapeHtml(item.documentId)}" role="article" aria-labelledby="result-title-${escapeHtml(item.documentId)}">
       <div class="result-header">
-        ${safeDomain ? `<span class="result-domain-badge">${safeDomain}</span>` : ''}
+        ${safeDomain ? `<span class="result-domain-badge" aria-label="Domain">${safeDomain}</span>` : ''}
         <cite class="result-url" title="${safeUrl}">${safeDisplayUrl}</cite>
       </div>
-      <h2 class="result-title">
-        <a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="result-link">
+      <h2 class="result-title" id="result-title-${escapeHtml(item.documentId)}">
+        <a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="result-link" aria-label="${escapeHtml(item.title || 'Untitled Document')} (opens in new tab)">
           ${displayTitle}
         </a>
       </h2>
@@ -133,7 +133,7 @@ export function renderPaginationControls(pagination: PaginationData): string {
         type="button"
         class="pagination-btn page-num-btn ${isCurrent ? 'active' : ''}"
         data-page="${p}"
-        aria-label="Go to page ${p}"
+        aria-label="Page ${p}${isCurrent ? ', current page' : ''}"
         ${isCurrent ? 'aria-current="page" disabled' : ''}
       >
         ${p}
@@ -149,11 +149,11 @@ export function renderPaginationControls(pagination: PaginationData): string {
         id="pagination-prev-btn"
         data-page="${prevPage || 1}"
         ${!hasPrevPage ? 'disabled aria-disabled="true"' : ''}
-        aria-label="Previous page"
+        aria-label="Go to previous page"
       >
         ← Previous
       </button>
-      <div class="pagination-pages">
+      <div class="pagination-pages" role="group" aria-label="Page selection">
         ${pagesHtml}
       </div>
       <button
@@ -162,7 +162,7 @@ export function renderPaginationControls(pagination: PaginationData): string {
         id="pagination-next-btn"
         data-page="${nextPage || totalPages}"
         ${!hasNextPage ? 'disabled aria-disabled="true"' : ''}
-        aria-label="Next page"
+        aria-label="Go to next page"
       >
         Next →
       </button>

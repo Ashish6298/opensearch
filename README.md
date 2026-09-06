@@ -22,9 +22,9 @@ The goal of V1.0.0 is **not** to rival Google-scale data centers, but to establi
 
 ## 2. Current Development Status
 
-- **Current Milestone**: **Milestone 6 — Public Web Application** (In Progress)
-- **Completed Phases**: **Phase 1 through Phase 20 (ALL PASSED)**
-- **Next Phase**: **Phase 21: Responsive & Accessibility Hardening**
+- **Current Milestone**: **Milestone 6 — Public Web Application** (COMPLETED)
+- **Completed Phases**: **Phase 1 through Phase 21 (ALL PASSED)**
+- **Next Phase**: **Phase 22: Full Crawl → Index → Search Integration** (Milestone 7)
 
 | Milestone        | Scope                                            | Status                                           |
 | :--------------- | :----------------------------------------------- | :----------------------------------------------- |
@@ -33,8 +33,8 @@ The goal of V1.0.0 is **not** to rival Google-scale data centers, but to establi
 | **Milestone 3**  | Search Index (Phases 9–11)                       | **COMPLETED** (Phases 9, 10, 11 Passed)          |
 | **Milestone 4**  | Query & Ranking (Phases 12–15)                   | **COMPLETED** (Phases 12, 13, 14, 15 Passed)     |
 | **Milestone 5**  | Search API (Phases 16–18)                        | **COMPLETED** (Phases 16, 17, 18 Passed)         |
-| **Milestone 6**  | Public Web Application (Phases 19–21)            | **In Progress** (Phases 19 & 20 Passed; Phase 21 Next) |
-| **Milestone 7**  | End-to-End Integration (Phases 22–24)            | Scheduled                                        |
+| **Milestone 6**  | Public Web Application (Phases 19–21)            | **COMPLETED** (Phases 19, 20, 21 Passed)         |
+| **Milestone 7**  | End-to-End Integration (Phases 22–24)            | **In Progress** (Phase 22 Next)                  |
 | **Milestone 8**  | Security, Reliability & Privacy (Phases 25–27)   | Scheduled                                        |
 | **Milestone 9**  | Performance & Free Infrastructure (Phases 28–30) | Scheduled                                        |
 | **Milestone 10** | Production Release (Phases 31–34)                | Scheduled                                        |
@@ -103,6 +103,7 @@ opensearch/
 
 - **Phase 19 (Search UI Foundation)**: Clean, fast, accessible public web search frontend (`apps/web`), semantic HTML5 application shell, responsive mobile/desktop design tokens (`style.css`), accessible search box with clear button and length validation, reactive state containers (home hero, loading skeleton with progress bar, empty state with search tips, error state with retry), and embedded zero-external-dependency Node.js HTTP `WebServer`.
 - **Phase 20 (Search Results UI)**: Result cards with title, domain badges, display URLs, snippets, safe query term highlighting (preserving `<mark>` while escaping dangerous XSS tags), word-break resilience against long URLs/tokens, result count summaries ("About 42 results (12ms)"), multi-page pagination controls (Previous, Next, page numbers), and secure external links (`target="_blank" rel="noopener noreferrer"`).
+- **Phase 21 (Responsive & Accessibility Hardening)**: Full responsive design spanning mobile (320px–640px), tablet (640px–1024px), and desktop viewports without layout overflow; accessible skip-navigation links (`#skip-to-search`, `#skip-to-results`); screen-reader live announcements (`#a11y-announcer` with `aria-live="polite"`); visible focus states with high-contrast focus rings (`:focus-visible`); keyboard shortcuts (`/` to focus search, `Escape` to clear/blur); and touch target sizes conforming to WCAG standards (>=44px).
 
 ---
 
@@ -133,7 +134,7 @@ npm install
 | `npm run lint`           | Runs ESLint across all TypeScript and JavaScript files                           |
 | `npm run format:check`   | Verifies code formatting with Prettier                                           |
 | `npm run format`         | Automatically formats code with Prettier                                         |
-| `npm run test`           | Runs the automated test suite via Vitest (332 tests passing)                     |
+| `npm run test`           | Runs the automated test suite via Vitest (335 tests passing)                     |
 | `npm run clean`          | Removes compiled distribution directories                                        |
 | `npm run verify:phase1`  | Runs the automated verification suite for Phase 1                                |
 | `npm run verify:phase2`  | Runs the automated verification suite for Phase 2                                |
@@ -155,6 +156,7 @@ npm install
 | `npm run verify:phase18` | Runs the automated verification suite for Phase 18                               |
 | `npm run verify:phase19` | Runs the automated verification suite for Phase 19                               |
 | `npm run verify:phase20` | Runs the automated verification suite for Phase 20                               |
+| `npm run verify:phase21` | Runs the automated verification suite for Phase 21                               |
 
 ---
 

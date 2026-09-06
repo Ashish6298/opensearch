@@ -33,15 +33,22 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
   </style>
 </head>
 <body>
+  <!-- Skip Links for Keyboard & Screen Reader Accessibility (Phase 21) -->
+  <a href="#search-input" class="skip-link" id="skip-to-search">Skip to search</a>
+  <a href="#results-area" class="skip-link" id="skip-to-results">Skip to results</a>
+
+  <!-- ARIA Live Announcer for Screen Readers (Phase 21) -->
+  <div id="a11y-announcer" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+
   <!-- Header -->
   <header class="app-header" id="app-header" role="banner">
-    <a href="/" class="brand-link" aria-label="OpenSearch Home">
-      <span style="color:var(--accent-primary);">⚡</span> OpenSearch
-      <span class="brand-badge">V1.0.0</span>
+    <a href="/" class="brand-link" aria-label="OpenSearch Home — Privacy First Search">
+      <span style="color:var(--accent-primary);" aria-hidden="true">⚡</span> OpenSearch
+      <span class="brand-badge" aria-label="Version 1.0.0">V1.0.0</span>
     </a>
     <div class="header-meta">
-      <span class="privacy-pill" title="No tracking, no user profiling">
-        🛡️ Privacy First
+      <span class="privacy-pill" title="No tracking, no user profiling" role="note">
+        <span aria-hidden="true">🛡️</span> Privacy First
       </span>
     </div>
   </header>
@@ -50,14 +57,14 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
   <main class="main-content center-mode" id="main-content" role="main">
     <!-- Hero (Visible in home mode) -->
     <div class="hero-container" id="hero-container">
-      <h1 class="hero-title">OpenSearch</h1>
+      <h1 class="hero-title" id="hero-title">OpenSearch</h1>
       <p class="hero-tagline">Search the web independently. Fast, reliable, and strictly private.</p>
     </div>
 
     <!-- Search Form -->
     <form class="search-form" id="search-form" role="search" aria-label="Web Search Form">
       <div class="search-input-wrapper">
-        <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
           <circle cx="11" cy="11" r="8"></circle>
           <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
         </svg>
@@ -65,23 +72,25 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
           type="search"
           id="search-input"
           class="search-input"
-          placeholder="Search the web or type a query..."
+          placeholder="Search the web or type a query... (Press '/' to focus)"
           autocomplete="off"
           autocorrect="off"
           autocapitalize="off"
           spellcheck="false"
           maxlength="200"
           aria-label="Search query"
+          aria-describedby="search-hint"
           required
         />
+        <span id="search-hint" class="sr-only">Type your query and press Enter to search, or press Escape to clear.</span>
         <button
           type="button"
           id="search-clear-btn"
           class="search-clear-btn"
           aria-label="Clear search input"
-          title="Clear"
+          title="Clear search text (Escape)"
         >
-          ✕
+          <span aria-hidden="true">✕</span>
         </button>
         <button
           type="submit"
@@ -95,15 +104,15 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
     </form>
 
     <!-- Value Props in Home Mode -->
-    <div class="privacy-features" id="privacy-features" aria-label="Search Engine Features">
+    <div class="privacy-features" id="privacy-features" aria-label="Search Engine Features" role="region">
       <div class="feature-item">
-        <span class="feature-icon">✓</span> No Accounts Required
+        <span class="feature-icon" aria-hidden="true">✓</span> No Accounts Required
       </div>
       <div class="feature-item">
-        <span class="feature-icon">✓</span> Zero Tracking & Profiling
+        <span class="feature-icon" aria-hidden="true">✓</span> Zero Tracking & Profiling
       </div>
       <div class="feature-item">
-        <span class="feature-icon">✓</span> Lexical BM25 Ranking
+        <span class="feature-icon" aria-hidden="true">✓</span> Lexical BM25 Ranking
       </div>
     </div>
 
@@ -111,15 +120,15 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
     <div class="state-container" id="state-container">
       <!-- Loading State -->
       <div class="loading-indicator" id="loading-indicator" role="status" aria-live="polite" aria-label="Loading search results">
-        <div class="progress-bar-container">
+        <div class="progress-bar-container" aria-hidden="true">
           <div class="progress-bar-fill"></div>
         </div>
-        <div class="skeleton-card">
+        <div class="skeleton-card" aria-hidden="true">
           <div class="skeleton-line short"></div>
           <div class="skeleton-line medium"></div>
           <div class="skeleton-line long"></div>
         </div>
-        <div class="skeleton-card">
+        <div class="skeleton-card" aria-hidden="true">
           <div class="skeleton-line short"></div>
           <div class="skeleton-line medium"></div>
           <div class="skeleton-line long"></div>
@@ -127,7 +136,7 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
       </div>
 
       <!-- Empty State -->
-      <div class="empty-state" id="empty-state" role="status" aria-live="polite">
+      <div class="empty-state" id="empty-state" role="region" aria-label="No results found" aria-live="polite">
         <div class="empty-icon" aria-hidden="true">🔍</div>
         <h2 class="empty-title">No search results found</h2>
         <p>No indexed documents matched your search for "<strong id="empty-query-text"></strong>".</p>
@@ -146,26 +155,26 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
         <div class="error-message" id="error-message">
           An error occurred while fetching search results.
         </div>
-        <button type="button" class="error-retry-btn" id="error-retry-btn">
+        <button type="button" class="error-retry-btn" id="error-retry-btn" aria-label="Retry search query">
           Try Again
         </button>
       </div>
 
       <!-- Results Area -->
-      <div class="results-meta" id="results-meta" aria-live="polite"></div>
-      <section class="results-container" id="results-area" aria-label="Search Results"></section>
-      <div id="pagination-area"></div>
+      <div class="results-meta" id="results-meta" role="status" aria-live="polite"></div>
+      <section class="results-container" id="results-area" aria-label="Search Results" role="feed"></section>
+      <div id="pagination-area" role="navigation" aria-label="Search pagination"></div>
     </div>
   </main>
 
   <!-- Footer -->
   <footer class="app-footer" role="contentinfo">
-    <div class="footer-links">
-      <a href="/about">About</a>
-      <a href="/privacy">Privacy</a>
-      <a href="/health" target="_blank">Status</a>
-      <a href="https://github.com/Ashish6298/opensearch" target="_blank" rel="noopener noreferrer">Source Code</a>
-    </div>
+    <nav class="footer-links" aria-label="Footer Navigation">
+      <a href="/about" aria-label="About OpenSearch">About</a>
+      <a href="/privacy" aria-label="Privacy Policy">Privacy</a>
+      <a href="/health" target="_blank" rel="noopener noreferrer" aria-label="System Health Status (opens in new tab)">Status</a>
+      <a href="https://github.com/Ashish6298/opensearch" target="_blank" rel="noopener noreferrer" aria-label="OpenSearch Source Code on GitHub (opens in new tab)">Source Code</a>
+    </nav>
     <p>OpenSearch V1.0.0 — Public Independent Search Engine</p>
   </footer>
 

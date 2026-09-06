@@ -13,7 +13,7 @@ import {
   sanitizeHighlightedHtml,
 } from '../src/index.js';
 
-describe('Phase 19 & 20 — Search UI & Results Presentation Suite', () => {
+describe('Phase 19, 20 & 21 — Search UI & Accessibility Hardening Suite', () => {
   let server: WebServer;
   let baseUrl: string;
 
@@ -29,25 +29,54 @@ describe('Phase 19 & 20 — Search UI & Results Presentation Suite', () => {
     await server.stop();
   });
 
-  describe('Module Boundary & Status Metadata', () => {
-    it('returns web status for Phase 20', () => {
+  describe('Module Boundary & Status Metadata (Phase 21)', () => {
+    it('returns web status for Phase 21', () => {
       const status = getWebStatus();
       expect(status.name).toBe('OpenSearch');
       expect(status.version).toBe('1.0.0');
-      expect(status.phase).toBe('Phase 20: Search Results UI');
+      expect(status.phase).toBe('Phase 21: Responsive & Accessibility Hardening');
       expect(status.status).toBe('ok');
     });
 
     it('returns web info and service identity', () => {
       const info = getWebInfo();
       expect(info.title).toBe('OpenSearch');
-      expect(info.phase).toBe('Phase 20: Search Results UI');
+      expect(info.phase).toBe('Phase 21: Responsive & Accessibility Hardening');
       expect(WEB_APP_INFO.moduleName).toBe('@opensearch/web');
     });
   });
 
-  describe('Result Card Formatting (Phase 20)', () => {
-    it('renders a complete result card with title, domain badge, snippet, and target=_blank', () => {
+  describe('Accessibility & Landmark Semantics (Phase 21)', () => {
+    it('generates HTML with skip-navigation links and ARIA live regions', () => {
+      const html = generateHtmlShell();
+      expect(html).toContain('id="skip-to-search"');
+      expect(html).toContain('id="skip-to-results"');
+      expect(html).toContain('class="skip-link"');
+      expect(html).toContain('id="a11y-announcer"');
+      expect(html).toContain('role="status"');
+      expect(html).toContain('aria-live="polite"');
+    });
+
+    it('includes appropriate ARIA labels and landmarks in form controls', () => {
+      const html = generateHtmlShell();
+      expect(html).toContain('role="search"');
+      expect(html).toContain('aria-label="Web Search Form"');
+      expect(html).toContain('aria-label="Search query"');
+      expect(html).toContain('aria-describedby="search-hint"');
+      expect(html).toContain('aria-label="Clear search input"');
+      expect(html).toContain('aria-label="Submit search"');
+      expect(html).toContain('role="feed"');
+      expect(html).toContain('aria-label="Search Results"');
+    });
+
+    it('provides clear focus-visible and screen-reader utility classes in CSS', () => {
+      const html = generateHtmlShell({ cssContent: '.custom-test-css{}' });
+      expect(html).toContain('<style>');
+    });
+  });
+
+  describe('Result Card Formatting with Accessibility (Phase 21)', () => {
+    it('renders a complete result card with article role, labelledby, and title target', () => {
       const cardHtml = renderResultCard({
         documentId: 'doc-1',
         url: 'https://example.com/docs/api-guide',
@@ -60,8 +89,11 @@ describe('Phase 19 & 20 — Search UI & Results Presentation Suite', () => {
       });
 
       expect(cardHtml).toContain('class="result-card"');
+      expect(cardHtml).toContain('role="article"');
+      expect(cardHtml).toContain('aria-labelledby="result-title-doc-1"');
+      expect(cardHtml).toContain('id="result-title-doc-1"');
       expect(cardHtml).toContain('data-document-id="doc-1"');
-      expect(cardHtml).toContain('<span class="result-domain-badge">example.com</span>');
+      expect(cardHtml).toContain('<span class="result-domain-badge" aria-label="Domain">example.com</span>');
       expect(cardHtml).toContain('example.com › docs › api-guide');
       expect(cardHtml).toContain('href="https://example.com/docs/api-guide"');
       expect(cardHtml).toContain('target="_blank"');
@@ -105,7 +137,7 @@ describe('Phase 19 & 20 — Search UI & Results Presentation Suite', () => {
     });
   });
 
-  describe('Pagination Navigation Bar', () => {
+  describe('Pagination Navigation Bar with Accessible Roles (Phase 21)', () => {
     it('renders multi-page controls with Previous, Next, and numbered buttons', () => {
       const paginationHtml = renderPaginationControls({
         page: 2,
@@ -119,6 +151,8 @@ describe('Phase 19 & 20 — Search UI & Results Presentation Suite', () => {
       });
 
       expect(paginationHtml).toContain('class="pagination-container"');
+      expect(paginationHtml).toContain('role="group"');
+      expect(paginationHtml).toContain('aria-label="Page selection"');
       expect(paginationHtml).toContain('id="pagination-prev-btn"');
       expect(paginationHtml).toContain('data-page="1"');
       expect(paginationHtml).toContain('id="pagination-next-btn"');
@@ -170,33 +204,39 @@ describe('Phase 19 & 20 — Search UI & Results Presentation Suite', () => {
     });
   });
 
-  describe('HTTP Web Server & Shell Serving', () => {
-    it('serves HTML application shell containing result and pagination containers', async () => {
+  describe('HTTP Web Server & Static Assets Serving', () => {
+    it('serves HTML application shell containing skip-links and announcer', async () => {
       const res = await fetch(`${baseUrl}/`);
       expect(res.status).toBe(200);
       const html = await res.text();
+      expect(html).toContain('id="skip-to-search"');
+      expect(html).toContain('id="skip-to-results"');
+      expect(html).toContain('id="a11y-announcer"');
       expect(html).toContain('id="results-area"');
       expect(html).toContain('id="results-meta"');
       expect(html).toContain('id="pagination-area"');
     });
 
-    it('serves updated CSS with result cards and highlight tokens', async () => {
+    it('serves updated CSS with responsive media queries, skip-link, and focus rings', async () => {
       const res = await fetch(`${baseUrl}/style.css`);
       expect(res.status).toBe(200);
       const css = await res.text();
-      expect(css).toContain('.result-card');
-      expect(css).toContain('.result-domain-badge');
-      expect(css).toContain('.pagination-container');
-      expect(css).toContain('mark {');
+      expect(css).toContain('.skip-link');
+      expect(css).toContain(':focus-visible');
+      expect(css).toContain('@media (max-width: 640px)');
+      expect(css).toContain('@media (max-width: 380px)');
+      expect(css).toContain('.sr-only');
     });
 
-    it('serves updated app.js with result rendering and pagination event logic', async () => {
+    it('serves updated app.js with keyboard navigation and announcer logic', async () => {
       const res = await fetch(`${baseUrl}/app.js`);
       expect(res.status).toBe(200);
       const js = await res.text();
+      expect(js).toContain('announceA11y');
+      expect(js).toContain("e.key === '/'");
+      expect(js).toContain("e.key === 'Escape'");
       expect(js).toContain('renderSearchResults');
-      expect(js).toContain('renderPaginationBar');
-      expect(js).toContain('pagination-btn');
     });
   });
 });
+

@@ -24,6 +24,7 @@
   const resultsArea = document.getElementById('results-area');
   const resultsMeta = document.getElementById('results-meta');
   const paginationArea = document.getElementById('pagination-area');
+  const a11yAnnouncer = document.getElementById('a11y-announcer');
 
   // Configuration
   const API_ENDPOINT = window.__OPENSEARCH_API_URL__ || '/api/v1/search';
@@ -75,6 +76,7 @@
       searchInput.focus();
       setUiMode('home');
       updateUrl('', 1);
+      announceA11y('Search input cleared.');
     });
 
     // Error retry button
@@ -85,6 +87,33 @@
         }
       });
     }
+
+    // Global keyboard shortcuts (Phase 21)
+    window.addEventListener('keydown', function (e) {
+      // '/' key: focus search input if not already typing in an input
+      if (
+        e.key === '/' &&
+        document.activeElement !== searchInput &&
+        !['input', 'textarea', 'select'].includes(
+          document.activeElement?.tagName?.toLowerCase() || '',
+        )
+      ) {
+        e.preventDefault();
+        searchInput.focus();
+        searchInput.select();
+      }
+
+      // 'Escape' key inside search input: clear query or blur
+      if (e.key === 'Escape' && document.activeElement === searchInput) {
+        if (searchInput.value.length > 0) {
+          searchInput.value = '';
+          updateClearButtonVisibility();
+          announceA11y('Search cleared.');
+        } else {
+          searchInput.blur();
+        }
+      }
+    });
 
     // Pagination button clicks (event delegation)
     if (paginationArea) {
@@ -118,6 +147,12 @@
         setUiMode('home');
       }
     });
+  }
+
+  function announceA11y(message) {
+    if (a11yAnnouncer) {
+      a11yAnnouncer.textContent = message;
+    }
   }
 
   function updateClearButtonVisibility() {
@@ -175,6 +210,7 @@
     if (paginationArea) paginationArea.innerHTML = '';
     loadingIndicator.classList.add('active');
     isLoading = true;
+    announceA11y(`Searching for ${query}...`);
 
     try {
       const fetchUrl = `${API_ENDPOINT}?q=${encodeURIComponent(query)}&page=${page}&pageSize=${PAGE_SIZE}`;
@@ -216,13 +252,16 @@
       if (resultsMeta) resultsMeta.textContent = '';
       if (resultsArea) resultsArea.innerHTML = '';
       if (paginationArea) paginationArea.innerHTML = '';
+      announceA11y(`No search results found for ${currentQuery}.`);
       return;
     }
 
+    const plural = totalHits === 1 ? 'result' : 'results';
+    const summaryText = `About ${totalHits.toLocaleString()} ${plural} (${durationMs}ms)`;
     if (resultsMeta) {
-      const plural = totalHits === 1 ? 'result' : 'results';
-      resultsMeta.textContent = `About ${totalHits.toLocaleString()} ${plural} (${durationMs}ms)`;
+      resultsMeta.textContent = summaryText;
     }
+    announceA11y(`${summaryText} for query ${currentQuery}. Showing page ${pagination?.page || 1}.`);
 
     // Render result cards
     let resultsHtml = '';
@@ -336,6 +375,7 @@
     if (resultsArea) resultsArea.innerHTML = '';
     if (resultsMeta) resultsMeta.textContent = '';
     if (paginationArea) paginationArea.innerHTML = '';
+    announceA11y(`Search request error: ${msg}`);
   }
 
   function escapeHtml(str) {
