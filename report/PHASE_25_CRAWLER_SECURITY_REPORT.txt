@@ -1,0 +1,132 @@
+================================================================================
+OPENSEARCH V1.0.0 — PHASE 25 VERIFICATION REPORT
+CRAWLER SECURITY HARDENING
+================================================================================
+
+Date: 2026-09-06
+Status: ALL SECURITY GATES PASSED — READY FOR PHASE 26
+Environment: Node.js 20+, TypeScript 5.7+ Composite Monorepo
+
+--------------------------------------------------------------------------------
+1. PHASE 25 OBJECTIVES & SCOPE EVALUATION
+--------------------------------------------------------------------------------
+Phase 25 hardens the crawler subsystem against malicious, dangerous, or resource-
+intensive web targets to guarantee crawler process stability, zero cost, and
+complete protection against server-side request forgery (SSRF), infinite loops,
+and memory exhaustion.
+
+Key Security Implementations Verified:
+1. Scheme Validation:
+   - Permitted schemes restricted exclusively to 'http:' and 'https:'.
+   - Explicitly rejects dangerous schemes ('ftp:', 'file:', 'gopher:', 'javascript:', 'data:').
+
+2. SSRF & Private Network Rejection:
+   - Syntactic pattern matching and DNS resolution check.
+   - Rejects loopback addresses (127.0.0.0/8, ::1), RFC-1918 private subnets
+     (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16), link-local addresses (fe80::/10),
+     APIPA / Cloud metadata services (169.254.169.254), and local TLDs (.local, .internal, .lan, .corp).
+
+3. Response-Size Limit Enforcement:
+   - Streaming HTTP response consumption using WHATWG ReadableStream.
+   - Immediately aborts download and cancels stream reader when exceeding maxPageBytes (default: 2MB).
+   - Returns CONTENT_SIZE_EXCEEDED without buffering excessive bytes into memory.
+
+4. Redirect Limits & Circular Loop Trapping:
+   - Tracks visited redirect targets within the active redirectChain.
+   - Traps circular redirect loops (/loop-a -> /loop-b -> /loop-a) and enforces maxRedirects limit.
+   - Re-checks SSRF guard on EVERY redirect target before making outbound connection.
+
+5. Request Timeout Controls:
+   - Enforces timeoutMs (default: 10,000ms) via AbortSignal.timeout and AbortController.
+   - Unresponsive / hanging HTTP servers abort cleanly with standard TIMEOUT code.
+
+6. Content-Type Restrictions:
+   - Validates response MIME types against ALLOWED_CONTENT_TYPE_PREFIXES (text/html, application/xhtml+xml, text/plain).
+   - Rejects binary archives, PDFs, audio/video streams, and executable payloads with UNSUPPORTED_CONTENT_TYPE.
+
+7. Malformed Input Resilience:
+   - Parser and text cleaner sanitize control characters (\x00-\x1F) and broken UTF-8 replacement characters (\uFFFD).
+   - Gracefully handles unclosed tags, malformed links, and broken HTML without throws or crashes.
+
+--------------------------------------------------------------------------------
+2. AUTOMATED SECURITY GATE EXECUTION
+--------------------------------------------------------------------------------
+Security Verification Suite Run:
+$ npm run verify:phase25
+
+Gate Breakdown:
+► 1. Scheme Validation
+  ✓ Rejected prohibited scheme URL: "ftp://files.example.com/download.zi..."
+  ✓ Rejected prohibited scheme URL: "file:///etc/shadow..."
+  ✓ Rejected prohibited scheme URL: "gopher://gopher.floodgap.com..."
+  ✓ Rejected prohibited scheme URL: "javascript:alert(document.cookie)..."
+  ✓ Rejected prohibited scheme URL: "data:text/html;base64,PHNjcmlwdD5hb..."
+  ✓ Permitted legitimate scheme URL: "http://example.org/page"
+  ✓ Permitted legitimate scheme URL: "https://example.org/secure"
+
+► 2. Private Network & SSRF Rejection
+  ✓ Blocked private/SSRF target: "http://127.0.0.1:8080/metrics"
+  ✓ Blocked private/SSRF target: "http://localhost/admin"
+  ✓ Blocked private/SSRF target: "http://10.0.0.1/sensitive"
+  ✓ Blocked private/SSRF target: "http://192.168.0.1/settings"
+  ✓ Blocked private/SSRF target: "http://172.16.0.1/"
+  ✓ Blocked private/SSRF target: "http://169.254.169.254/latest/meta-data/"
+  ✓ Blocked private/SSRF target: "http://vault.internal:8200/"
+  ✓ Blocked private/SSRF target: "http://router.local/"
+
+► 3. Hostile Web Target Defense Simulation
+► 4. Redirect Loop Protection
+  ✓ Redirect loop fetch failed as expected
+  ✓ Returned code REDIRECT_FAILURE (REDIRECT_FAILURE)
+  ✓ Redirect counter stopped at 5 redirects
+
+► 5. Streaming Response-Size Limits
+  ✓ Oversized payload download aborted successfully
+  ✓ Returned code CONTENT_SIZE_EXCEEDED (CONTENT_SIZE_EXCEEDED)
+
+► 6. Content-Type Filtering
+  ✓ Non-text MIME type rejected
+  ✓ Returned code UNSUPPORTED_CONTENT_TYPE (UNSUPPORTED_CONTENT_TYPE)
+
+► 7. Request Timeout Enforcement
+  ✓ Hanging request was aborted by timeout
+  ✓ Returned code TIMEOUT (TIMEOUT)
+
+► 8. Malformed HTML & Control Character Sanitization
+  ✓ Extracted title from broken HTML
+  ✓ Extracted visible text without crashes
+  ✓ Extracted valid outbound links despite broken structure
+
+Phase 25 Verification Summary: 27 passed, 0 failed.
+
+Vitest Full Monorepo Test Suite:
+$ npm test
+Test Files: 33 passed (33)
+Tests:      353 passed (353)
+
+--------------------------------------------------------------------------------
+3. FILES IMPLEMENTED / MODIFIED
+--------------------------------------------------------------------------------
+- packages/crawler/src/security/crawler-security.ts (NEW)
+  Implements CrawlerSecurityValidator, DEFAULT_CRAWLER_SECURITY_POLICY, and security checks.
+- packages/crawler/src/index.ts (MODIFIED)
+  Exports Phase 25 crawler security interfaces and validator.
+- packages/crawler/tests/crawler-security.test.ts (NEW)
+  Vitest test suite covering scheme validation, SSRF, redirect loops, streaming size limits,
+  timeouts, and malformed HTML handling.
+- scripts/verify-phase25.mjs (NEW)
+  Automated 27-gate verification script for Phase 25.
+- package.json (MODIFIED)
+  Added verify:phase25 npm script.
+- README.md (MODIFIED)
+  Updated status table, milestone progress (Milestone 8 In Progress), and script documentation.
+
+--------------------------------------------------------------------------------
+4. CONCLUSION & READINESS STATEMENT
+--------------------------------------------------------------------------------
+Phase 25 ("Crawler Security Hardening") has been fully implemented, comprehensively
+tested against hostile target simulations, and satisfies all requirements in
+PHASE.txt and PROJECT.txt.
+
+Status: READY FOR PHASE 26 (Storage Reliability & Crash Recovery)
+================================================================================
