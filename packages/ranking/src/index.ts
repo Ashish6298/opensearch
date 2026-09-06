@@ -1,5 +1,5 @@
 /**
- * @opensearch/ranking — Ranking & Query Engine Root (Milestone 4 / Phase 12 & 13)
+ * @opensearch/ranking — Ranking & Query Engine Root (Milestone 4 / Phase 12, 13 & 14)
  */
 
 // ── Phase 12: Query Processing ──────────────────────────────────────────
@@ -34,3 +34,26 @@ export {
   createCandidateRetriever,
 } from './retrieval/candidate-retriever.js';
 export type { IndexCandidateRetrieverOptions } from './retrieval/candidate-retriever.js';
+
+// ── Phase 14: Ranking Engine ────────────────────────────────────────────
+export type {
+  BM25Params,
+  FieldWeightBoosts,
+  ScoreSignalConfig,
+  RankingOptions,
+  TermScoreBreakdown,
+  ScoreExplanation,
+  ScoredDocument,
+  RankingStats,
+  RankingResult,
+  RankingEngine,
+} from './scorer/scorer-types.js';
+
+export { BM25Scorer, DEFAULT_BM25_PARAMS, DEFAULT_FIELD_BOOSTS } from './scorer/bm25-scorer.js';
+
+export {
+  DefaultRankingEngine,
+  DEFAULT_SCORE_SIGNALS,
+  createRankingEngine,
+} from './scorer/ranking-engine.js';
+export type { DefaultRankingEngineOptions } from './scorer/ranking-engine.js';
