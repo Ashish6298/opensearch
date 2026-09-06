@@ -1,0 +1,106 @@
+================================================================================
+OPENSEARCH V1.0.0 — PHASE 13: CANDIDATE RETRIEVAL REPORT
+================================================================================
+Timestamp: 2026-09-06T19:17:30+05:30
+Phase Status: COMPLETED
+Verification Result: PASS (100% checks passed)
+Overall Suite: 284 Vitest Unit/Integration Tests PASS, All 13 Phase Verification Suites PASS
+
+--------------------------------------------------------------------------------
+1. EXECUTIVE SUMMARY & OBJECTIVES ACHIEVED
+--------------------------------------------------------------------------------
+Phase 13 establishes the Candidate Retrieval subsystem in `@opensearch/ranking`,
+connecting the structured `ParsedQuery` (Phase 12) to the `InvertedIndex` (Phase 10)
+to efficiently retrieve, filter, and merge candidate documents for downstream ranking.
+
+Key achievements:
+- Term Lookup & Posting Retrieval: Performs indexed lookups across unique positive
+  query terms in the InvertedIndex dictionary.
+- Candidate Merging & Aggregation: Aggregates matching terms and detailed field-level
+  postings per candidate document, computing `matchedTerms`, `matchCount`, and
+  `isFullMatch`.
+- Boolean Combination Modes:
+  - 'intersection': Strictly returns documents containing all searched terms.
+  - 'union': Returns documents matching at least one search term.
+  - 'adaptive' (default): Attempts intersection first and falls back to union if
+    candidate yield is under threshold.
+- Negation Filtering: Evaluates `negatedTerms` from Phase 12 query processing,
+  purging any candidate document containing excluded terms.
+- Phrase Verification: Verifies exact adjacent token positional sequences across
+  document fields when quoted phrases (`"exact match"`) are specified.
+- Result Limits & Diagnostics: Clamps output candidates to `maxCandidates` (default: 500)
+  and tracks performance statistics (`searchedTerms`, `missingTerms`, `durationMs`).
+- Safe Failure & Edge Cases: Missing terms, empty queries, or empty indices cleanly
+  return safe empty results (`candidates: []`) without throwing.
+- Zero Regressions: All 284 unit/integration tests and all 13 phase verification
+  suites pass with zero errors.
+
+--------------------------------------------------------------------------------
+2. COMPONENT ARCHITECTURE & IMPLEMENTATION DETAILS
+--------------------------------------------------------------------------------
+Phase 13 added the following modules in `packages/ranking/src/retrieval/`:
+
+1. `retrieval-types.ts`
+   - `RetrievalMode`: 'union' | 'intersection' | 'adaptive'.
+   - `CandidateDocument`: Document ID, `documentMeta`, `matchedTerms`, `termPostings`,
+     `matchCount`, `isFullMatch`, and `phraseMatches`.
+   - `RetrievalOptions`: Configurable `mode`, `maxCandidates`, `minCandidatesForAdaptive`,
+     and `applyNegationFilter`.
+   - `RetrievalStats`: Diagnostics metrics including `searchedTerms`, `missingTerms`,
+     `totalPostingsEvaluated`, `candidateCount`, `effectiveMode`, and `durationMs`.
+   - `RetrievalResult`: Final output payload containing `candidates[]` and `stats`.
+   - `CandidateRetriever`: Primary retrieval interface defining `retrieve()`.
+
+2. `candidate-retriever.ts` (`IndexCandidateRetriever`)
+   - Implements `CandidateRetriever` against an `InvertedIndex` instance.
+   - Merges candidate postings and tracks full matches vs partial matches.
+   - Positional sequence verification for quoted exact phrases (`verifyPhrases()`).
+   - `createCandidateRetriever()` factory function.
+
+3. `index.ts` (Package root exports)
+   - Re-exports all Phase 13 retrieval types, `IndexCandidateRetriever`, and
+     `createCandidateRetriever`.
+
+--------------------------------------------------------------------------------
+3. TEST & VERIFICATION SUMMARY
+--------------------------------------------------------------------------------
+A. Automated Unit Tests (Vitest)
+   - Test File: `packages/ranking/tests/candidate-retriever.test.ts`
+   - Results: 9/9 Tests PASS
+   - Full Test Suite: 27 test files, 284 tests PASS, 0 failed.
+
+B. Standalone Verification Suite
+   - Script: `scripts/verify-phase13.mjs` (`npm run verify:phase13`)
+   - Checks Executed: 24 individual assertion checks across 6 functional areas:
+     1. Single Exact Term Lookup (6 checks) - PASS
+     2. Multi-Term Candidate Merging (4 checks) - PASS
+     3. Boolean Combination Modes (5 checks) - PASS
+     4. Negation Term Exclusion (2 checks) - PASS
+     5. Quoted Exact Phrase Verification (2 checks) - PASS
+     6. Edge Cases & Resilience (5 checks) - PASS
+   - Results: 24 passed, 0 failed.
+
+C. Full Workspace Verification Pipeline (Phases 1 through 13)
+   - `npm run verify:phase1`  — Project Foundation: PASS
+   - `npm run verify:phase2`  — Shared Infrastructure: PASS
+   - `npm run verify:phase3`  — JSON Storage Foundation: PASS
+   - `npm run verify:phase4`  — URL Model & Normalization: PASS
+   - `npm run verify:phase5`  — HTTP Fetcher & SSRF Guard: PASS
+   - `npm run verify:phase6`  — Robots.txt Policy Service: PASS
+   - `npm run verify:phase7`  — HTML Parser & Text Extraction: PASS
+   - `npm run verify:phase8`  — Crawl Orchestrator: PASS
+   - `npm run verify:phase9`  — Document Processing Pipeline: PASS
+   - `npm run verify:phase10` — Inverted Index Core: PASS
+   - `npm run verify:phase11` — Index Builder & Rebuild Pipeline: PASS
+   - `npm run verify:phase12` — Query Processing: PASS
+   - `npm run verify:phase13` — Candidate Retrieval: PASS
+
+--------------------------------------------------------------------------------
+4. READINESS FOR NEXT PHASE
+--------------------------------------------------------------------------------
+Phase 13 (Candidate Retrieval) is complete and verified. Candidate documents and
+their associated term posting distributions are ready to feed into the scoring engine.
+
+The project is READY to proceed to:
+Milestone 4, Phase 14 — Ranking Engine (BM25 & Signals).
+================================================================================

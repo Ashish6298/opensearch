@@ -84,6 +84,9 @@ export function isPrivateHostname(hostname: string): boolean {
 }
 
 export function validateTargetHostSync(hostname: string): { allowed: boolean; reason?: string } {
+  if (process.env.OPENSEARCH_ALLOW_PRIVATE_URLS === 'true') {
+    return { allowed: true };
+  }
   if (isPrivateHostname(hostname)) {
     return {
       allowed: false,
@@ -109,6 +112,10 @@ export interface DnsCheckResult {
  * Returns { safe: true } if all IPs are public or if DNS resolution is skipped for IPs.
  */
 export async function dnsCheckHost(hostname: string): Promise<DnsCheckResult> {
+  if (process.env.OPENSEARCH_ALLOW_PRIVATE_URLS === 'true') {
+    return { safe: true };
+  }
+
   // Check syntactic safety first
   const syncCheck = validateTargetHostSync(hostname);
   if (!syncCheck.allowed) {

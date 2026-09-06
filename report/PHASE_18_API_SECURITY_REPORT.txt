@@ -1,0 +1,122 @@
+================================================================================
+OPENSEARCH V1.0.0 — PHASE 18 VERIFICATION REPORT
+================================================================================
+Timestamp: 2026-09-06T19:51:30Z
+Scope: Phase 18 — API Security, Limits & Reliability (Milestone 5: Search API)
+Status: PASSED (100% Tests Passing, 0 Regressions)
+Readiness: READY FOR NEXT PHASE (Milestone 6 / Phase 19: Search UI Foundation)
+================================================================================
+
+1. EXECUTIVE SUMMARY
+--------------------------------------------------------------------------------
+Phase 18 completes Milestone 5 (Search API) by establishing defensive security
+controls, resource exhaustion protection, rate limiting suitable for free/low-cost
+hosting tiers, request timeout management, defensive HTTP headers, safe zero-leak
+error responses, and privacy-minimizing structured logging.
+
+All implemented mechanisms have been rigorously validated across unit and
+integration test suites in @opensearch/api and standalone end-to-end verification
+scripts.
+
+2. IMPLEMENTATION SUMMARY
+--------------------------------------------------------------------------------
+(A) In-Memory Rate Limiting (`apps/api/src/rate-limiter.ts` & `middlewares.ts`):
+    - Sliding-window counter tracking client requests per IP address.
+    - Zero external database dependencies, minimal memory footprint.
+    - Configurable requests per window (`rateLimitPerMinute`, default: 60/min).
+    - Standard response headers:
+      * X-RateLimit-Limit: configured maximum requests per window
+      * X-RateLimit-Remaining: remaining tokens for client in current window
+      * X-RateLimit-Reset: Unix epoch second when current window resets
+    - Rejection behavior: HTTP 429 Too Many Requests with `Retry-After: <seconds>`.
+    - Automated periodic background cleanup of expired client buckets to prevent memory leaks.
+
+(B) Request Timeout Controls (`apps/api/src/middlewares.ts`):
+    - Enforces configured `searchTimeoutMs` (default: 5000ms / max: 10000ms).
+    - Races request handling against timer; triggers clean abort with HTTP 504 Gateway Timeout
+      and standard `TimeoutError` payload (`REQUEST_TIMEOUT`).
+
+(C) Request Size & Query Length Limits:
+    - Payload body limit: 64KB (`API_LIMITS.DEFAULT_BODY_LIMIT_BYTES`), rejecting oversized
+      POST payloads with HTTP 413 Payload Too Large (`PAYLOAD_TOO_LARGE`).
+    - Query character limit: 200 characters (`SEARCH_LIMITS.MAX_QUERY_LENGTH`), rejecting
+      excessively long search queries with HTTP 400 Bad Request (`QUERY_TOO_LONG`).
+
+(D) Defensive Security Headers Suite (`apps/api/src/middlewares.ts`):
+    - `X-Content-Type-Options: nosniff` (prevents MIME type sniffing)
+    - `X-Frame-Options: DENY` (clickjacking protection)
+    - `X-XSS-Protection: 1; mode=block` (legacy XSS filter trigger)
+    - `Referrer-Policy: strict-origin-when-cross-origin`
+    - `Content-Security-Policy: default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'`
+
+(E) Strict CORS Policy & Preflight:
+    - Configurable allowed origin (e.g. `http://localhost:5173` or environment-specified origin).
+    - OPTIONS preflight handler responding with HTTP 204 No Content, `Access-Control-Allow-Methods`,
+      `Access-Control-Allow-Headers`, and `Access-Control-Max-Age: 86400`.
+
+(F) Safe Error Responses & Secret Masking:
+    - Guaranteed zero leak of call stack traces, internal file paths, or credentials.
+    - Centralized formatting into typed `SafeErrorResponse` with timestamp, status, category,
+      and sanitized user-facing error message.
+
+(G) Privacy-Minimizing Request Logging:
+    - Client IP address anonymization (`anonymizeIp`):
+      * IPv4: masks host octet (`192.168.1.42` -> `192.168.1.0`)
+      * IPv6: masks interface host bits (`2001:db8:85a3::8a2e:370:7334` -> `2001:db8:85a3::`)
+    - Redaction of sensitive headers and parameters (`Authorization`, `Cookie`, tokens).
+
+3. VERIFICATION & TEST RESULTS
+--------------------------------------------------------------------------------
+Vitest Suite Run:
+  - Test Files: 29 passed (29 total)
+  - Tests: 321 passed (321 total)
+  - Coverage: apps/api, packages/shared, packages/storage, packages/crawler,
+    packages/indexer, packages/ranking, apps/web
+
+Phase 18 Automated Script (`node ./scripts/verify-phase18.mjs`):
+  [✓] Health endpoint returns HTTP 200 OK
+  [✓] X-Content-Type-Options is nosniff
+  [✓] X-Frame-Options is DENY
+  [✓] X-XSS-Protection is enabled
+  [✓] Referrer-Policy is strict-origin-when-cross-origin
+  [✓] Content-Security-Policy is restrictive
+  [✓] OPTIONS preflight returns HTTP 204 No Content
+  [✓] Access-Control-Allow-Origin matches configured origin
+  [✓] Access-Control-Allow-Methods includes GET and POST
+  [✓] Oversized query returns HTTP 400 Bad Request
+  [✓] Error code is QUERY_TOO_LONG
+  [✓] Error category is VALIDATION
+  [✓] Oversized payload returns HTTP 413 Payload Too Large
+  [✓] Error code is PAYLOAD_TOO_LARGE
+  [✓] 1st request allowed (remaining: 1)
+  [✓] X-RateLimit-Remaining header decremented
+  [✓] 2nd request allowed (remaining: 0)
+  [✓] 3rd request rejected with HTTP 429 Too Many Requests
+  [✓] Retry-After header present
+  [✓] Error code is RATE_LIMIT_EXCEEDED
+  [✓] Slow request returns HTTP 504 Gateway Timeout
+  [✓] Error code is REQUEST_TIMEOUT
+  [✓] Error category is TIMEOUT
+  [✓] Non-existent endpoint returns HTTP 404
+  [✓] No stack trace exposed in response error
+  [✓] No top-level stack property present
+  [✓] IP anonymization masks IPv4 last octet
+  [✓] IP anonymization masks IPv6 host bits
+  [✓] Standalone limiter consumes 1st token
+  [✓] Standalone limiter consumes 2nd token
+  [✓] Standalone limiter denies 3rd token
+
+All 31 verification checks in Phase 18 passed with zero failures.
+
+All Phase 1 through Phase 17 verification scripts continue to pass (100% backwards compatible).
+
+4. READINESS EVALUATION
+--------------------------------------------------------------------------------
+Milestone 5 (Search API) is now 100% COMPLETE.
+The system satisfies all security, abuse protection, and reliability constraints
+defined in PROJECT.txt and PHASE.txt.
+
+READY FOR NEXT PHASE:
+Milestone 6 — Public Web Application
+Phase 19 — Search UI Foundation
+================================================================================

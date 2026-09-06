@@ -1,0 +1,110 @@
+================================================================================
+OPENSEARCH V1.0.0 — PHASE 12: QUERY PROCESSING REPORT
+================================================================================
+Timestamp: 2026-09-06T19:15:00+05:30
+Phase Status: COMPLETED
+Verification Result: PASS (100% checks passed)
+Overall Suite: 275 Vitest Unit/Integration Tests PASS, All 12 Phase Verification Suites PASS
+
+--------------------------------------------------------------------------------
+1. EXECUTIVE SUMMARY & OBJECTIVES ACHIEVED
+--------------------------------------------------------------------------------
+Phase 12 launches Milestone 4: Query & Ranking by implementing a robust, safe,
+and deterministic query processing engine in `@opensearch/ranking`.
+
+It turns raw, potentially malformed or adversarial user query text into structured,
+safe `ParsedQuery` representations ready for downstream candidate retrieval and
+BM25 relevance scoring.
+
+Key achievements:
+- Query Input Validation & Type Safety: Safely handles null, undefined, boolean,
+  numerical, and object inputs without throwing runtime exceptions.
+- Length Limits & Boundary Clamping: Enforces `SEARCH_LIMITS.MAX_QUERY_LENGTH = 200`
+  characters and token limits (min 1, max 64 characters), setting `isClamped: true`
+  when clamping occurs.
+- Text Normalization & Unicode Support: Implements Unicode canonical NFC normalization,
+  case folding, accent/diacritic stripping ('crème brûlée' -> 'creme brulee'),
+  and safely converts control characters/null bytes into clean term separators.
+- Multilingual Script Support: Supports Cyrillic, CJK, Arabic, and other non-Latin
+  scripts cleanly without character corruption.
+- Quoted Exact Phrase Extraction: Parses double (`"phrase"`) and single (`'phrase'`)
+  quoted exact expressions, preserving both the phrase string and tokenized phrase terms.
+- Negation Handling: Extracts negated terms with minus (`-term`) and keyword (`NOT term`)
+  syntax into `negatedTerms` while filtering them out of positive search terms.
+- Empty & Malformed Query Handling: Guarantees that empty, whitespace-only, and
+  punctuation-only queries return valid, empty `ParsedQuery` objects with `isEmpty: true`.
+- Zero Regressions: All 275 unit tests and all 12 phase verification scripts pass with
+  zero failures.
+
+--------------------------------------------------------------------------------
+2. COMPONENT ARCHITECTURE & IMPLEMENTATION DETAILS
+--------------------------------------------------------------------------------
+Phase 12 added the following modules in `packages/ranking/src/query/`:
+
+1. `query-types.ts`
+   - `ParsedPhrase`: Contains `rawPhrase` string and constituent `terms[]`.
+   - `ParsedQuery`: Structured query payload with `rawQuery`, `normalizedQuery`,
+     `terms[]`, `uniqueTerms[]`, `phrases[]`, `negatedTerms[]`, `isEmpty`,
+     `isClamped`, and `termCount`.
+   - `QueryParserOptions`: Configurable constraints for query length, token length,
+     stop-word removal, accent folding, and phrase/negation feature flags.
+   - `QueryParser`: Interface defining `parse()`, `normalize()`, and `tokenize()`.
+
+2. `query-normalizer.ts`
+   - `normalizeQueryText()`: Strips control characters, normalizes Unicode NFC,
+     folds accents/diacritics via `foldDiacritics()`, lowercases text, and normalizes
+     whitespace.
+   - `foldDiacritics()`: Strips Unicode combining marks (`\u0300-\u036f`).
+
+3. `query-parser.ts` (`DefaultQueryParser`)
+   - Implements `QueryParser`.
+   - Performs input validation, boundary clamping, phrase extraction, tokenization,
+     and negation extraction.
+   - `createQueryParser()` factory for standard instantiation.
+
+4. `index.ts` (Package root exports)
+   - Exports all query processing types, utilities, and `DefaultQueryParser` / `createQueryParser`.
+
+--------------------------------------------------------------------------------
+3. TEST & VERIFICATION SUMMARY
+--------------------------------------------------------------------------------
+A. Automated Unit Tests (Vitest)
+   - Test File: `packages/ranking/tests/query-parser.test.ts`
+   - Results: 16/16 Tests PASS
+   - Full Test Suite: 26 test files, 275 tests PASS, 0 failed.
+
+B. Standalone Verification Suite
+   - Script: `scripts/verify-phase12.mjs` (`npm run verify:phase12`)
+   - Checks Executed: 36 individual assertion checks across 7 categories:
+     1. Normal & Multi-Term Query Parsing (5 checks) - PASS
+     2. Length Limits & Boundary Clamping (6 checks) - PASS
+     3. Normalization & Unicode / Non-ASCII Resilience (5 checks) - PASS
+     4. Quoted Phrase Extraction (6 checks) - PASS
+     5. Negation Handling (-term and NOT term) (6 checks) - PASS
+     6. Empty & Malformed Query Safety (6 checks) - PASS
+     7. Utility Functions (2 checks) - PASS
+   - Results: 36 passed, 0 failed.
+
+C. Full Workspace Verification Pipeline
+   - `npm run verify:phase1`  — Project Foundation: PASS
+   - `npm run verify:phase2`  — Configuration, Logger, Errors: PASS
+   - `npm run verify:phase3`  — JSON Storage Foundation: PASS
+   - `npm run verify:phase4`  — URL Model, Normalization & Queue: PASS
+   - `npm run verify:phase5`  — HTTP Fetcher & SSRF Guard: PASS
+   - `npm run verify:phase6`  — Robots.txt Parser & Policy Service: PASS
+   - `npm run verify:phase7`  — HTML Parser & Content Extraction: PASS
+   - `npm run verify:phase8`  — Crawl Orchestrator: PASS
+   - `npm run verify:phase9`  — Document Processing Pipeline: PASS
+   - `npm run verify:phase10` — Inverted Index Core: PASS
+   - `npm run verify:phase11` — Index Builder & Rebuild Pipeline: PASS
+   - `npm run verify:phase12` — Query Processing: PASS
+
+--------------------------------------------------------------------------------
+4. READINESS FOR NEXT PHASE
+--------------------------------------------------------------------------------
+Phase 12 (Query Processing) is complete and verified. The parsed structured query
+is ready to be consumed by downstream candidate retrieval.
+
+The project is READY to proceed to:
+Milestone 4, Phase 13 — Candidate Retrieval.
+================================================================================
