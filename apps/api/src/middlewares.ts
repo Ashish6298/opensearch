@@ -1,13 +1,44 @@
 /**
- * @opensearch/api — Standard HTTP Middlewares (Phase 16)
+ * @opensearch/api — Standard HTTP Middlewares (Phase 16 & 18)
  *
  * Implements core middleware layers:
- * 1. CORS Headers: Configurable Origin, Methods, Allowed Headers
- * 2. Request Timing & Logging: Trace request execution duration with structured logger
- * 3. Security Headers: Basic defensive headers (X-Content-Type-Options, X-Frame-Options)
+ * 1. CORS Headers: Configurable Origin, Methods, Allowed Headers & Preflight
+ * 2. Security Headers: Defensive HTTP headers (CSP, X-Content-Type-Options, X-Frame-Options, HSTS, Referrer-Policy)
+ * 3. Rate Limiting: IP-based sliding window rate limiter emitting standard rate-limit headers
+ * 4. Request Timeout: Abort and timeout protection against slow/stalled operations
+ * 5. Request Logging: Structured execution logs with privacy minimization (IP anonymization)
  */
 
+import { HTTP_STATUS, TimeoutError } from '@opensearch/shared';
+import { MemoryRateLimiter } from './rate-limiter.js';
 import { MiddlewareHandler } from './types.js';
+
+/**
+ * Anonymizes an IP address for privacy-conscious logging.
+ * Replaces the last octet in IPv4 (e.g. 192.168.1.10 -> 192.168.1.0)
+ * or truncates host portions in IPv6.
+ */
+export function anonymizeIp(ip: string): string {
+  if (!ip || ip === 'unknown') return '0.0.0.0';
+
+  // Check IPv4
+  if (ip.includes('.')) {
+    const parts = ip.split('.');
+    if (parts.length === 4) {
+      return `${parts[0]}.${parts[1]}.${parts[2]}.0`;
+    }
+  }
+
+  // Check IPv6
+  if (ip.includes(':')) {
+    const parts = ip.split(':');
+    if (parts.length >= 3) {
+      return `${parts[0]}:${parts[1]}:${parts[2]}::`;
+    }
+  }
+
+  return 'anonymized-ip';
+}
 
 export function createCorsMiddleware(allowedOrigin = '*'): MiddlewareHandler {
   return (req, res, next) => {
@@ -33,7 +64,65 @@ export function createSecurityHeadersMiddleware(): MiddlewareHandler {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader('X-XSS-Protection', '1; mode=block');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader(
+      'Content-Security-Policy',
+      "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+    );
     return next();
+  };
+}
+
+export function createRateLimitMiddleware(rateLimiter: MemoryRateLimiter): MiddlewareHandler {
+  return (req, res, next) => {
+    const clientKey = req.ip || '127.0.0.1';
+    const result = rateLimiter.consume(clientKey);
+
+    res.setHeader('X-RateLimit-Limit', result.limit.toString());
+    res.setHeader('X-RateLimit-Remaining', result.remaining.toString());
+    res.setHeader('X-RateLimit-Reset', Math.ceil(result.resetTimeMs / 1000).toString());
+
+    if (!result.allowed) {
+      res.setHeader('Retry-After', result.retryAfterSeconds.toString());
+      res.status(HTTP_STATUS.TOO_MANY_REQUESTS).json({
+        error: {
+          message: `Too many requests. Please retry after ${result.retryAfterSeconds} seconds.`,
+          code: 'RATE_LIMIT_EXCEEDED',
+          category: 'SECURITY',
+          statusCode: HTTP_STATUS.TOO_MANY_REQUESTS,
+          timestamp: new Date().toISOString(),
+        },
+      });
+      return;
+    }
+
+    return next();
+  };
+}
+
+export function createTimeoutMiddleware(timeoutMs: number): MiddlewareHandler {
+  return async (req, _res, next) => {
+    let timer: NodeJS.Timeout | null = null;
+
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => {
+        reject(
+          new TimeoutError(`Request timed out after ${timeoutMs}ms.`, {
+            code: 'REQUEST_TIMEOUT',
+            statusCode: HTTP_STATUS.GATEWAY_TIMEOUT,
+            context: { path: req.pathname, timeoutMs },
+          }),
+        );
+      }, timeoutMs);
+    });
+
+    try {
+      await Promise.race([next(), timeoutPromise]);
+    } finally {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    }
   };
 }
 
@@ -43,10 +132,11 @@ export function createLoggingMiddleware(): MiddlewareHandler {
     await next();
     const durationMs = Date.now() - start;
 
+    // Structured logging with privacy minimization (anonymized IP, no auth secrets logged)
     context.logger.info('HTTP Request handled', {
       method: req.method,
       path: req.pathname,
-      ip: req.ip,
+      ip: anonymizeIp(req.ip),
       statusCode: res.raw.statusCode,
       durationMs,
     });

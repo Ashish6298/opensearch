@@ -1,6 +1,6 @@
 /**
  * @opensearch/api
- * Search API Application Boundary (Milestone 5 / Phase 16 & 17: Search Endpoint)
+ * Search API Application Boundary (Milestone 5 / Phase 18: API Security, Limits & Reliability)
  * Consumes typed configuration and structured logger from @opensearch/shared.
  */
 
@@ -16,9 +16,10 @@ import { ApiAppContext } from './types.js';
 
 export const API_SERVICE_INFO: ServiceBoundaryInfo = {
   moduleName: '@opensearch/api',
-  purpose: 'Public HTTP Search API providing search endpoints, validation, and health checks',
+  purpose:
+    'Public HTTP Search API providing search endpoints, security limits, rate limiting, and health checks',
   currentPhaseScope:
-    'Phase 17: Search Endpoint — Query parsing, candidate retrieval, BM25 ranking, snippets, pagination.',
+    'Phase 18: API Security, Limits & Reliability — Rate limiting, timeouts, security headers, request size limits, safe errors.',
 };
 
 export type {
@@ -41,8 +42,13 @@ export { Router } from './router.js';
 export {
   createCorsMiddleware,
   createSecurityHeadersMiddleware,
+  createRateLimitMiddleware,
+  createTimeoutMiddleware,
   createLoggingMiddleware,
+  anonymizeIp,
 } from './middlewares.js';
+export { MemoryRateLimiter, createRateLimiter } from './rate-limiter.js';
+export type { RateLimiterOptions, RateLimitResult } from './rate-limiter.js';
 export { handleApiRoot, handleHealthCheck, handleSystemStatus, handleSearch } from './routes.js';
 export { ApiServer, createApiServer } from './server.js';
 
@@ -60,7 +66,7 @@ export function getApiStatus(): SystemStatus {
   return {
     name: PROJECT_NAME,
     version: PROJECT_VERSION,
-    phase: 'Phase 17: Search Endpoint',
+    phase: 'Phase 18: API Security, Limits & Reliability',
     status: 'ok',
     timestamp: new Date().toISOString(),
   };

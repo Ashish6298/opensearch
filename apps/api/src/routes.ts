@@ -1,5 +1,5 @@
 /**
- * @opensearch/api — Standard HTTP API Routes (Phase 16 & 17)
+ * @opensearch/api — Standard HTTP API Routes (Phase 16, 17 & 18)
  *
  * Implements core API endpoints:
  * - GET /: API index information and discovery links
@@ -21,7 +21,7 @@ export const handleHealthCheck: RouteHandler = (_req, res, context) => {
   const response: HealthCheckResponse = {
     name: PROJECT_NAME,
     version: PROJECT_VERSION,
-    phase: 'Phase 17: Search Endpoint',
+    phase: 'Phase 18: API Security, Limits & Reliability',
     status: 'ok',
     timestamp: new Date().toISOString(),
     uptimeSeconds,
@@ -60,7 +60,7 @@ export const handleSystemStatus: RouteHandler = (_req, res, context) => {
   res.status(200).json({
     name: PROJECT_NAME,
     version: PROJECT_VERSION,
-    phase: 'Milestone 5 — Search API',
+    phase: 'Milestone 5 — Search API (Phase 18: Security & Reliability)',
     status: 'ok',
     timestamp: new Date().toISOString(),
     server: {
@@ -210,7 +210,7 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
   const responsePayload: SearchApiResponse = {
     query: {
       raw: rawQuery,
-      normalized: parsedQuery.normalizedText,
+      normalized: parsedQuery.normalizedQuery,
       terms: parsedQuery.terms,
       phrases: parsedQuery.phrases.map(p => p.rawPhrase),
       negatedTerms: parsedQuery.negatedTerms,

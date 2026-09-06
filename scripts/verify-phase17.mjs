@@ -103,7 +103,10 @@ async function runVerification() {
     );
 
     const searchData = await searchRes.json();
-    check('Query terms reflected in response metadata', searchData.query?.terms?.includes('search'));
+    check(
+      'Query terms reflected in response metadata',
+      searchData.query?.terms?.includes('search'),
+    );
     check('Results returned', searchData.results?.length >= 1);
     check('Top result matches doc-search', searchData.results[0]?.documentId === 'doc-search');
     check(

@@ -1,8 +1,8 @@
 /**
- * @opensearch/api — HTTP Server Application (Phase 16 & 17)
+ * @opensearch/api — HTTP Server Application (Phase 16, 17 & 18)
  *
  * Coordinates server lifecycle, router configuration, middleware pipelines,
- * search engine service wiring, and graceful startup/shutdown.
+ * rate limiting, timeout enforcement, search subsystem wiring, and graceful startup/shutdown.
  */
 
 import { createServer, Server } from 'node:http';
@@ -17,8 +17,11 @@ import { AppConfig, createLogger, loadConfig, Logger } from '@opensearch/shared'
 import {
   createCorsMiddleware,
   createLoggingMiddleware,
+  createRateLimitMiddleware,
   createSecurityHeadersMiddleware,
+  createTimeoutMiddleware,
 } from './middlewares.js';
+import { createRateLimiter, MemoryRateLimiter } from './rate-limiter.js';
 import { Router } from './router.js';
 import { handleApiRoot, handleHealthCheck, handleSearch, handleSystemStatus } from './routes.js';
 import { ApiAppContext, ApiServerOptions, SearchServices } from './types.js';
@@ -29,6 +32,7 @@ export class ApiServer {
   private readonly router: Router;
   private readonly startTime: number;
   private readonly services: SearchServices;
+  private readonly rateLimiter: MemoryRateLimiter;
   private server: Server | null = null;
 
   constructor(options: ApiServerOptions = {}) {
@@ -42,10 +46,20 @@ export class ApiServer {
     this.router = new Router();
     this.startTime = Date.now();
 
+    // Wire or initialize rate limiter
+    const rateLimit = options.rateLimitPerMinute ?? this.config.api.rateLimitPerMinute ?? 60;
+    this.rateLimiter = createRateLimiter({
+      maxRequests: rateLimit,
+      windowMs: 60_000,
+    });
+
     // Wire or initialize search subsystem services
     this.services = options.services ?? this.initializeSearchServices(options.index);
 
-    this.setupMiddlewares(options.corsOrigin ?? this.config.api.corsOrigin);
+    const timeoutMs = options.searchTimeoutMs ?? this.config.search.searchTimeoutMs ?? 5_000;
+    const corsOrigin = options.corsOrigin ?? this.config.api.corsOrigin ?? '*';
+
+    this.setupMiddlewares(corsOrigin, timeoutMs);
     this.setupRoutes();
   }
 
@@ -57,12 +71,17 @@ export class ApiServer {
     return this.services;
   }
 
+  getRateLimiter(): MemoryRateLimiter {
+    return this.rateLimiter;
+  }
+
   getContext(): ApiAppContext {
     return {
       config: this.config,
       logger: this.logger,
       startTime: this.startTime,
       services: this.services,
+      rateLimiter: this.rateLimiter,
     };
   }
 
@@ -70,7 +89,6 @@ export class ApiServer {
     const index = customIndex ?? createInvertedIndex({ indexDir: this.config.storage.indexDir });
     const queryParser = createQueryParser({
       maxQueryLength: this.config.search.maxQueryLength,
-      minQueryLength: this.config.search.minQueryLength,
     });
     const candidateRetriever = createCandidateRetriever(index, {
       defaultMaxCandidates: this.config.search.maxCandidates,
@@ -91,10 +109,17 @@ export class ApiServer {
     };
   }
 
-  private setupMiddlewares(corsOrigin: string): void {
+  private setupMiddlewares(corsOrigin: string, timeoutMs: number): void {
+    // 1. CORS Preflight & headers
     this.router.use(createCorsMiddleware(corsOrigin));
+    // 2. Defensive Security headers (CSP, X-Content-Type-Options, etc.)
     this.router.use(createSecurityHeadersMiddleware());
+    // 3. Privacy-conscious structured access logging
     this.router.use(createLoggingMiddleware());
+    // 4. In-memory Rate Limiting
+    this.router.use(createRateLimitMiddleware(this.rateLimiter));
+    // 5. Timeout protection
+    this.router.use(createTimeoutMiddleware(timeoutMs));
   }
 
   private setupRoutes(): void {
@@ -140,9 +165,11 @@ export class ApiServer {
   }
 
   /**
-   * Gracefully stops the HTTP server.
+   * Gracefully stops the HTTP server and cleans up resources.
    */
   async stop(): Promise<void> {
+    this.rateLimiter.destroy();
+
     if (!this.server) {
       return;
     }

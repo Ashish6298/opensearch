@@ -1,5 +1,5 @@
 /**
- * @opensearch/api — HTTP Server & Routing Types (Phase 16 & 17)
+ * @opensearch/api — HTTP Server & Routing Types (Phase 16, 17 & 18)
  *
  * Defines contracts, request/response models, routing signatures,
  * validation schemas, search endpoints, and context for the HTTP Search API service.
@@ -16,6 +16,7 @@ import {
   PaginationMeta,
 } from '@opensearch/ranking';
 import { AppConfig, Logger, SystemStatus } from '@opensearch/shared';
+import { MemoryRateLimiter } from './rate-limiter.js';
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'OPTIONS' | 'HEAD' | string;
 
@@ -86,6 +87,7 @@ export interface ApiAppContext {
   logger: Logger;
   startTime: number;
   services?: SearchServices;
+  rateLimiter?: MemoryRateLimiter;
 }
 
 export interface HealthCheckResponse extends SystemStatus {
@@ -122,6 +124,8 @@ export interface ApiServerOptions {
   corsOrigin?: string;
   services?: SearchServices;
   index?: InvertedIndex;
+  rateLimitPerMinute?: number;
+  searchTimeoutMs?: number;
 }
 
 export type ApiApplicationContext = ApiAppContext;
