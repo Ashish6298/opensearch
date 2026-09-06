@@ -100,3 +100,12 @@ export type {
 } from './evaluation/quality-evaluator.js';
 
 export { SearchQualityEvaluator } from './evaluation/quality-evaluator.js';
+
+// ── Phase 28: Search Performance & Query Caching ─────────────────────────
+export type {
+  CacheEntry,
+  CacheStats,
+  QueryCacheOptions,
+} from './cache/query-cache.js';
+
+export { LruQueryCache, createQueryCache } from './cache/query-cache.js';

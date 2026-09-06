@@ -33,7 +33,7 @@
   // State
   let currentQuery = '';
   let currentPage = 1;
-  let isLoading = false;
+  let activeAbortController = null;
 
   function init() {
     // Check URL parameters for pre-filled query and page (e.g. ?q=test&page=2)
@@ -199,8 +199,13 @@
     errorState.classList.remove('active');
   }
 
-  async function performSearch(query, page = 1, updateState = true) {
-    if (isLoading) return;
+  async function performSearch(query, page = 1) {
+    // Cancel any previous inflight search request to avoid race conditions and wasted resources
+    if (activeAbortController) {
+      activeAbortController.abort();
+      activeAbortController = null;
+    }
+
     currentQuery = query;
     currentPage = page;
 
@@ -212,9 +217,12 @@
     isLoading = true;
     announceA11y(`Searching for ${query}...`);
 
+    activeAbortController = new AbortController();
+    const signal = activeAbortController.signal;
+
     try {
       const fetchUrl = `${API_ENDPOINT}?q=${encodeURIComponent(query)}&page=${page}&pageSize=${PAGE_SIZE}`;
-      const res = await fetch(fetchUrl);
+      const res = await fetch(fetchUrl, { signal });
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
@@ -227,12 +235,17 @@
       const data = await res.json();
       renderSearchResults(data);
     } catch (err) {
+      if (err.name === 'AbortError') {
+        // Request was aborted by newer search, ignore silently
+        return;
+      }
       showError(
         'Unable to reach OpenSearch API server. Please ensure the API service is running and check your connection.',
       );
     } finally {
       loadingIndicator.classList.remove('active');
       isLoading = false;
+      activeAbortController = null;
     }
   }
 

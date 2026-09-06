@@ -29,6 +29,7 @@ export function createCorsMiddleware(allowedOrigin = '*'): MiddlewareHandler {
       'Access-Control-Allow-Headers',
       'Content-Type, Authorization, X-Requested-With, X-Correlation-ID',
     );
+    res.setHeader('Access-Control-Expose-Headers', 'X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset, X-Cache, Retry-After');
     res.setHeader('Access-Control-Max-Age', '86400');
 
     if (req.method === 'OPTIONS') {

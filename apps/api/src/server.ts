@@ -12,6 +12,8 @@ import {
   createQueryParser,
   createRankingEngine,
   createResultGenerator,
+  createQueryCache,
+  LruQueryCache,
 } from '@opensearch/ranking';
 import { AppConfig, createLogger, loadConfig, Logger } from '@opensearch/shared';
 import {
@@ -24,7 +26,7 @@ import {
 import { createRateLimiter, MemoryRateLimiter } from './rate-limiter.js';
 import { Router } from './router.js';
 import { handleApiRoot, handleHealthCheck, handleSearch, handleSystemStatus } from './routes.js';
-import { ApiAppContext, ApiServerOptions, SearchServices } from './types.js';
+import { ApiAppContext, ApiServerOptions, SearchApiResponse, SearchServices } from './types.js';
 
 export class ApiServer {
   private readonly config: AppConfig;
@@ -33,6 +35,7 @@ export class ApiServer {
   private readonly startTime: number;
   private readonly services: SearchServices;
   private readonly rateLimiter: MemoryRateLimiter;
+  private readonly queryCache: LruQueryCache<SearchApiResponse>;
   private server: Server | null = null;
 
   constructor(options: ApiServerOptions = {}) {
@@ -51,6 +54,12 @@ export class ApiServer {
     this.rateLimiter = createRateLimiter({
       maxRequests: rateLimit,
       windowMs: 60_000,
+    });
+
+    // Wire or initialize query cache (Phase 28 performance optimization)
+    this.queryCache = createQueryCache<SearchApiResponse>({
+      maxCapacity: 250,
+      ttlMs: 60_000,
     });
 
     // Wire or initialize search subsystem services
@@ -75,6 +84,10 @@ export class ApiServer {
     return this.rateLimiter;
   }
 
+  getQueryCache(): LruQueryCache<SearchApiResponse> {
+    return this.queryCache;
+  }
+
   getContext(): ApiAppContext {
     return {
       config: this.config,
@@ -82,6 +95,7 @@ export class ApiServer {
       startTime: this.startTime,
       services: this.services,
       rateLimiter: this.rateLimiter,
+      queryCache: this.queryCache,
     };
   }
 
@@ -106,6 +120,7 @@ export class ApiServer {
       candidateRetriever,
       rankingEngine,
       resultGenerator,
+      queryCache: this.queryCache,
     };
   }
 

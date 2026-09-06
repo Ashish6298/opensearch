@@ -14,6 +14,7 @@ import {
   ResultGenerator,
   SearchResultItem,
   PaginationMeta,
+  LruQueryCache,
 } from '@opensearch/ranking';
 import { AppConfig, Logger, SystemStatus } from '@opensearch/shared';
 import { MemoryRateLimiter } from './rate-limiter.js';
@@ -80,6 +81,7 @@ export interface SearchServices {
   candidateRetriever: CandidateRetriever;
   rankingEngine: RankingEngine;
   resultGenerator: ResultGenerator;
+  queryCache?: LruQueryCache<SearchApiResponse>;
 }
 
 export interface ApiAppContext {
@@ -88,6 +90,7 @@ export interface ApiAppContext {
   startTime: number;
   services?: SearchServices;
   rateLimiter?: MemoryRateLimiter;
+  queryCache?: LruQueryCache<SearchApiResponse>;
 }
 
 export interface ComponentHealth {
@@ -106,6 +109,7 @@ export interface HealthCheckResponse extends SystemStatus {
     index: ComponentHealth;
     rateLimiter: ComponentHealth;
     memory: ComponentHealth;
+    queryCache?: ComponentHealth;
   };
 }
 

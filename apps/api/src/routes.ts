@@ -31,6 +31,7 @@ export const handleHealthCheck: RouteHandler = (_req, res, context) => {
 
   const rateLimiterStatus: 'ok' | 'degraded' | 'error' = context.rateLimiter ? 'ok' : 'degraded';
   const memoryStatus: 'ok' | 'degraded' | 'error' = memoryUsageMb > 512 ? 'degraded' : 'ok';
+  const queryCacheStatus: 'ok' | 'degraded' | 'error' = context.queryCache ? 'ok' : 'degraded';
 
   let overallStatus: 'ok' | 'degraded' | 'error' = 'ok';
   if (indexStatus === 'error') {
@@ -42,7 +43,7 @@ export const handleHealthCheck: RouteHandler = (_req, res, context) => {
   const response: HealthCheckResponse = {
     name: PROJECT_NAME,
     version: PROJECT_VERSION,
-    phase: 'Milestone 8 — Security, Reliability & Privacy (Phase 26: Reliability)',
+    phase: 'Milestone 9 — Performance & Free Infrastructure (Phase 28: Performance)',
     status: overallStatus,
     timestamp: new Date().toISOString(),
     uptimeSeconds,
@@ -70,6 +71,17 @@ export const handleHealthCheck: RouteHandler = (_req, res, context) => {
         details: {
           activeEntries: context.rateLimiter?.getStats().activeEntries ?? 0,
         },
+      },
+      queryCache: {
+        status: queryCacheStatus,
+        details: context.queryCache
+          ? {
+              size: context.queryCache.getStats().size,
+              hits: context.queryCache.getStats().hits,
+              misses: context.queryCache.getStats().misses,
+              hitRatePercent: context.queryCache.getStats().hitRatePercent,
+            }
+          : {},
       },
       memory: {
         status: memoryStatus,
@@ -237,6 +249,28 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
     return;
   }
 
+  // Check LRU Query Cache (Phase 28 performance optimization)
+  const cacheKey = `q:${parsedQuery.normalizedQuery}|p:${page}|s:${pageSize}`;
+  const queryCache = context.services.queryCache || context.queryCache;
+
+  if (queryCache) {
+    const cached = queryCache.get(cacheKey);
+    if (cached) {
+      // Return cached results with updated duration header / response
+      const cachedResponse: SearchApiResponse = {
+        ...cached,
+        meta: {
+          ...cached.meta,
+          durationMs: Date.now() - startMs,
+          timestamp: new Date().toISOString(),
+        },
+      };
+      res.setHeader('X-Cache', 'HIT');
+      res.status(HTTP_STATUS.OK).json(cachedResponse);
+      return;
+    }
+  }
+
   // 4. Candidate Retrieval
   const retrievalResult = candidateRetriever.retrieve(parsedQuery, {
     maxCandidates: context.config.search.maxCandidates,
@@ -274,5 +308,11 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
     },
   };
 
+  // Populate cache for subsequent identical requests
+  if (queryCache) {
+    queryCache.set(cacheKey, responsePayload);
+  }
+
+  res.setHeader('X-Cache', 'MISS');
   res.status(HTTP_STATUS.OK).json(responsePayload);
 };
