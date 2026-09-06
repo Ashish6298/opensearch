@@ -83,3 +83,20 @@ export {
   DEFAULT_PAGINATION,
   createResultGenerator,
 } from './results/result-generator.js';
+
+// ── Phase 24: Search Quality Evaluation ──────────────────────────────────
+export type {
+  QueryCategory,
+  EvaluationQuery,
+} from './evaluation/evaluation-dataset.js';
+
+export { SEARCH_QUALITY_DATASET } from './evaluation/evaluation-dataset.js';
+
+export type {
+  QueryEvaluationResult,
+  CategorySummary,
+  SearchQualityEvaluationReport,
+  SearchPipelineComponents,
+} from './evaluation/quality-evaluator.js';
+
+export { SearchQualityEvaluator } from './evaluation/quality-evaluator.js';
