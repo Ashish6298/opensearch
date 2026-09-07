@@ -85,10 +85,7 @@ export {
 } from './results/result-generator.js';
 
 // ── Phase 24: Search Quality Evaluation ──────────────────────────────────
-export type {
-  QueryCategory,
-  EvaluationQuery,
-} from './evaluation/evaluation-dataset.js';
+export type { QueryCategory, EvaluationQuery } from './evaluation/evaluation-dataset.js';
 
 export { SEARCH_QUALITY_DATASET } from './evaluation/evaluation-dataset.js';
 
@@ -102,10 +99,6 @@ export type {
 export { SearchQualityEvaluator } from './evaluation/quality-evaluator.js';
 
 // ── Phase 28: Search Performance & Query Caching ─────────────────────────
-export type {
-  CacheEntry,
-  CacheStats,
-  QueryCacheOptions,
-} from './cache/query-cache.js';
+export type { CacheEntry, CacheStats, QueryCacheOptions } from './cache/query-cache.js';
 
 export { LruQueryCache, createQueryCache } from './cache/query-cache.js';

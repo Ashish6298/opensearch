@@ -136,7 +136,8 @@ export class LruQueryCache<T = unknown> {
    */
   getStats(): CacheStats {
     const totalRequests = this.hits + this.misses;
-    const hitRatePercent = totalRequests > 0 ? Math.round((this.hits / totalRequests) * 10000) / 100 : 0;
+    const hitRatePercent =
+      totalRequests > 0 ? Math.round((this.hits / totalRequests) * 10000) / 100 : 0;
 
     return {
       size: this.entries.size,

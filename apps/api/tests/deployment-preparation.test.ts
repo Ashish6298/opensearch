@@ -91,17 +91,19 @@ describe('Phase 30 — Free Deployment Preparation Suite', () => {
     apiPort = started.port;
 
     const res = await new Promise<{ status: number; body: any }>((resolve, reject) => {
-      http.get(`http://127.0.0.1:${apiPort}/health`, (response) => {
-        let data = '';
-        response.on('data', (chunk) => (data += chunk));
-        response.on('end', () => {
-          try {
-            resolve({ status: response.statusCode || 500, body: JSON.parse(data) });
-          } catch (e) {
-            reject(e);
-          }
-        });
-      }).on('error', reject);
+      http
+        .get(`http://127.0.0.1:${apiPort}/health`, response => {
+          let data = '';
+          response.on('data', chunk => (data += chunk));
+          response.on('end', () => {
+            try {
+              resolve({ status: response.statusCode || 500, body: JSON.parse(data) });
+            } catch (e) {
+              reject(e);
+            }
+          });
+        })
+        .on('error', reject);
     });
 
     expect(res.status).toBe(200);
@@ -130,17 +132,19 @@ describe('Phase 30 — Free Deployment Preparation Suite', () => {
 
     // Check /health
     const healthRes = await new Promise<{ status: number; body: any }>((resolve, reject) => {
-      http.get(`http://127.0.0.1:${webPort}/health`, (response) => {
-        let data = '';
-        response.on('data', (chunk) => (data += chunk));
-        response.on('end', () => {
-          try {
-            resolve({ status: response.statusCode || 500, body: JSON.parse(data) });
-          } catch (e) {
-            reject(e);
-          }
-        });
-      }).on('error', reject);
+      http
+        .get(`http://127.0.0.1:${webPort}/health`, response => {
+          let data = '';
+          response.on('data', chunk => (data += chunk));
+          response.on('end', () => {
+            try {
+              resolve({ status: response.statusCode || 500, body: JSON.parse(data) });
+            } catch (e) {
+              reject(e);
+            }
+          });
+        })
+        .on('error', reject);
     });
 
     expect(healthRes.status).toBe(200);
@@ -149,11 +153,13 @@ describe('Phase 30 — Free Deployment Preparation Suite', () => {
 
     // Check HTML shell response
     const htmlRes = await new Promise<{ status: number; body: string }>((resolve, reject) => {
-      http.get(`http://127.0.0.1:${webPort}/`, (response) => {
-        let data = '';
-        response.on('data', (chunk) => (data += chunk));
-        response.on('end', () => resolve({ status: response.statusCode || 500, body: data }));
-      }).on('error', reject);
+      http
+        .get(`http://127.0.0.1:${webPort}/`, response => {
+          let data = '';
+          response.on('data', chunk => (data += chunk));
+          response.on('end', () => resolve({ status: response.statusCode || 500, body: data }));
+        })
+        .on('error', reject);
     });
 
     expect(htmlRes.status).toBe(200);

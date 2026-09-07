@@ -62,9 +62,9 @@ function requestHttp(port, path, options = {}) {
         method: options.method || 'GET',
         headers: options.headers || {},
       },
-      (res) => {
+      res => {
         let data = '';
-        res.on('data', (c) => (data += c));
+        res.on('data', c => (data += c));
         res.on('end', () => {
           let json = null;
           try {
@@ -79,7 +79,7 @@ function requestHttp(port, path, options = {}) {
             json,
           });
         });
-      }
+      },
     );
     req.on('error', reject);
     if (options.body) req.write(options.body);
@@ -102,10 +102,19 @@ async function runPhase34FinalReleaseValidation() {
   try {
     // 1. Definition of Done Check: Phase Reports (1 through 33)
     const reportFiles = fs.readdirSync('./report');
-    assert(reportFiles.length >= 33, `All preceding 33 phase reports exist in ./report (Found: ${reportFiles.length})`);
+    assert(
+      reportFiles.length >= 33,
+      `All preceding 33 phase reports exist in ./report (Found: ${reportFiles.length})`,
+    );
 
     // 2. Definition of Done Check: Core Documentation
-    assert(fs.existsSync('README.md') && fs.existsSync('docs/DEPLOYMENT.md') && fs.existsSync('docs/PRIVACY.md') && fs.existsSync('docs/SECURITY.md'), 'All required core system documentation is present and audited');
+    assert(
+      fs.existsSync('README.md') &&
+        fs.existsSync('docs/DEPLOYMENT.md') &&
+        fs.existsSync('docs/PRIVACY.md') &&
+        fs.existsSync('docs/SECURITY.md'),
+      'All required core system documentation is present and audited',
+    );
 
     // 3. Definition of Done Check: Production Configuration & Zero Hardcoded Assumptions
     const config = loadConfig({
@@ -118,7 +127,10 @@ async function runPhase34FinalReleaseValidation() {
       LOG_FORMAT: 'json',
       CORS_ORIGIN: 'http://127.0.0.1',
     });
-    assert(config.isProduction === true, 'Configuration loads in production mode with zero hardcoded local paths');
+    assert(
+      config.isProduction === true,
+      'Configuration loads in production mode with zero hardcoded local paths',
+    );
 
     // 4. Definition of Done Check: Storage, Crawler Corpus & Custom Inverted Index
     const storage = createStorageAdapter({ config });
@@ -143,15 +155,24 @@ async function runPhase34FinalReleaseValidation() {
         docCount++;
       }
     }
-    assert(docCount > 0, `Storage initialized with ${docCount} seed documents from the project's own corpus`);
+    assert(
+      docCount > 0,
+      `Storage initialized with ${docCount} seed documents from the project's own corpus`,
+    );
 
     // Build the inverted index
     const builder = createIndexBuilder({ config, storage });
     const buildRes = await builder.build();
-    assert(buildRes.status === 'success', 'Project custom inverted index builder builds and atomically deploys index');
+    assert(
+      buildRes.status === 'success',
+      'Project custom inverted index builder builds and atomically deploys index',
+    );
 
     const activeIndex = builder.getActiveIndex();
-    assert(activeIndex !== null && activeIndex.getStats().totalDocuments === docCount, 'Active inverted index loaded into memory');
+    assert(
+      activeIndex !== null && activeIndex.getStats().totalDocuments === docCount,
+      'Active inverted index loaded into memory',
+    );
 
     // 5. Start API and Web Services
     apiServer = createApiServer({
@@ -171,28 +192,59 @@ async function runPhase34FinalReleaseValidation() {
 
     // DoD 1 & 2: Public user can access search website without an account
     const webHome = await requestHttp(webAddr.port, '/');
-    assert(webHome.statusCode === 200 && webHome.body.includes('OpenSearch'), 'Public website opens without authentication or cookies');
+    assert(
+      webHome.statusCode === 200 && webHome.body.includes('OpenSearch'),
+      'Public website opens without authentication or cookies',
+    );
     assert(!webHome.headers['set-cookie'], 'Zero cookies issued to public users');
 
     // DoD 6, 7 & 8: Query execution, BM25 retrieval, useful snippets, pagination
-    const searchRes = await requestHttp(apiAddr.port, '/api/v1/search?q=javascript+documentation&page=1&pageSize=2');
-    assert(searchRes.statusCode === 200 && searchRes.json?.results?.length > 0, 'Search results returned from project custom index');
+    const searchRes = await requestHttp(
+      apiAddr.port,
+      '/api/v1/search?q=javascript+documentation&page=1&pageSize=2',
+    );
+    assert(
+      searchRes.statusCode === 200 && searchRes.json?.results?.length > 0,
+      'Search results returned from project custom index',
+    );
     const firstHit = searchRes.json?.results[0];
-    assert(firstHit?.title && firstHit?.url && firstHit?.snippet, 'Results include useful title, URL, and snippet');
-    assert(searchRes.json?.pagination?.totalPages > 1 && searchRes.json?.pagination?.hasNextPage === true, 'Pagination navigation functional across multi-page results');
+    assert(
+      firstHit?.title && firstHit?.url && firstHit?.snippet,
+      'Results include useful title, URL, and snippet',
+    );
+    assert(
+      searchRes.json?.pagination?.totalPages > 1 &&
+        searchRes.json?.pagination?.hasNextPage === true,
+      'Pagination navigation functional across multi-page results',
+    );
 
     // DoD 10: API abuse protection & rate limiting
     const healthRes = await requestHttp(apiAddr.port, '/health');
-    assert(healthRes.statusCode === 200 && healthRes.json?.status === 'ok', 'API health status ok and reporting all subcomponents');
-    assert(healthRes.json?.components?.rateLimiter?.status === 'ok', 'API sliding window rate limiter active');
+    assert(
+      healthRes.statusCode === 200 && healthRes.json?.status === 'ok',
+      'API health status ok and reporting all subcomponents',
+    );
+    assert(
+      healthRes.json?.components?.rateLimiter?.status === 'ok',
+      'API sliding window rate limiter active',
+    );
 
     // DoD 11: Privacy & data minimization
-    assert(webHome.body.includes('rel="noopener noreferrer"'), 'External outbound links protect referrer leakage');
+    assert(
+      webHome.body.includes('rel="noopener noreferrer"'),
+      'External outbound links protect referrer leakage',
+    );
     const privacyRes = await requestHttp(webAddr.port, '/privacy');
-    assert(privacyRes.statusCode === 200 && privacyRes.body.includes('Zero-Tracking'), 'Public privacy policy accessible');
+    assert(
+      privacyRes.statusCode === 200 && privacyRes.body.includes('Zero-Tracking'),
+      'Public privacy policy accessible',
+    );
 
     // DoD 12: Desktop and mobile layouts
-    assert(webHome.body.includes('<meta name="viewport"'), 'Responsive mobile viewport meta tag configured');
+    assert(
+      webHome.body.includes('<meta name="viewport"'),
+      'Responsive mobile viewport meta tag configured',
+    );
 
     await storage.close();
   } finally {
@@ -210,13 +262,15 @@ async function runPhase34FinalReleaseValidation() {
   console.log(`================================================================`);
 
   if (passedGates === totalGates) {
-    console.log('\n>>> OPENSEARCH V1.0.0 IS FORMALLY COMPLETE & APPROVED FOR PRODUCTION RELEASE <<<\n');
+    console.log(
+      '\n>>> OPENSEARCH V1.0.0 IS FORMALLY COMPLETE & APPROVED FOR PRODUCTION RELEASE <<<\n',
+    );
   } else {
     process.exit(1);
   }
 }
 
-runPhase34FinalReleaseValidation().catch((err) => {
+runPhase34FinalReleaseValidation().catch(err => {
   console.error('Fatal Phase 34 verification error:', err);
   process.exit(1);
 });

@@ -58,7 +58,7 @@ export async function deployProductionCorpusAndIndex(customConfig) {
   }
 
   console.log(
-    `[DEPLOY] Inverted index built successfully: ${buildResult.stats?.documentsIndexed} docs, ${buildResult.stats?.termsIndexed} terms in ${buildResult.stats?.durationMs}ms.`
+    `[DEPLOY] Inverted index built successfully: ${buildResult.stats?.documentsIndexed} docs, ${buildResult.stats?.termsIndexed} terms in ${buildResult.stats?.durationMs}ms.`,
   );
 
   await storage.close();
@@ -72,7 +72,7 @@ export async function deployProductionCorpusAndIndex(customConfig) {
 if (process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/'))) {
   deployProductionCorpusAndIndex()
     .then(() => process.exit(0))
-    .catch((err) => {
+    .catch(err => {
       console.error('[DEPLOY] Fatal deployment error:', err);
       process.exit(1);
     });

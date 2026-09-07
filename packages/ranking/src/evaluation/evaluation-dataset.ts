@@ -170,7 +170,8 @@ export const SEARCH_QUALITY_DATASET: EvaluationQuery[] = [
     id: 'dup-01',
     category: 'duplicate_content',
     rawQuery: 'digital privacy and user rights',
-    description: 'Query where a primary document and an exact duplicate exist; primary should rank 1st',
+    description:
+      'Query where a primary document and an exact duplicate exist; primary should rank 1st',
     expectedTopUrlMatch: '/privacy-rights',
     expectedMinHits: 1,
     maxAcceptableRank: 1,

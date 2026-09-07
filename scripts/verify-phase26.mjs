@@ -82,8 +82,14 @@ async function runVerification() {
     const healthRes = await fetch(`http://127.0.0.1:${port}/health`);
     assert(healthRes.status === 200, 'Health endpoint returns HTTP 200 OK');
     const healthData = await healthRes.json();
-    assert(healthData.status === 'degraded', 'Overall system health accurately reports "degraded" status (empty index)');
-    assert(healthData.components.index.status === 'degraded', 'Index component reports "degraded" status');
+    assert(
+      healthData.status === 'degraded',
+      'Overall system health accurately reports "degraded" status (empty index)',
+    );
+    assert(
+      healthData.components.index.status === 'degraded',
+      'Index component reports "degraded" status',
+    );
     assert(healthData.components.index.details.totalDocuments === 0, 'Index document count is 0');
     assert(healthData.components.rateLimiter.status === 'ok', 'Rate limiter component is "ok"');
     assert(healthData.components.memory.status === 'ok', 'Memory component is "ok"');
@@ -116,7 +122,10 @@ async function runVerification() {
       headers: { 'Content-Type': 'application/json' },
       body: '{"brokenJson": true, unclosed',
     });
-    assert(malformedJsonRes.status === 400, 'Malformed POST JSON body rejected with 400 Bad Request');
+    assert(
+      malformedJsonRes.status === 400,
+      'Malformed POST JSON body rejected with 400 Bad Request',
+    );
 
     const oversizedBody = JSON.stringify({ q: 'test', padding: 'x'.repeat(128 * 1024) });
     const payloadLimitRes = await fetch(`http://127.0.0.1:${port}/api/v1/search`, {
@@ -124,7 +133,10 @@ async function runVerification() {
       headers: { 'Content-Type': 'application/json' },
       body: oversizedBody,
     });
-    assert(payloadLimitRes.status === 413, 'Oversized POST payload rejected with 413 Payload Too Large');
+    assert(
+      payloadLimitRes.status === 413,
+      'Oversized POST payload rejected with 413 Payload Too Large',
+    );
 
     // 6. Privacy & Information Leakage Prevention
     console.log('\n► 6. Error Response Privacy & Header Security');
@@ -132,8 +144,14 @@ async function runVerification() {
     assert(notFoundRes.status === 404, 'Non-existent route returns 404 Not Found');
     const notFoundData = await notFoundRes.json();
     assert(!('stack' in notFoundData), 'Error payload does not expose stack traces');
-    assert(Boolean(notFoundRes.headers.get('content-security-policy')), 'CSP header present in response');
-    assert(notFoundRes.headers.get('x-content-type-options') === 'nosniff', 'X-Content-Type-Options is nosniff');
+    assert(
+      Boolean(notFoundRes.headers.get('content-security-policy')),
+      'CSP header present in response',
+    );
+    assert(
+      notFoundRes.headers.get('x-content-type-options') === 'nosniff',
+      'X-Content-Type-Options is nosniff',
+    );
   } finally {
     if (server) {
       await server.stop();

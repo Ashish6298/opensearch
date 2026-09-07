@@ -84,8 +84,12 @@ describe('Phase 27 — Privacy & Data-Minimization Review', () => {
     });
 
     it('masks host group identifiers in IPv6 addresses', () => {
-      expect(anonymizeIpAddress('2001:0db8:85a3:0000:0000:8a2e:0370:7334')).toBe('2001:0db8:85a3::');
-      expect(anonymizeIpAddress('fe80:0000:0000:0000:0204:61ff:fe9d:f152')).toBe('fe80:0000:0000::');
+      expect(anonymizeIpAddress('2001:0db8:85a3:0000:0000:8a2e:0370:7334')).toBe(
+        '2001:0db8:85a3::',
+      );
+      expect(anonymizeIpAddress('fe80:0000:0000:0000:0204:61ff:fe9d:f152')).toBe(
+        'fe80:0000:0000::',
+      );
     });
 
     it('handles localhost and fallback IP safely', () => {

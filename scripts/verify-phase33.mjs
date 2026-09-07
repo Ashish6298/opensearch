@@ -47,13 +47,22 @@ async function runPhase33Verification() {
 
   // 1. Secrets & Environment Safety
   const gitignore = fs.readFileSync('.gitignore', 'utf-8');
-  assert(gitignore.includes('.env') && gitignore.includes('*.env.local'), 'Gitignore excludes all environment and secret files');
+  assert(
+    gitignore.includes('.env') && gitignore.includes('*.env.local'),
+    'Gitignore excludes all environment and secret files',
+  );
   assert(fs.existsSync('.env.example'), '.env.example template is present');
   const envExample = fs.readFileSync('.env.example', 'utf-8');
-  assert(!envExample.includes('sk_live_') && !envExample.includes('password123'), '.env.example does not contain hardcoded real secrets');
+  assert(
+    !envExample.includes('sk_live_') && !envExample.includes('password123'),
+    '.env.example does not contain hardcoded real secrets',
+  );
 
   // 2. Dependency Vulnerabilities
-  assert(fs.existsSync('package-lock.json'), 'package-lock.json exists for deterministic dependency resolution');
+  assert(
+    fs.existsSync('package-lock.json'),
+    'package-lock.json exists for deterministic dependency resolution',
+  );
 
   // 3. Crawler Safety & SSRF Protections
   assert(!validateUrl('http://127.0.0.1:8080/').ok, 'SSRF guard blocks 127.0.0.1 loopback');
@@ -61,27 +70,45 @@ async function runPhase33Verification() {
   assert(!validateUrl('http://192.168.1.1/').ok, 'SSRF guard blocks 192.168.0.0/16 private subnet');
   assert(!validateUrl('http://10.0.0.1/').ok, 'SSRF guard blocks 10.0.0.0/8 private subnet');
   assert(!validateUrl('http://172.16.0.1/').ok, 'SSRF guard blocks 172.16.0.0/12 private subnet');
-  assert(!validateUrl('http://169.254.169.254/latest/meta-data/').ok, 'SSRF guard blocks AWS/cloud metadata address');
+  assert(
+    !validateUrl('http://169.254.169.254/latest/meta-data/').ok,
+    'SSRF guard blocks AWS/cloud metadata address',
+  );
   assert(!validateUrl('file:///etc/passwd').ok, 'SSRF guard blocks file:// protocol');
-  assert(validateUrl('https://developer.mozilla.org/en-US/').ok, 'SSRF guard permits public HTTPS web targets');
+  assert(
+    validateUrl('https://developer.mozilla.org/en-US/').ok,
+    'SSRF guard permits public HTTPS web targets',
+  );
 
   // 4. API Abuse Protection
   const limiter = createRateLimiter({ maxRequests: 2, windowMs: 1000 });
-  assert(limiter.consume('198.51.100.1').allowed === true, 'Rate limiter allows requests under threshold');
+  assert(
+    limiter.consume('198.51.100.1').allowed === true,
+    'Rate limiter allows requests under threshold',
+  );
   assert(limiter.consume('198.51.100.1').allowed === true, 'Rate limiter tracks second request');
   const blocked = limiter.consume('198.51.100.1');
-  assert(blocked.allowed === false && blocked.remaining === 0, 'Rate limiter blocks requests exceeding threshold');
+  assert(
+    blocked.allowed === false && blocked.remaining === 0,
+    'Rate limiter blocks requests exceeding threshold',
+  );
   limiter.destroy();
 
   // 5. Privacy Behavior
   const privacyDoc = fs.readFileSync('docs/PRIVACY.md', 'utf-8');
-  assert(privacyDoc.includes('Zero-Tracking') && privacyDoc.includes('Anonymized IP Handling'), 'Privacy policy documents zero-tracking and IP masking');
+  assert(
+    privacyDoc.includes('Zero-Tracking') && privacyDoc.includes('Anonymized IP Handling'),
+    'Privacy policy documents zero-tracking and IP masking',
+  );
 
   // 6. Error Exposure & Stack Protection
   const rawErr = new Error('Sensitive SQL query failure: select * from users where pass=secret');
   const safeErr = toSafeErrorResponse(rawErr);
   assert(safeErr.error.statusCode === 500, 'Uncaught exceptions mapped to HTTP 500');
-  assert(safeErr.error.code === 'INTERNAL_SERVER_ERROR', 'Error response returns sanitized error code');
+  assert(
+    safeErr.error.code === 'INTERNAL_SERVER_ERROR',
+    'Error response returns sanitized error code',
+  );
   assert(safeErr.error.stack === undefined, 'Error response omits sensitive stack traces');
 
   // 7. Robots Compliance
@@ -105,12 +132,21 @@ Disallow: /admin/
     HOST: '0.0.0.0',
     CORS_ORIGIN: 'https://search.example.com',
   });
-  assert(config.crawler.maxConcurrency <= 5, 'Crawler concurrency ceiling bounded for free-tier hosting');
-  assert(config.crawler.politenessDelayMs >= 250, 'Politeness delay enforces minimum delay between requests');
+  assert(
+    config.crawler.maxConcurrency <= 5,
+    'Crawler concurrency ceiling bounded for free-tier hosting',
+  );
+  assert(
+    config.crawler.politenessDelayMs >= 250,
+    'Politeness delay enforces minimum delay between requests',
+  );
 
   // 9. Production Configuration & PaaS Support
   assert(config.isProduction === true, 'Configuration validates production environment');
-  assert(config.api.server.host === '0.0.0.0' && config.api.server.port === 8080, 'Server binds to 0.0.0.0:PORT on PaaS');
+  assert(
+    config.api.server.host === '0.0.0.0' && config.api.server.port === 8080,
+    'Server binds to 0.0.0.0:PORT on PaaS',
+  );
 
   // 10. Documentation Completeness
   assert(fs.existsSync('README.md'), 'README.md exists');
@@ -120,13 +156,15 @@ Disallow: /admin/
 
   console.log(`\nVerification Summary: ${passedChecks}/${totalChecks} gates passed.`);
   if (passedChecks === totalChecks) {
-    console.log('Phase 33 is FULLY VERIFIED and READY for Phase 34 (V1.0.0 Final Validation & Release Report).\n');
+    console.log(
+      'Phase 33 is FULLY VERIFIED and READY for Phase 34 (V1.0.0 Final Validation & Release Report).\n',
+    );
   } else {
     process.exit(1);
   }
 }
 
-runPhase33Verification().catch((err) => {
+runPhase33Verification().catch(err => {
   console.error('Fatal Phase 33 verification error:', err);
   process.exit(1);
 });

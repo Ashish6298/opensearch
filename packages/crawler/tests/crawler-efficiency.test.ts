@@ -4,10 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import * as fs from 'node:fs';
 import { AppConfig, loadConfig } from '@opensearch/shared';
-import {
-  createStorageAdapter,
-  StorageAdapter,
-} from '@opensearch/storage';
+import { createStorageAdapter, StorageAdapter } from '@opensearch/storage';
 import {
   createCrawlQueue,
   CrawlQueue,
@@ -24,7 +21,13 @@ import {
 class MockHttpFetcher implements HttpFetcher {
   private responses = new Map<
     string,
-    { status: number; bodyText: string; contentType?: string; headers?: Record<string, string>; delayMs?: number }
+    {
+      status: number;
+      bodyText: string;
+      contentType?: string;
+      headers?: Record<string, string>;
+      delayMs?: number;
+    }
   >();
   public callCount = 0;
   public concurrentCalls = 0;
@@ -51,7 +54,7 @@ class MockHttpFetcher implements HttpFetcher {
     const mock = this.responses.get(target.url);
 
     if (mock?.delayMs && mock.delayMs > 0) {
-      await new Promise((r) => setTimeout(r, mock.delayMs));
+      await new Promise(r => setTimeout(r, mock.delayMs));
     }
 
     this.concurrentCalls--;
@@ -203,10 +206,38 @@ describe('Phase 29 — Crawler Efficiency & Resource Controls', () => {
   });
 
   it('bounds worker concurrency controls', async () => {
-    mockFetcher.setResponse('https://example.com/1', 200, '<html><body>Page 1</body></html>', 'text/html', {}, 30);
-    mockFetcher.setResponse('https://example.com/2', 200, '<html><body>Page 2</body></html>', 'text/html', {}, 30);
-    mockFetcher.setResponse('https://example.com/3', 200, '<html><body>Page 3</body></html>', 'text/html', {}, 30);
-    mockFetcher.setResponse('https://example.com/4', 200, '<html><body>Page 4</body></html>', 'text/html', {}, 30);
+    mockFetcher.setResponse(
+      'https://example.com/1',
+      200,
+      '<html><body>Page 1</body></html>',
+      'text/html',
+      {},
+      30,
+    );
+    mockFetcher.setResponse(
+      'https://example.com/2',
+      200,
+      '<html><body>Page 2</body></html>',
+      'text/html',
+      {},
+      30,
+    );
+    mockFetcher.setResponse(
+      'https://example.com/3',
+      200,
+      '<html><body>Page 3</body></html>',
+      'text/html',
+      {},
+      30,
+    );
+    mockFetcher.setResponse(
+      'https://example.com/4',
+      200,
+      '<html><body>Page 4</body></html>',
+      'text/html',
+      {},
+      30,
+    );
 
     const orchestrator = createCrawlOrchestrator({
       config,
@@ -279,10 +310,7 @@ describe('Phase 29 — Crawler Efficiency & Resource Controls', () => {
     });
 
     await orchestrator.initialize();
-    await orchestrator.addSeeds([
-      'https://example.com/1',
-      'https://example.com/2',
-    ]);
+    await orchestrator.addSeeds(['https://example.com/1', 'https://example.com/2']);
 
     const summary = await orchestrator.start({
       checkpointIntervalPages: 1,
@@ -304,8 +332,22 @@ describe('Phase 29 — Crawler Efficiency & Resource Controls', () => {
   });
 
   it('allows clean crawl stop via AbortController signal', async () => {
-    mockFetcher.setResponse('https://example.com/1', 200, '<html><body>Page 1</body></html>', 'text/html', {}, 100);
-    mockFetcher.setResponse('https://example.com/2', 200, '<html><body>Page 2</body></html>', 'text/html', {}, 100);
+    mockFetcher.setResponse(
+      'https://example.com/1',
+      200,
+      '<html><body>Page 1</body></html>',
+      'text/html',
+      {},
+      100,
+    );
+    mockFetcher.setResponse(
+      'https://example.com/2',
+      200,
+      '<html><body>Page 2</body></html>',
+      'text/html',
+      {},
+      100,
+    );
 
     const orchestrator = createCrawlOrchestrator({
       config,
@@ -317,10 +359,7 @@ describe('Phase 29 — Crawler Efficiency & Resource Controls', () => {
     });
 
     await orchestrator.initialize();
-    await orchestrator.addSeeds([
-      'https://example.com/1',
-      'https://example.com/2',
-    ]);
+    await orchestrator.addSeeds(['https://example.com/1', 'https://example.com/2']);
 
     const abortController = new AbortController();
     setTimeout(() => abortController.abort(), 15);

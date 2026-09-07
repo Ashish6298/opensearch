@@ -25,7 +25,9 @@
   // Configuration
   const rawApiUrl = window.__OPENSEARCH_API_URL__ || '';
   const API_ENDPOINT = rawApiUrl
-    ? (rawApiUrl.endsWith('/api/v1/search') ? rawApiUrl : `${rawApiUrl.replace(/\/+$/, '')}/api/v1/search`)
+    ? rawApiUrl.endsWith('/api/v1/search')
+      ? rawApiUrl
+      : `${rawApiUrl.replace(/\/+$/, '')}/api/v1/search`
     : '/api/v1/search';
   const PAGE_SIZE = 10;
 
@@ -234,7 +236,9 @@
     if (resultsMeta) {
       resultsMeta.textContent = summaryText;
     }
-    announceA11y(`${summaryText} for query ${currentQuery}. Showing page ${pagination?.page || 1}.`);
+    announceA11y(
+      `${summaryText} for query ${currentQuery}. Showing page ${pagination?.page || 1}.`,
+    );
 
     // Render terminal result cards
     let resultsHtml = '';

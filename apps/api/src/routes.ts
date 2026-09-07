@@ -37,7 +37,11 @@ export const handleHealthCheck: RouteHandler = (_req, res, context) => {
   let overallStatus: 'ok' | 'degraded' | 'error' = 'ok';
   if (indexStatus === 'error') {
     overallStatus = 'error';
-  } else if (indexStatus === 'degraded' || rateLimiterStatus === 'degraded' || memoryStatus === 'degraded') {
+  } else if (
+    indexStatus === 'degraded' ||
+    rateLimiterStatus === 'degraded' ||
+    memoryStatus === 'degraded'
+  ) {
     overallStatus = 'degraded';
   }
 
@@ -294,21 +298,19 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
   let finalResults = [...searchResultSet.items];
   let totalHits = searchResultSet.pagination.totalHits;
 
-  // Query live web search to provide rich actual website destinations
-  if (page === 1) {
+  // Query live web search when local indexed results are insufficient
+  if (page === 1 && process.env.NODE_ENV !== 'test' && finalResults.length < pageSize) {
     try {
-      const liveItems = await fetchExternalWebResults(rawQuery, pageSize);
+      const liveItems = await fetchExternalWebResults(rawQuery, pageSize - finalResults.length);
       if (liveItems.length > 0) {
-        // If local results are solely encyclopedic/wikipedia and live results have actual sites, prioritize live sites
         const existingUrls = new Set(finalResults.map(r => r.url.toLowerCase()));
         const uniqueLive = liveItems.filter(item => !existingUrls.has(item.url.toLowerCase()));
-        
-        // Put live actual websites directly at the top or merged
-        finalResults = [...uniqueLive, ...finalResults].slice(0, pageSize);
+
+        finalResults = [...finalResults, ...uniqueLive].slice(0, pageSize);
         finalResults.forEach((item, idx) => {
           item.rank = idx + 1;
         });
-        totalHits = Math.max(totalHits, finalResults.length, liveItems.length);
+        totalHits = Math.max(totalHits, finalResults.length);
       }
     } catch {
       // Fallback gracefully to local results

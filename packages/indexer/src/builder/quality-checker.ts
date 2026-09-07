@@ -38,10 +38,7 @@ export interface CorpusQualitySummary {
  * Computes a normalized content hash for detecting near-duplicate body text.
  */
 export function computeContentHash(text: string): string {
-  const normalized = text
-    .toLowerCase()
-    .replace(/\s+/g, ' ')
-    .trim();
+  const normalized = text.toLowerCase().replace(/\s+/g, ' ').trim();
   return createHash('sha256').update(normalized, 'utf-8').digest('hex');
 }
 
@@ -107,9 +104,8 @@ export async function analyzeCorpusQuality(storage: StorageAdapter): Promise<{
 
   for (const doc of allDocs) {
     const report = evaluateDocumentQuality(doc);
-    const textToHash = (doc.bodyText && doc.bodyText.trim().length > 0)
-      ? doc.bodyText
-      : (doc.title || '');
+    const textToHash =
+      doc.bodyText && doc.bodyText.trim().length > 0 ? doc.bodyText : doc.title || '';
     const contentHash = computeContentHash(textToHash);
 
     if (contentHash && contentHashMap.has(contentHash)) {

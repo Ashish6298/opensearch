@@ -4,11 +4,7 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 import { loadConfig } from '@opensearch/shared';
 import { createStorageAdapter, StorageAdapter, INDEX_STATUS } from '@opensearch/storage';
-import {
-  CURATED_SEED_CORPUS,
-  getCuratedSeedUrls,
-  getAllCuratedSeeds,
-} from '@opensearch/crawler';
+import { CURATED_SEED_CORPUS, getCuratedSeedUrls, getAllCuratedSeeds } from '@opensearch/crawler';
 import {
   computeContentHash,
   evaluateDocumentQuality,
@@ -65,7 +61,8 @@ describe('Phase 23 — Seed Corpus & Initial Public Index Suite', () => {
         title: 'Comprehensive Guide to Search Engines',
         description: 'An in-depth explanation of inverted indices and ranking.',
         headings: 'Introduction\nArchitecture\nBM25 Formula',
-        bodyText: 'Search engines are complex software systems designed to discover, crawl, store, index, and rank web pages for user queries. When a user submits a query, the search engine looks up matching terms in an inverted index, computes BM25 relevance scores across multiple fields, and returns formatted result snippets with pagination.',
+        bodyText:
+          'Search engines are complex software systems designed to discover, crawl, store, index, and rank web pages for user queries. When a user submits a query, the search engine looks up matching terms in an inverted index, computes BM25 relevance scores across multiple fields, and returns formatted result snippets with pagination.',
         language: 'en',
         contentType: 'text/html',
         contentLength: 500,
@@ -89,7 +86,8 @@ describe('Phase 23 — Seed Corpus & Initial Public Index Suite', () => {
     });
 
     it('detects near-duplicate content across documents using content hashing', async () => {
-      const docText = 'Identical body text across multiple duplicated web pages for testing duplicate detection.';
+      const docText =
+        'Identical body text across multiple duplicated web pages for testing duplicate detection.';
 
       await storage.documents.create({
         url: 'https://example.com/original',
@@ -125,7 +123,9 @@ describe('Phase 23 — Seed Corpus & Initial Public Index Suite', () => {
 
       expect(summary.totalDocuments).toBe(2);
       expect(summary.duplicateDocuments).toBe(1);
-      expect(reports.some(r => r.isDuplicate && r.duplicateOfUrl === 'https://example.com/original')).toBe(true);
+      expect(
+        reports.some(r => r.isDuplicate && r.duplicateOfUrl === 'https://example.com/original'),
+      ).toBe(true);
     });
 
     it('computes deterministic content hashes ignoring extra whitespace and casing', () => {

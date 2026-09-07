@@ -80,7 +80,10 @@ async function runVerification() {
 
   for (const target of privateIps) {
     const res = await validator.validateTargetUrl(target);
-    assert(!res.allowed && res.code === 'SSRF_REJECTED', `Blocked private/SSRF target: "${target}"`);
+    assert(
+      !res.allowed && res.code === 'SSRF_REJECTED',
+      `Blocked private/SSRF target: "${target}"`,
+    );
   }
 
   // 3. Setup Hostile Target Test Server
@@ -131,7 +134,9 @@ async function runVerification() {
 
       if (url === '/malformed-html') {
         res.writeHead(200, { 'Content-Type': 'text/html' });
-        res.end('<!DOCTYPE html><html><head><title>Broken\x00 Markup</title></head><body><h1>Unclosed header<p>Broken control chars: \x01\x02\x03 and <a href="/valid-path">Valid Link</a>');
+        res.end(
+          '<!DOCTYPE html><html><head><title>Broken\x00 Markup</title></head><body><h1>Unclosed header<p>Broken control chars: \x01\x02\x03 and <a href="/valid-path">Valid Link</a>',
+        );
         return;
       }
 
@@ -154,10 +159,18 @@ async function runVerification() {
       logger: silentLogger,
       maxRedirects: 4,
     });
-    const loopResult = await redirectFetcher.fetch({ url: `http://127.0.0.1:${mockPort}/redirect-loop-1` });
+    const loopResult = await redirectFetcher.fetch({
+      url: `http://127.0.0.1:${mockPort}/redirect-loop-1`,
+    });
     assert(!loopResult.ok, 'Redirect loop fetch failed as expected');
-    assert(loopResult.code === FETCH_ERROR_CODE.REDIRECT_FAILURE, `Returned code REDIRECT_FAILURE (${loopResult.code})`);
-    assert(loopResult.redirectCount >= 4, `Redirect counter stopped at ${loopResult.redirectCount} redirects`);
+    assert(
+      loopResult.code === FETCH_ERROR_CODE.REDIRECT_FAILURE,
+      `Returned code REDIRECT_FAILURE (${loopResult.code})`,
+    );
+    assert(
+      loopResult.redirectCount >= 4,
+      `Redirect counter stopped at ${loopResult.redirectCount} redirects`,
+    );
 
     // 5. Oversized Payload Defense
     console.log('\n► 5. Streaming Response-Size Limits');
@@ -165,18 +178,28 @@ async function runVerification() {
       logger: silentLogger,
       maxPageBytes: 64 * 1024, // 64 KB limit
     });
-    const sizeResult = await sizeFetcher.fetch({ url: `http://127.0.0.1:${mockPort}/oversized-payload` });
+    const sizeResult = await sizeFetcher.fetch({
+      url: `http://127.0.0.1:${mockPort}/oversized-payload`,
+    });
     assert(!sizeResult.ok, 'Oversized payload download aborted successfully');
-    assert(sizeResult.code === FETCH_ERROR_CODE.CONTENT_SIZE_EXCEEDED, `Returned code CONTENT_SIZE_EXCEEDED (${sizeResult.code})`);
+    assert(
+      sizeResult.code === FETCH_ERROR_CODE.CONTENT_SIZE_EXCEEDED,
+      `Returned code CONTENT_SIZE_EXCEEDED (${sizeResult.code})`,
+    );
 
     // 6. Content-Type Restrictions
     console.log('\n► 6. Content-Type Filtering');
     const mimeFetcher = new NodeFetcher({
       logger: silentLogger,
     });
-    const mimeResult = await mimeFetcher.fetch({ url: `http://127.0.0.1:${mockPort}/binary-archive.zip` });
+    const mimeResult = await mimeFetcher.fetch({
+      url: `http://127.0.0.1:${mockPort}/binary-archive.zip`,
+    });
     assert(!mimeResult.ok, 'Non-text MIME type rejected');
-    assert(mimeResult.code === FETCH_ERROR_CODE.UNSUPPORTED_CONTENT_TYPE, `Returned code UNSUPPORTED_CONTENT_TYPE (${mimeResult.code})`);
+    assert(
+      mimeResult.code === FETCH_ERROR_CODE.UNSUPPORTED_CONTENT_TYPE,
+      `Returned code UNSUPPORTED_CONTENT_TYPE (${mimeResult.code})`,
+    );
 
     // 7. Timeout Enforcement
     console.log('\n► 7. Request Timeout Enforcement');
@@ -185,21 +208,29 @@ async function runVerification() {
       timeoutMs: 150,
       maxRetries: 0,
     });
-    const timeoutResult = await timeoutFetcher.fetch({ url: `http://127.0.0.1:${mockPort}/slow-hang` });
+    const timeoutResult = await timeoutFetcher.fetch({
+      url: `http://127.0.0.1:${mockPort}/slow-hang`,
+    });
     assert(!timeoutResult.ok, 'Hanging request was aborted by timeout');
-    assert(timeoutResult.code === FETCH_ERROR_CODE.TIMEOUT, `Returned code TIMEOUT (${timeoutResult.code})`);
+    assert(
+      timeoutResult.code === FETCH_ERROR_CODE.TIMEOUT,
+      `Returned code TIMEOUT (${timeoutResult.code})`,
+    );
 
     // 8. Malformed HTML & Binary Resilience
     console.log('\n► 8. Malformed HTML & Control Character Sanitization');
     const parser = createHtmlParser();
     const parseResult = parser.parse(
       '<!DOCTYPE html><html><head><title>Broken\x00 Title</title></head><body><h1>Unclosed tag<p>Valid text with <a href="/valid-path">Valid Link</a>',
-      `http://127.0.0.1:${mockPort}/malformed-html`
+      `http://127.0.0.1:${mockPort}/malformed-html`,
     );
 
     assert(parseResult.title.length > 0, 'Extracted title from broken HTML');
     assert(parseResult.bodyText.includes('Valid text'), 'Extracted visible text without crashes');
-    assert(parseResult.discoveredUrls.length === 1, 'Extracted valid outbound links despite broken structure');
+    assert(
+      parseResult.discoveredUrls.length === 1,
+      'Extracted valid outbound links despite broken structure',
+    );
 
     delete process.env.OPENSEARCH_ALLOW_PRIVATE_URLS;
   } finally {

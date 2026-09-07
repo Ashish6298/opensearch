@@ -46,9 +46,9 @@ function requestHttp(port, path, options = {}) {
         method: options.method || 'GET',
         headers: options.headers || {},
       },
-      (res) => {
+      res => {
         let data = '';
-        res.on('data', (c) => (data += c));
+        res.on('data', c => (data += c));
         res.on('end', () => {
           let json = null;
           try {
@@ -63,7 +63,7 @@ function requestHttp(port, path, options = {}) {
             json,
           });
         });
-      }
+      },
     );
     req.on('error', reject);
     if (options.body) req.write(options.body);
@@ -121,15 +121,24 @@ async function runPhase31Verification() {
         docCount++;
       }
     }
-    assert(docCount > 0, `Production seed corpus created with ${docCount} documents across multiple categories`);
+    assert(
+      docCount > 0,
+      `Production seed corpus created with ${docCount} documents across multiple categories`,
+    );
 
     // 3. Index & Storage Deployment Strategy
     const builder = createIndexBuilder({ config, storage });
     const buildRes = await builder.build();
-    assert(buildRes.status === 'success', 'Production inverted index generated and atomically activated');
+    assert(
+      buildRes.status === 'success',
+      'Production inverted index generated and atomically activated',
+    );
 
     const activeIndex = builder.getActiveIndex();
-    assert(activeIndex !== null && activeIndex.getStats().totalDocuments === docCount, 'Active index contains all production documents');
+    assert(
+      activeIndex !== null && activeIndex.getStats().totalDocuments === docCount,
+      'Active index contains all production documents',
+    );
 
     // 4. API Deployment
     apiServer = createApiServer({
@@ -152,73 +161,114 @@ async function runPhase31Verification() {
     const webRes = await requestHttp(webAddr.port, '/', {
       headers: {
         'x-forwarded-proto': 'https',
-        'host': 'opensearch.local',
+        host: 'opensearch.local',
       },
     });
     assert(webRes.statusCode === 200, 'Public website root returns HTTP 200');
-    assert(webRes.body.includes('OpenSearch') && webRes.body.includes('search-input'), 'Public website renders interactive search interface');
+    assert(
+      webRes.body.includes('OpenSearch') && webRes.body.includes('search-input'),
+      'Public website renders interactive search interface',
+    );
 
     const privacyRes = await requestHttp(webAddr.port, '/privacy', {
       headers: { 'x-forwarded-proto': 'https' },
     });
-    assert(privacyRes.statusCode === 200 && privacyRes.body.includes('Zero-Tracking'), 'Privacy & Data-Minimization policy page opens cleanly');
+    assert(
+      privacyRes.statusCode === 200 && privacyRes.body.includes('Zero-Tracking'),
+      'Privacy & Data-Minimization policy page opens cleanly',
+    );
 
     // VERIFY CRITERION 2: API is reachable
     const apiRootRes = await requestHttp(apiAddr.port, '/', {
       headers: { 'x-forwarded-proto': 'https' },
     });
-    assert(apiRootRes.statusCode === 200 && apiRootRes.json?.name === 'OpenSearch', 'API root / endpoint is reachable and reports service metadata');
+    assert(
+      apiRootRes.statusCode === 200 && apiRootRes.json?.name === 'OpenSearch',
+      'API root / endpoint is reachable and reports service metadata',
+    );
 
     const apiStatusRes = await requestHttp(apiAddr.port, '/api/v1/status', {
       headers: { 'x-forwarded-proto': 'https' },
     });
-    assert(apiStatusRes.statusCode === 200 && apiStatusRes.json?.status === 'ok', 'API system status endpoint reports ok');
+    assert(
+      apiStatusRes.statusCode === 200 && apiStatusRes.json?.status === 'ok',
+      'API system status endpoint reports ok',
+    );
 
     // VERIFY CRITERION 3: Search works from the public environment
     const searchRes = await requestHttp(apiAddr.port, '/api/v1/search?q=javascript+documentation', {
       headers: {
         'x-forwarded-proto': 'https',
-        'origin': 'https://opensearch.local',
+        origin: 'https://opensearch.local',
       },
     });
     assert(searchRes.statusCode === 200, 'Public search query executes successfully with HTTP 200');
-    assert(searchRes.json?.results?.length > 0, 'Public search returns relevant results matching query');
-    assert(searchRes.json?.pagination?.totalHits > 0, 'Search pagination metadata is properly populated');
-    assert(searchRes.json?.results[0]?.snippet?.length > 0, 'Search result contains highlight snippet');
+    assert(
+      searchRes.json?.results?.length > 0,
+      'Public search returns relevant results matching query',
+    );
+    assert(
+      searchRes.json?.pagination?.totalHits > 0,
+      'Search pagination metadata is properly populated',
+    );
+    assert(
+      searchRes.json?.results[0]?.snippet?.length > 0,
+      'Search result contains highlight snippet',
+    );
 
     // VERIFY CRITERION 4: Index is available
     const healthRes = await requestHttp(apiAddr.port, '/health', {
       headers: { 'x-forwarded-proto': 'https' },
     });
-    assert(healthRes.statusCode === 200 && healthRes.json?.components?.index?.status === 'ok', 'Health endpoint confirms index is available and status ok');
-    assert(healthRes.json?.totalDocumentsIndexed === docCount, 'Health endpoint reflects exact index document count');
+    assert(
+      healthRes.statusCode === 200 && healthRes.json?.components?.index?.status === 'ok',
+      'Health endpoint confirms index is available and status ok',
+    );
+    assert(
+      healthRes.json?.totalDocumentsIndexed === docCount,
+      'Health endpoint reflects exact index document count',
+    );
 
     // VERIFY CRITERION 5: HTTPS & Security Headers
     assert(
       webRes.headers['strict-transport-security']?.includes('max-age=31536000'),
-      'Web server sends Strict-Transport-Security (HSTS) over HTTPS'
+      'Web server sends Strict-Transport-Security (HSTS) over HTTPS',
     );
     assert(
       apiRootRes.headers['strict-transport-security']?.includes('max-age=31536000'),
-      'API server sends Strict-Transport-Security (HSTS) over HTTPS'
+      'API server sends Strict-Transport-Security (HSTS) over HTTPS',
     );
-    assert(apiRootRes.headers['x-content-type-options'] === 'nosniff', 'Security header X-Content-Type-Options is present');
-    assert(apiRootRes.headers['x-frame-options'] === 'DENY', 'Security header X-Frame-Options is DENY');
+    assert(
+      apiRootRes.headers['x-content-type-options'] === 'nosniff',
+      'Security header X-Content-Type-Options is present',
+    );
+    assert(
+      apiRootRes.headers['x-frame-options'] === 'DENY',
+      'Security header X-Frame-Options is DENY',
+    );
 
     // VERIFY CRITERION 6: Production errors reviewed & boundary validation
     const invalidQueryRes = await requestHttp(apiAddr.port, '/api/v1/search?page=-1', {
       headers: { 'x-forwarded-proto': 'https' },
     });
-    assert(invalidQueryRes.statusCode === 400 && invalidQueryRes.json?.error?.code === 'INVALID_PAGE_NUMBER', 'API gracefully handles invalid query input with structured 400 error');
+    assert(
+      invalidQueryRes.statusCode === 400 &&
+        invalidQueryRes.json?.error?.code === 'INVALID_PAGE_NUMBER',
+      'API gracefully handles invalid query input with structured 400 error',
+    );
 
     const corsPreflight = await requestHttp(apiAddr.port, '/api/v1/search', {
       method: 'OPTIONS',
       headers: {
-        'origin': 'https://opensearch.local',
+        origin: 'https://opensearch.local',
         'access-control-request-method': 'POST',
       },
     });
-    assert(corsPreflight.statusCode === 204 && corsPreflight.headers['access-control-allow-origin'] === 'https://opensearch.local', 'Production CORS preflight correctly authorizes origin');
+    assert(
+      corsPreflight.statusCode === 204 &&
+        corsPreflight.headers['access-control-allow-origin'] === 'https://opensearch.local',
+      'Production CORS preflight correctly authorizes origin',
+    );
 
     await storage.close();
   } finally {
@@ -233,13 +283,15 @@ async function runPhase31Verification() {
 
   console.log(`\nVerification Summary: ${passedChecks}/${totalChecks} gates passed.`);
   if (passedChecks === totalChecks) {
-    console.log('Phase 31 is FULLY VERIFIED and READY for Phase 32 (Post-Launch Operations & Maintenance).\n');
+    console.log(
+      'Phase 31 is FULLY VERIFIED and READY for Phase 32 (Post-Launch Operations & Maintenance).\n',
+    );
   } else {
     process.exit(1);
   }
 }
 
-runPhase31Verification().catch((err) => {
+runPhase31Verification().catch(err => {
   console.error('Fatal Phase 31 verification error:', err);
   process.exit(1);
 });

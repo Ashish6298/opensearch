@@ -55,7 +55,9 @@ describe('Phase 25 — Crawler Security Hardening Suite', () => {
       // 4. Broken / Malformed HTML containing control chars and unclosed tags
       if (url === '/malformed') {
         res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end('<!DOCTYPE html><html><head><title>Broken\x00\x01\x02 Page</title><body><h1>Unclosed H1<p>Malformed text with \uFFFD replacement chars and broken <<<<<>>>>> markup.');
+        res.end(
+          '<!DOCTYPE html><html><head><title>Broken\x00\x01\x02 Page</title><body><h1>Unclosed H1<p>Malformed text with \uFFFD replacement chars and broken <<<<<>>>>> markup.',
+        );
         return;
       }
 
@@ -224,7 +226,7 @@ describe('Phase 25 — Crawler Security Hardening Suite', () => {
 
       const parsedDoc = parser.parse(
         '<!DOCTYPE html><html><head><title>Malformed \x00 Title</title></head><body><h1>Unclosed H1<p>Valid text with <a href="/valid">link</a>',
-        'https://example.com/page'
+        'https://example.com/page',
       );
 
       expect(parsedDoc.title).toContain('Malformed');

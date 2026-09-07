@@ -35,24 +35,24 @@ OpenSearch is designed from the ground up to operate reliably on zero-cost compu
 
 ## 2. Environment Variables Reference
 
-| Variable | Required | Default (Dev) | Default (Prod) | Description |
-| :--- | :--- | :--- | :--- | :--- |
-| `NODE_ENV` | Yes | `development` | `production` | Runtime mode (`development`, `production`, `test`) |
-| `PORT` | Auto | `3000` | Injected by PaaS | Server listening port |
-| `HOST` | No | `localhost` | `0.0.0.0` | Server listening host |
-| `API_PORT` | No | `3000` | Inherits `PORT` | Explicit port for API service |
-| `WEB_PORT` | No | `5173` | Inherits `PORT` | Explicit port for Web service |
-| `CORS_ORIGIN` | No | `http://localhost:5173` | `*` | Allowed CORS origins for public API |
-| `VITE_API_URL` | No | `http://localhost:3000/api/v1/search` | `http://localhost:3000/api/v1/search` | Public endpoint accessed by web frontend |
-| `STORAGE_DIR` | No | `./data/storage` | `./data/storage` | Storage directory for documents/crawls |
-| `INDEX_DIR` | No | `./data/index` | `./data/index` | Active inverted index directory |
-| `CRAWLER_DATA_DIR` | No | `./data/crawler` | `./data/crawler` | Queue and crawl checkpoint directory |
-| `LOG_LEVEL` | No | `debug` | `info` | Logging verbosity (`debug`, `info`, `warn`, `error`) |
-| `LOG_FORMAT` | No | `pretty` | `json` | Log format (`json` or `pretty`) |
-| `CRAWLER_MAX_CONCURRENCY` | No | `1` | `1` | Max concurrent crawl workers (free-tier max: 2-3) |
-| `CRAWLER_MAX_PAGES` | No | `1000` | `1000` | Page budget ceiling per crawl run |
-| `CRAWLER_RETRY_BUDGET` | No | `50` | `50` | Retry budget to suppress transient storm loops |
-| `RATE_LIMIT_PER_MINUTE` | No | `60` | `60` | In-memory API rate limit per client IP mask |
+| Variable                  | Required | Default (Dev)                         | Default (Prod)                        | Description                                          |
+| :------------------------ | :------- | :------------------------------------ | :------------------------------------ | :--------------------------------------------------- |
+| `NODE_ENV`                | Yes      | `development`                         | `production`                          | Runtime mode (`development`, `production`, `test`)   |
+| `PORT`                    | Auto     | `3000`                                | Injected by PaaS                      | Server listening port                                |
+| `HOST`                    | No       | `localhost`                           | `0.0.0.0`                             | Server listening host                                |
+| `API_PORT`                | No       | `3000`                                | Inherits `PORT`                       | Explicit port for API service                        |
+| `WEB_PORT`                | No       | `5173`                                | Inherits `PORT`                       | Explicit port for Web service                        |
+| `CORS_ORIGIN`             | No       | `http://localhost:5173`               | `*`                                   | Allowed CORS origins for public API                  |
+| `VITE_API_URL`            | No       | `http://localhost:3000/api/v1/search` | `http://localhost:3000/api/v1/search` | Public endpoint accessed by web frontend             |
+| `STORAGE_DIR`             | No       | `./data/storage`                      | `./data/storage`                      | Storage directory for documents/crawls               |
+| `INDEX_DIR`               | No       | `./data/index`                        | `./data/index`                        | Active inverted index directory                      |
+| `CRAWLER_DATA_DIR`        | No       | `./data/crawler`                      | `./data/crawler`                      | Queue and crawl checkpoint directory                 |
+| `LOG_LEVEL`               | No       | `debug`                               | `info`                                | Logging verbosity (`debug`, `info`, `warn`, `error`) |
+| `LOG_FORMAT`              | No       | `pretty`                              | `json`                                | Log format (`json` or `pretty`)                      |
+| `CRAWLER_MAX_CONCURRENCY` | No       | `1`                                   | `1`                                   | Max concurrent crawl workers (free-tier max: 2-3)    |
+| `CRAWLER_MAX_PAGES`       | No       | `1000`                                | `1000`                                | Page budget ceiling per crawl run                    |
+| `CRAWLER_RETRY_BUDGET`    | No       | `50`                                  | `50`                                  | Retry budget to suppress transient storm loops       |
+| `RATE_LIMIT_PER_MINUTE`   | No       | `60`                                  | `60`                                  | In-memory API rate limit per client IP mask          |
 
 ---
 

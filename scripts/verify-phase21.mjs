@@ -43,10 +43,16 @@ async function runVerification() {
   // 1. Module Identity & Boundary
   console.log('► 1. Identity & Phase 21 Metadata');
   const status = getWebStatus();
-  assert(status.phase === 'Phase 21: Responsive & Accessibility Hardening', 'Status reports Phase 21');
+  assert(
+    status.phase === 'Phase 21: Responsive & Accessibility Hardening',
+    'Status reports Phase 21',
+  );
   assert(status.status === 'ok', 'Status reports ok');
   const info = getWebInfo();
-  assert(info.phase === 'Phase 21: Responsive & Accessibility Hardening', 'Web info reports Phase 21');
+  assert(
+    info.phase === 'Phase 21: Responsive & Accessibility Hardening',
+    'Web info reports Phase 21',
+  );
   assert(WEB_APP_INFO.moduleName === '@opensearch/web', 'Module name is @opensearch/web');
 
   // 2. Semantic Landmarks & Skip Links
@@ -84,8 +90,14 @@ async function runVerification() {
     highlightedSnippet: 'Screen reader accessible <mark>search</mark> results.',
   });
   assert(cardHtml.includes('role="article"'), 'Result card has role="article"');
-  assert(cardHtml.includes('aria-labelledby="result-title-doc-a11y"'), 'Result card has aria-labelledby matching title ID');
-  assert(cardHtml.includes('id="result-title-doc-a11y"'), 'Result card title has unique ID matching labelledby');
+  assert(
+    cardHtml.includes('aria-labelledby="result-title-doc-a11y"'),
+    'Result card has aria-labelledby matching title ID',
+  );
+  assert(
+    cardHtml.includes('id="result-title-doc-a11y"'),
+    'Result card title has unique ID matching labelledby',
+  );
   assert(cardHtml.includes('aria-label="Domain"'), 'Domain badge has aria-label="Domain"');
   assert(cardHtml.includes('target="_blank"'), 'Title link opens in external window');
   assert(cardHtml.includes('rel="noopener noreferrer"'), 'External link has noopener noreferrer');
@@ -102,12 +114,24 @@ async function runVerification() {
     nextPage: 3,
     prevPage: 1,
   });
-  assert(paginationHtml.includes('aria-label="Search Results Pagination"'), 'Pagination has descriptive aria-label');
+  assert(
+    paginationHtml.includes('aria-label="Search Results Pagination"'),
+    'Pagination has descriptive aria-label',
+  );
   assert(paginationHtml.includes('role="group"'), 'Pagination pages wrapper has role="group"');
-  assert(paginationHtml.includes('aria-label="Page selection"'), 'Pagination pages wrapper has aria-label');
+  assert(
+    paginationHtml.includes('aria-label="Page selection"'),
+    'Pagination pages wrapper has aria-label',
+  );
   assert(paginationHtml.includes('aria-current="page"'), 'Active page has aria-current="page"');
-  assert(paginationHtml.includes('aria-label="Go to previous page"'), 'Previous button has descriptive aria-label');
-  assert(paginationHtml.includes('aria-label="Go to next page"'), 'Next button has descriptive aria-label');
+  assert(
+    paginationHtml.includes('aria-label="Go to previous page"'),
+    'Previous button has descriptive aria-label',
+  );
+  assert(
+    paginationHtml.includes('aria-label="Go to next page"'),
+    'Next button has descriptive aria-label',
+  );
 
   // 6. HTTP Web Server End-to-End Asset Verification
   console.log('\n► 6. Web Server & Asset Serving Smoke Test');
@@ -130,8 +154,14 @@ async function runVerification() {
     const cssContent = await cssRes.text();
     assert(cssContent.includes('.skip-link'), 'CSS contains skip-link styles');
     assert(cssContent.includes(':focus-visible'), 'CSS contains focus-visible focus ring styles');
-    assert(cssContent.includes('@media (max-width: 640px)'), 'CSS contains mobile responsive media query');
-    assert(cssContent.includes('@media (max-width: 380px)'), 'CSS contains compact mobile media query');
+    assert(
+      cssContent.includes('@media (max-width: 640px)'),
+      'CSS contains mobile responsive media query',
+    );
+    assert(
+      cssContent.includes('@media (max-width: 380px)'),
+      'CSS contains compact mobile media query',
+    );
     assert(cssContent.includes('min-height: 44px'), 'CSS ensures >=44px touch targets on buttons');
 
     // JS check

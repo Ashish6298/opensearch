@@ -51,9 +51,15 @@ export function getWebStatus(): SystemStatus {
 }
 
 // Auto-run if executed directly via node (e.g., in production or npm start)
-if (process.argv[1] && (process.argv[1].endsWith('web/dist/index.js') || process.argv[1].endsWith('web\\dist\\index.js') || process.argv[1].endsWith('web/src/index.ts') || process.argv[1].endsWith('web\\src\\index.ts'))) {
+if (
+  process.argv[1] &&
+  (process.argv[1].endsWith('web/dist/index.js') ||
+    process.argv[1].endsWith('web\\dist\\index.js') ||
+    process.argv[1].endsWith('web/src/index.ts') ||
+    process.argv[1].endsWith('web\\src\\index.ts'))
+) {
   const server = new (await import('./server.js')).WebServer();
-  server.start().catch((err) => {
+  server.start().catch(err => {
     console.error('Fatal Web server error:', err);
     process.exit(1);
   });

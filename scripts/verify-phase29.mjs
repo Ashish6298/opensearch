@@ -61,7 +61,7 @@ class MockHttpFetcher {
     const mock = this.responses.get(target.url);
 
     if (mock?.delayMs && mock.delayMs > 0) {
-      await new Promise((r) => setTimeout(r, mock.delayMs));
+      await new Promise(r => setTimeout(r, mock.delayMs));
     }
 
     this.concurrentCalls--;
@@ -142,7 +142,10 @@ async function runPhase29Verification() {
 
     assert(config.crawler.maxConcurrency === 4, 'Configuration parses CRAWLER_MAX_CONCURRENCY');
     assert(config.crawler.retryBudget === 3, 'Configuration parses CRAWLER_RETRY_BUDGET');
-    assert(config.crawler.checkpointIntervalPages === 2, 'Configuration parses CRAWLER_CHECKPOINT_INTERVAL_PAGES');
+    assert(
+      config.crawler.checkpointIntervalPages === 2,
+      'Configuration parses CRAWLER_CHECKPOINT_INTERVAL_PAGES',
+    );
 
     const storage = createStorageAdapter({ config });
     const queue = createCrawlQueue({ config });
@@ -190,13 +193,22 @@ async function runPhase29Verification() {
       politenessDelayMs: 0,
     });
 
-    assert(crawl1.status === 'limit_reached', 'Crawler halts cleanly when maxPages limit is reached');
+    assert(
+      crawl1.status === 'limit_reached',
+      'Crawler halts cleanly when maxPages limit is reached',
+    );
     assert(crawl1.stats.pagesFetched === 3, 'Crawler fetched exact maxPages budget');
-    assert(mockFetcher.peakConcurrency <= 3, 'Peak concurrency was bounded within maxConcurrency ceiling');
+    assert(
+      mockFetcher.peakConcurrency <= 3,
+      'Peak concurrency was bounded within maxConcurrency ceiling',
+    );
     assert(fs.existsSync(checkpointFile), 'Crawl checkpoint saved to disk');
 
     const chkData = JSON.parse(fs.readFileSync(checkpointFile, 'utf-8'));
-    assert(chkData.version === 1 && chkData.stats.pagesFetched === 3, 'Crawl checkpoint schema and stats are verified');
+    assert(
+      chkData.version === 1 && chkData.stats.pagesFetched === 3,
+      'Crawl checkpoint schema and stats are verified',
+    );
 
     // 3. Retry Budget & Storm Suppression Check
     await orchestrator.addSeeds([
@@ -213,7 +225,10 @@ async function runPhase29Verification() {
     });
 
     assert(crawl2.stats.retriesConsumed === 2, 'Retry budget consumption tracked accurately');
-    assert(crawl2.stats.retryBudgetExhaustedCount >= 1, 'Retry storms suppressed when budget exhausted');
+    assert(
+      crawl2.stats.retryBudgetExhaustedCount >= 1,
+      'Retry storms suppressed when budget exhausted',
+    );
 
     // 4. Graceful Stop via AbortController
     const abortController = new AbortController();
@@ -248,7 +263,7 @@ async function runPhase29Verification() {
   }
 }
 
-runPhase29Verification().catch((err) => {
+runPhase29Verification().catch(err => {
   console.error('Fatal verification error:', err);
   process.exit(1);
 });
