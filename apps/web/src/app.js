@@ -27,7 +27,10 @@
   const a11yAnnouncer = document.getElementById('a11y-announcer');
 
   // Configuration
-  const API_ENDPOINT = window.__OPENSEARCH_API_URL__ || '/api/v1/search';
+  const rawApiUrl = window.__OPENSEARCH_API_URL__ || '';
+  const API_ENDPOINT = rawApiUrl
+    ? (rawApiUrl.endsWith('/api/v1/search') ? rawApiUrl : `${rawApiUrl.replace(/\/+$/, '')}/api/v1/search`)
+    : '/api/v1/search';
   const PAGE_SIZE = 10;
 
   // State

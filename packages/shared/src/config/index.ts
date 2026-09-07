@@ -239,9 +239,10 @@ export function loadConfig(sourceEnv: Record<string, string | undefined> = proce
     min: 1,
     max: 65535,
   });
+  const clientHost = apiHost === '0.0.0.0' ? 'localhost' : apiHost;
   const apiUrl = readString(sourceEnv, {
     envKey: 'VITE_API_URL',
-    defaultValue: sourceEnv['API_URL'] || `http://${apiHost}:${apiPort}`,
+    defaultValue: sourceEnv['API_URL'] || `http://${clientHost}:${apiPort}`,
   });
 
   const config: AppConfig = {

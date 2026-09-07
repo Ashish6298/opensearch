@@ -6,7 +6,10 @@
  */
 
 import { createServer, Server } from 'node:http';
+import path from 'node:path';
+import fs from 'node:fs';
 import { createInvertedIndex, InvertedIndex } from '@opensearch/indexer';
+import { createStorageAdapter } from '@opensearch/storage';
 import {
   createCandidateRetriever,
   createQueryParser,
@@ -36,6 +39,7 @@ export class ApiServer {
   private readonly services: SearchServices;
   private readonly rateLimiter: MemoryRateLimiter;
   private readonly queryCache: LruQueryCache<SearchApiResponse>;
+  private readonly customIndexProvided: boolean;
   private server: Server | null = null;
 
   constructor(options: ApiServerOptions = {}) {
@@ -64,6 +68,7 @@ export class ApiServer {
 
     // Wire or initialize search subsystem services
     this.services = options.services ?? this.initializeSearchServices(options.index);
+    this.customIndexProvided = Boolean(options.services || options.index);
 
     const timeoutMs = options.searchTimeoutMs ?? this.config.search.searchTimeoutMs ?? 5_000;
     const corsOrigin = options.corsOrigin ?? this.config.api.corsOrigin ?? '*';
@@ -101,6 +106,7 @@ export class ApiServer {
 
   private initializeSearchServices(customIndex?: InvertedIndex): SearchServices {
     const index = customIndex ?? createInvertedIndex({ indexDir: this.config.storage.indexDir });
+
     const queryParser = createQueryParser({
       maxQueryLength: this.config.search.maxQueryLength,
     });
@@ -122,6 +128,74 @@ export class ApiServer {
       resultGenerator,
       queryCache: this.queryCache,
     };
+  }
+
+  /**
+   * Loads the active search index from disk storage if one is present.
+   */
+  async loadActiveIndex(): Promise<void> {
+    if (this.customIndexProvided || this.services.index.getStats().totalDocuments > 0) {
+      return;
+    }
+    try {
+      // Resolve potential storage directories (from current working directory or workspace root)
+      const candidateStorageDirs = [
+        this.config.storage.storageDir,
+        path.resolve(process.cwd(), this.config.storage.storageDir),
+        path.resolve(process.cwd(), '..', this.config.storage.storageDir),
+        path.resolve(process.cwd(), '..', '..', this.config.storage.storageDir),
+        './data/storage',
+        '../../data/storage',
+      ];
+
+      let storageDirToUse = this.config.storage.storageDir;
+      for (const cand of candidateStorageDirs) {
+        if (fs.existsSync(path.join(cand, 'index-metadata.json'))) {
+          storageDirToUse = cand;
+          break;
+        }
+      }
+
+      const storage = createStorageAdapter({
+        config: {
+          ...this.config,
+          storage: {
+            ...this.config.storage,
+            storageDir: storageDirToUse,
+          },
+        },
+      });
+
+      await storage.initialize();
+      const activeMeta = await storage.indexMetadata.findActive();
+      if (activeMeta && activeMeta.indexPath) {
+        const candidateIndexPaths = [
+          activeMeta.indexPath,
+          path.resolve(process.cwd(), activeMeta.indexPath),
+          path.resolve(path.dirname(storageDirToUse), '..', activeMeta.indexPath),
+          path.resolve(storageDirToUse, '..', 'index', 'builds', activeMeta.buildId),
+        ];
+
+        let resolvedIndexPath = activeMeta.indexPath;
+        for (const cand of candidateIndexPaths) {
+          if (fs.existsSync(path.join(cand, 'index-data.json')) || fs.existsSync(cand)) {
+            resolvedIndexPath = cand;
+            break;
+          }
+        }
+
+        await this.services.index.load(resolvedIndexPath);
+        this.logger.info('Active search index loaded from storage', {
+          buildId: activeMeta.buildId,
+          totalDocuments: activeMeta.documentCount,
+          totalTerms: activeMeta.termCount,
+          indexPath: resolvedIndexPath,
+        });
+      }
+      await storage.close();
+    } catch (e) {
+      this.logger.warn('Could not load active index metadata on boot', { error: (e as Error).message });
+    }
   }
 
   private setupMiddlewares(corsOrigin: string, timeoutMs: number): void {
@@ -157,6 +231,9 @@ export class ApiServer {
 
     // Pre-flight startup validation
     this.validateStartupConfig(port, host);
+
+    // Ensure active search index is loaded before accepting traffic
+    await this.loadActiveIndex();
 
     const context = this.getContext();
 

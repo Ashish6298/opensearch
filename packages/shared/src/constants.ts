@@ -14,7 +14,7 @@ export const ENVIRONMENTS = {
 export type Environment = (typeof ENVIRONMENTS)[keyof typeof ENVIRONMENTS];
 
 // Default Network & Service Coordinates
-export const DEFAULT_HOST = 'localhost';
+export const DEFAULT_HOST = '0.0.0.0';
 export const DEFAULT_API_PORT = 3000;
 export const DEFAULT_WEB_PORT = 5173;
 
