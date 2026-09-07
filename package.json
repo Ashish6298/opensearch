@@ -55,6 +55,7 @@
     "verify:phase29": "node ./scripts/verify-phase29.mjs",
     "verify:phase30": "node ./scripts/verify-phase30.mjs",
     "verify:phase31": "node ./scripts/verify-phase31.mjs",
+    "verify:phase32": "node ./scripts/verify-phase32.mjs",
     "deploy:production": "node ./scripts/deploy-production.mjs"
   },
   "devDependencies": {

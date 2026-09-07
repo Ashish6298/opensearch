@@ -34,7 +34,7 @@
   let currentQuery = '';
   let currentPage = 1;
   let activeAbortController = null;
-  let isLoading = false;
+  let _isLoading = false;
 
   function init() {
     // Check URL parameters for pre-filled query and page (e.g. ?q=test&page=2)
@@ -215,7 +215,7 @@
     hideAllStates();
     if (paginationArea) paginationArea.innerHTML = '';
     loadingIndicator.classList.add('active');
-    isLoading = true;
+    _isLoading = true;
     announceA11y(`Searching for ${query}...`);
 
     activeAbortController = new AbortController();
@@ -245,7 +245,7 @@
       );
     } finally {
       loadingIndicator.classList.remove('active');
-      isLoading = false;
+      _isLoading = false;
       activeAbortController = null;
     }
   }
