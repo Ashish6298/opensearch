@@ -1,0 +1,125 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main", "ashish" ]
+  pull_request:
+    branches: [ "main", "ashish" ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  code-quality:
+    name: 🔍 Lint, Format & Types
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [20.x, 22.x]
+
+    steps:
+      - name: 🛎️ Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+
+      - name: 📦 Install Dependencies
+        run: npm ci
+
+      - name: 🎨 Code Formatting Check (Prettier)
+        run: npm run format:check
+
+      - name: 🔎 Static Analysis (ESLint 9)
+        run: npm run lint
+
+      - name: 📐 Type Integrity Check (TypeScript tsc -b)
+        run: npm run typecheck
+
+  test-suite:
+    name: 🧪 Automated Test Suite
+    runs-on: ubuntu-latest
+    needs: code-quality
+    steps:
+      - name: 🛎️ Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js 20.x LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: "npm"
+
+      - name: 📦 Install Dependencies
+        run: npm ci
+
+      - name: 🏗️ Build All Packages & Apps
+        run: npm run build
+
+      - name: 🧪 Execute Unit & Integration Tests (Vitest)
+        run: npm run test
+
+  verification-audit:
+    name: 🛡️ Milestone Verification Harness
+    runs-on: ubuntu-latest
+    needs: test-suite
+    steps:
+      - name: 🛎️ Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js 20.x LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: "npm"
+
+      - name: 📦 Install Dependencies
+        run: npm ci
+
+      - name: 🏗️ Build Monorepo
+        run: npm run build
+
+      - name: 🏁 Run Milestone 10 (Production Release) Verifications
+        run: |
+          node ./scripts/verify-phase31.mjs
+          node ./scripts/verify-phase32.mjs
+          node ./scripts/verify-phase33.mjs
+          node ./scripts/verify-phase34.mjs
+
+  build-artifacts:
+    name: 📦 Production Artifacts Build
+    runs-on: ubuntu-latest
+    needs: [test-suite, verification-audit]
+    steps:
+      - name: 🛎️ Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js 20.x LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: "npm"
+
+      - name: 📦 Install Dependencies
+        run: npm ci
+
+      - name: 🚀 Production Build
+        run: npm run build
+
+      - name: 📤 Archive API Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: opensearch-api-dist
+          path: apps/api/dist/
+          retention-days: 7
+
+      - name: 📤 Archive Web Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: opensearch-web-dist
+          path: apps/web/dist/
+          retention-days: 7
