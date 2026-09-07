@@ -23,6 +23,7 @@
     "format": "prettier --write .",
     "test": "vitest run",
     "test:watch": "vitest",
+    "deploy:vercel": "vercel --prod",
     "clean": "node ./scripts/clean.mjs",
     "verify:phase1": "node ./scripts/verify-phase1.mjs",
     "verify:phase2": "node ./scripts/verify-phase2.mjs",

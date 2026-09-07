@@ -146,6 +146,44 @@ export class WebServer {
       return;
     }
 
+    if (pathname === '/about') {
+      const aboutHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="About OpenSearch — An independent, privacy-first web search engine.">
+  <title>About — OpenSearch</title>
+  <style>
+    ${this.cssCache}
+    .about-content { max-width: 780px; margin: 2rem auto; padding: 1rem; line-height: 1.6; }
+    .about-content h1, .about-content h2 { color: var(--accent-primary, #38bdf8); }
+    .back-btn { display: inline-block; margin-bottom: 1rem; color: #38bdf8; text-decoration: none; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="about-content">
+    <a href="/" class="back-btn">← Back to Search</a>
+    <h1>About OpenSearch</h1>
+    <p>OpenSearch is a completely independent, open-source web search engine engineered with a single principle: <strong>your search queries belong to you, not to a corporation</strong>.</p>
+    <h2>Key Principles</h2>
+    <ul>
+      <li><strong>Independent Indexing:</strong> Inverted index with BM25 lexical relevance scoring.</li>
+      <li><strong>Polite Autonomous Crawler:</strong> Honors robots.txt directives and domain-specific delays.</li>
+      <li><strong>Zero Tracking:</strong> No tracking scripts, cookies, or user profile generation.</li>
+      <li><strong>Open Source:</strong> Transparent, inspectable codebase released under the MIT License.</li>
+    </ul>
+    <p><small>OpenSearch V1.0.0 — Built by <a href="https://github.com/Ashish6298" target="_blank" rel="noopener noreferrer">Ashish6298</a></small></p>
+  </div>
+</body>
+</html>`;
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.setHeader('Content-Length', Buffer.byteLength(aboutHtml));
+      res.end(aboutHtml);
+      return;
+    }
+
     if (pathname === '/style.css') {
       res.statusCode = 200;
       res.setHeader('Content-Type', 'text/css; charset=utf-8');

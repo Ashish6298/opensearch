@@ -241,7 +241,8 @@ export class MemoryInvertedIndex implements InvertedIndex {
 
   async load(targetDir?: string): Promise<void> {
     const dir = targetDir || this.defaultIndexDir;
-    const filePath = path.join(dir, 'index-data.json');
+    const filePath =
+      fs.existsSync(dir) && fs.statSync(dir).isFile() ? dir : path.join(dir, 'index-data.json');
 
     if (!fs.existsSync(filePath)) {
       throw new Error(`Index file not found at: ${filePath}`);
