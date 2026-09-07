@@ -11,6 +11,7 @@
 
 import { HTTP_STATUS, PROJECT_NAME, PROJECT_VERSION, ValidationError } from '@opensearch/shared';
 import { HealthCheckResponse, RouteHandler, SearchApiResponse } from './types.js';
+import { fetchExternalWebResults } from './external-search.js';
 
 export const handleHealthCheck: RouteHandler = (_req, res, context) => {
   const uptimeSeconds = Math.floor((Date.now() - context.startTime) / 1000);
@@ -290,6 +291,30 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
     },
   });
 
+  let finalResults = [...searchResultSet.items];
+  let totalHits = searchResultSet.pagination.totalHits;
+
+  // If local index has 0 results or few results, query live web search
+  if (finalResults.length < pageSize && page === 1) {
+    try {
+      const liveItems = await fetchExternalWebResults(rawQuery, pageSize - finalResults.length);
+      if (liveItems.length > 0) {
+        // Filter duplicates by URL
+        const existingUrls = new Set(finalResults.map(r => r.url.toLowerCase()));
+        for (const item of liveItems) {
+          if (!existingUrls.has(item.url.toLowerCase())) {
+            existingUrls.add(item.url.toLowerCase());
+            item.rank = finalResults.length + 1;
+            finalResults.push(item);
+          }
+        }
+        totalHits = Math.max(totalHits, finalResults.length);
+      }
+    } catch {
+      // Fallback gracefully to local results
+    }
+  }
+
   const responsePayload: SearchApiResponse = {
     query: {
       raw: rawQuery,
@@ -298,10 +323,14 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
       phrases: parsedQuery.phrases.map(p => p.rawPhrase),
       negatedTerms: parsedQuery.negatedTerms,
     },
-    results: searchResultSet.items,
-    pagination: searchResultSet.pagination,
+    results: finalResults,
+    pagination: {
+      ...searchResultSet.pagination,
+      totalHits,
+      totalPages: Math.max(1, Math.ceil(totalHits / pageSize)),
+    },
     meta: {
-      totalHits: searchResultSet.pagination.totalHits,
+      totalHits,
       candidateCount: retrievalResult.candidates.length,
       durationMs: Date.now() - startMs,
       timestamp: new Date().toISOString(),
