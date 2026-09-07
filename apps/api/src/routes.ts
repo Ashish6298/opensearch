@@ -11,6 +11,7 @@
 
 import { HTTP_STATUS, PROJECT_NAME, PROJECT_VERSION, ValidationError } from '@opensearch/shared';
 import { HealthCheckResponse, RouteHandler, SearchApiResponse } from './types.js';
+import { fetchExternalWebResults } from './external-search.js';
 
 export const handleHealthCheck: RouteHandler = (_req, res, context) => {
   const uptimeSeconds = Math.floor((Date.now() - context.startTime) / 1000);
@@ -290,6 +291,30 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
     },
   });
 
+  let finalResults = [...searchResultSet.items];
+  let totalHits = searchResultSet.pagination.totalHits;
+
+  // Query live web search to provide rich actual website destinations
+  if (page === 1) {
+    try {
+      const liveItems = await fetchExternalWebResults(rawQuery, pageSize);
+      if (liveItems.length > 0) {
+        // If local results are solely encyclopedic/wikipedia and live results have actual sites, prioritize live sites
+        const existingUrls = new Set(finalResults.map(r => r.url.toLowerCase()));
+        const uniqueLive = liveItems.filter(item => !existingUrls.has(item.url.toLowerCase()));
+        
+        // Put live actual websites directly at the top or merged
+        finalResults = [...uniqueLive, ...finalResults].slice(0, pageSize);
+        finalResults.forEach((item, idx) => {
+          item.rank = idx + 1;
+        });
+        totalHits = Math.max(totalHits, finalResults.length, liveItems.length);
+      }
+    } catch {
+      // Fallback gracefully to local results
+    }
+  }
+
   const responsePayload: SearchApiResponse = {
     query: {
       raw: rawQuery,
@@ -298,10 +323,14 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
       phrases: parsedQuery.phrases.map(p => p.rawPhrase),
       negatedTerms: parsedQuery.negatedTerms,
     },
-    results: searchResultSet.items,
-    pagination: searchResultSet.pagination,
+    results: finalResults,
+    pagination: {
+      ...searchResultSet.pagination,
+      totalHits,
+      totalPages: Math.max(1, Math.ceil(totalHits / pageSize)),
+    },
     meta: {
-      totalHits: searchResultSet.pagination.totalHits,
+      totalHits,
       candidateCount: retrievalResult.candidates.length,
       durationMs: Date.now() - startMs,
       timestamp: new Date().toISOString(),

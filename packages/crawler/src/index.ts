@@ -116,12 +116,13 @@ export { extractBaseHref, extractOutboundLinks } from './parser/link-extractor.j
 export { DefaultHtmlParser } from './parser/html-parser.js';
 export { createHtmlParser } from './parser/parser-factory.js';
 
-// ── Phase 8: Crawl Orchestrator ──────────────────────────────
+// ── Phase 8 & 29: Crawl Orchestrator ─────────────────────────
 export type {
   CrawlRunOptions,
   CrawlRunStats,
   ProcessedPageOutcome,
   CrawlSummary,
+  CrawlCheckpoint,
   CrawlOrchestrator,
 } from './orchestrator/orchestrator-types.js';
 

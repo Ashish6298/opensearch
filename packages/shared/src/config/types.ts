@@ -22,6 +22,12 @@ export interface CrawlerConfig {
   maxPages: number;
   maxPageBytes: number;
   politenessDelayMs: number;
+  /** Maximum concurrent request workers (Phase 29). Default: 1. */
+  maxConcurrency: number;
+  /** Global retry budget limit per run to prevent retry storms (Phase 29). Default: 50. */
+  retryBudget: number;
+  /** Interval in pages processed between progress checkpoints (Phase 29). Default: 10. */
+  checkpointIntervalPages: number;
   userAgent: string;
   /** Maximum number of HTTP redirects to follow per request (Phase 5) */
   maxRedirects: number;

@@ -14,7 +14,7 @@ export const ENVIRONMENTS = {
 export type Environment = (typeof ENVIRONMENTS)[keyof typeof ENVIRONMENTS];
 
 // Default Network & Service Coordinates
-export const DEFAULT_HOST = 'localhost';
+export const DEFAULT_HOST = '0.0.0.0';
 export const DEFAULT_API_PORT = 3000;
 export const DEFAULT_WEB_PORT = 5173;
 
@@ -53,6 +53,14 @@ export const CRAWLER_LIMITS = {
   MAX_PAGE_BYTES_CEILING: 10 * 1024 * 1024, // 10MB
   DEFAULT_POLITENESS_DELAY_MS: 1_000,
   MIN_POLITENESS_DELAY_MS: 200,
+  /** Default worker concurrency for parallel crawl processing (Phase 29). */
+  DEFAULT_MAX_CONCURRENCY: 1,
+  /** Hard ceiling on worker concurrency for free-tier resource safety. */
+  MAX_CONCURRENCY_CEILING: 10,
+  /** Global retry budget limit per crawl run to prevent retry storms. */
+  DEFAULT_MAX_RETRY_BUDGET: 50,
+  /** Frequency of progress checkpoint saves (in pages processed). */
+  DEFAULT_CHECKPOINT_INTERVAL_PAGES: 10,
   DEFAULT_USER_AGENT: 'OpenSearchBot/1.0 (+https://github.com/Ashish6298/opensearch)',
   /** Maximum length of any URL accepted by the crawler (characters). */
   MAX_URL_LENGTH: 2_048,

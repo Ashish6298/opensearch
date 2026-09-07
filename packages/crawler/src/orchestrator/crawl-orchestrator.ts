@@ -15,6 +15,8 @@
  */
 
 import { randomUUID } from 'node:crypto';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { AppConfig, Logger, createLogger } from '@opensearch/shared';
 import { CRAWL_STATUS, INDEX_STATUS, StorageAdapter } from '@opensearch/storage';
 
@@ -25,6 +27,7 @@ import { HttpFetcher } from '../fetcher/fetcher-types.js';
 import { RobotsPolicyEvaluator } from '../robots/robots-types.js';
 import { HtmlParser } from '../parser/parser-types.js';
 import {
+  CrawlCheckpoint,
   CrawlOrchestrator,
   CrawlRunOptions,
   CrawlRunStats,
@@ -141,6 +144,15 @@ export class DefaultCrawlOrchestrator implements CrawlOrchestrator {
     const maxPages = options?.maxPages ?? this.config.crawler.maxPages;
     const maxDepth = options?.maxDepth ?? this.config.crawler.maxDepth;
     const defaultPolitenessMs = options?.politenessDelayMs ?? this.config.crawler.politenessDelayMs;
+    const maxConcurrency = Math.min(
+      options?.maxConcurrency ?? this.config.crawler.maxConcurrency ?? 1,
+      10,
+    );
+    const retryBudget = options?.retryBudget ?? this.config.crawler.retryBudget ?? 50;
+    const checkpointInterval = options?.checkpointIntervalPages ?? this.config.crawler.checkpointIntervalPages ?? 10;
+    const checkpointPath =
+      options?.checkpointPath ??
+      path.join(this.config.storage.crawlerDataDir, 'crawl-checkpoint.json');
 
     this.stats = this.createInitialStats(runId);
     this.stats.state = 'running';
@@ -150,6 +162,9 @@ export class DefaultCrawlOrchestrator implements CrawlOrchestrator {
       maxPages,
       maxDepth,
       defaultPolitenessMs,
+      maxConcurrency,
+      retryBudget,
+      checkpointInterval,
       initialQueueSize: await this.queue.size(),
     });
 
@@ -162,39 +177,31 @@ export class DefaultCrawlOrchestrator implements CrawlOrchestrator {
     let summaryMessage = 'Crawl completed normally';
 
     const startRunMs = Date.now();
+    let reservedPages = 0;
+    let retriesRemaining = retryBudget;
+    let lastCheckpointPageCount = 0;
+    let activeWorkers = 0;
 
-    try {
-      while (!this.shouldStop) {
-        // Check external abort signal
-        if (options?.signal?.aborted) {
-          this.logger.info('Crawl run aborted via external signal');
-          summaryStatus = 'stopped';
-          summaryMessage = 'Crawl aborted by external signal';
-          break;
-        }
-
-        // Check page limit
-        if (this.stats.pagesFetched >= maxPages) {
-          this.logger.info('Reached configured maxPages limit', {
-            pagesFetched: this.stats.pagesFetched,
-            maxPages,
-          });
+    const workerLoop = async (): Promise<void> => {
+      while (!this.shouldStop && !options?.signal?.aborted) {
+        if (reservedPages >= maxPages || this.stats.pagesFetched >= maxPages) {
           summaryStatus = 'limit_reached';
           summaryMessage = `Reached maximum page limit of ${maxPages}`;
           break;
         }
 
-        // Dequeue next work unit
         const item = await this.queue.dequeue();
         if (!item) {
-          // Queue is empty
-          this.logger.info('Crawl queue is empty, crawl completed');
-          summaryStatus = 'completed';
-          summaryMessage = 'All queued URLs crawled';
+          // No items available right now
           break;
         }
 
-        // Check depth limit
+        if (reservedPages >= maxPages || this.stats.pagesFetched >= maxPages) {
+          summaryStatus = 'limit_reached';
+          summaryMessage = `Reached maximum page limit of ${maxPages}`;
+          break;
+        }
+
         if (item.depth > maxDepth) {
           this.logger.debug('Skipping URL exceeding maxDepth', {
             url: item.normalizedUrl,
@@ -204,12 +211,65 @@ export class DefaultCrawlOrchestrator implements CrawlOrchestrator {
           continue;
         }
 
-        // Process URL
-        await this.processItem(item.normalizedUrl, item.depth, defaultPolitenessMs, maxDepth);
+        reservedPages++;
+        activeWorkers++;
+        this.stats.activeWorkers = activeWorkers;
 
-        // Update stats
-        this.stats.queuePending = await this.queue.size();
-        this.stats.durationMs = Date.now() - startRunMs;
+        try {
+          const outcome = await this.processItem(
+            item.normalizedUrl,
+            item.depth,
+            defaultPolitenessMs,
+            maxDepth,
+            retriesRemaining,
+          );
+
+          if (outcome.status === CRAWL_STATUS.FAILED) {
+            reservedPages--; // failed fetch did not count as a fetched page
+            if (retriesRemaining > 0) {
+              retriesRemaining--;
+              this.stats.retriesConsumed++;
+            } else {
+              this.stats.retryBudgetExhaustedCount++;
+            }
+          }
+
+          // Progress Checkpointing (Phase 29)
+          if (
+            this.stats.pagesFetched - lastCheckpointPageCount >= checkpointInterval &&
+            this.stats.pagesFetched > 0
+          ) {
+            lastCheckpointPageCount = this.stats.pagesFetched;
+            await this.saveCheckpoint(checkpointPath, {
+              maxPages,
+              maxDepth,
+              politenessDelayMs: defaultPolitenessMs,
+              maxConcurrency,
+            });
+          }
+        } finally {
+          activeWorkers--;
+          this.stats.activeWorkers = activeWorkers;
+          this.stats.queuePending = await this.queue.size();
+          this.stats.durationMs = Date.now() - startRunMs;
+        }
+      }
+    };
+
+    try {
+      if (maxConcurrency <= 1) {
+        await workerLoop();
+      } else {
+        const workers: Promise<void>[] = [];
+        for (let i = 0; i < maxConcurrency; i++) {
+          workers.push(workerLoop());
+        }
+        await Promise.all(workers);
+      }
+
+      if (options?.signal?.aborted) {
+        summaryStatus = 'stopped';
+        summaryMessage = 'Crawl aborted by external signal';
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -223,6 +283,15 @@ export class DefaultCrawlOrchestrator implements CrawlOrchestrator {
       this.stats.durationMs = Date.now() - startRunMs;
       this.stats.queuePending = await this.queue.size();
       this.stats.queueSeen = this.queue.stats().seenCount;
+      this.stats.activeWorkers = 0;
+
+      // Final checkpoint save
+      await this.saveCheckpoint(checkpointPath, {
+        maxPages,
+        maxDepth,
+        politenessDelayMs: defaultPolitenessMs,
+        maxConcurrency,
+      });
 
       this.logger.info('Crawl run finished', {
         runId,
@@ -231,6 +300,7 @@ export class DefaultCrawlOrchestrator implements CrawlOrchestrator {
         pagesStored: this.stats.pagesStored,
         linksDiscovered: this.stats.linksDiscovered,
         errors: this.stats.fetchErrors,
+        retriesConsumed: this.stats.retriesConsumed,
         durationMs: this.stats.durationMs,
       });
     }
@@ -241,6 +311,43 @@ export class DefaultCrawlOrchestrator implements CrawlOrchestrator {
       stats: { ...this.stats },
       message: summaryMessage,
     };
+  }
+
+  async saveCheckpoint(
+    checkpointPath: string,
+    options: {
+      maxPages: number;
+      maxDepth: number;
+      politenessDelayMs: number;
+      maxConcurrency: number;
+    },
+  ): Promise<void> {
+    try {
+      const checkpoint: CrawlCheckpoint = {
+        version: 1,
+        runId: this.stats.crawlRunId,
+        savedAt: new Date().toISOString(),
+        stats: { ...this.stats },
+        options,
+      };
+
+      const dir = path.dirname(checkpointPath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+
+      const tmpFile = `${checkpointPath}.tmp`;
+      fs.writeFileSync(tmpFile, JSON.stringify(checkpoint, null, 2), 'utf-8');
+      fs.renameSync(tmpFile, checkpointPath);
+
+      this.stats.checkpointsSaved++;
+      this.logger.debug('Crawl checkpoint saved', {
+        pagesFetched: this.stats.pagesFetched,
+        checkpointPath,
+      });
+    } catch (err) {
+      this.logger.warn('Failed to write crawl checkpoint', { error: String(err) });
+    }
   }
 
   async stop(): Promise<void> {
@@ -268,6 +375,7 @@ export class DefaultCrawlOrchestrator implements CrawlOrchestrator {
     depth: number,
     defaultPolitenessMs: number,
     maxDepth: number,
+    retriesRemaining = 50,
   ): Promise<ProcessedPageOutcome> {
     const startMs = Date.now();
     const urlHash = computeUrlHash(url);
@@ -333,6 +441,7 @@ export class DefaultCrawlOrchestrator implements CrawlOrchestrator {
         code: fetchResult.code,
         statusCode: fetchResult.statusCode,
         message: fetchResult.message,
+        retriesRemaining,
       });
 
       // Update UrlRecord & CrawlRecord
@@ -580,6 +689,10 @@ export class DefaultCrawlOrchestrator implements CrawlOrchestrator {
       queuePending: 0,
       queueSeen: 0,
       durationMs: 0,
+      retriesConsumed: 0,
+      retryBudgetExhaustedCount: 0,
+      activeWorkers: 0,
+      checkpointsSaved: 0,
     };
   }
 }

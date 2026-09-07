@@ -98,6 +98,22 @@ export function loadConfig(sourceEnv: Record<string, string | undefined> = proce
     defaultValue: CRAWLER_LIMITS.DEFAULT_POLITENESS_DELAY_MS,
     min: CRAWLER_LIMITS.MIN_POLITENESS_DELAY_MS,
   });
+  const crawlerMaxConcurrency = readInt(sourceEnv, {
+    envKey: 'CRAWLER_MAX_CONCURRENCY',
+    defaultValue: CRAWLER_LIMITS.DEFAULT_MAX_CONCURRENCY,
+    min: 1,
+    max: CRAWLER_LIMITS.MAX_CONCURRENCY_CEILING,
+  });
+  const crawlerRetryBudget = readInt(sourceEnv, {
+    envKey: 'CRAWLER_RETRY_BUDGET',
+    defaultValue: CRAWLER_LIMITS.DEFAULT_MAX_RETRY_BUDGET,
+    min: 0,
+  });
+  const crawlerCheckpointIntervalPages = readInt(sourceEnv, {
+    envKey: 'CRAWLER_CHECKPOINT_INTERVAL_PAGES',
+    defaultValue: CRAWLER_LIMITS.DEFAULT_CHECKPOINT_INTERVAL_PAGES,
+    min: 1,
+  });
   const crawlerUserAgent = readString(sourceEnv, {
     envKey: 'CRAWLER_USER_AGENT',
     defaultValue: CRAWLER_LIMITS.DEFAULT_USER_AGENT,
@@ -183,14 +199,15 @@ export function loadConfig(sourceEnv: Record<string, string | undefined> = proce
     min: 10,
   });
 
-  // API Server Configuration
+  // API Server Configuration (Support PaaS PORT / HOST env variables)
+  const defaultServerHost = isProduction ? '0.0.0.0' : DEFAULT_HOST;
   const apiHost = readString(sourceEnv, {
     envKey: 'API_HOST',
-    defaultValue: DEFAULT_HOST,
+    defaultValue: sourceEnv['HOST'] || defaultServerHost,
   });
   const apiPort = readInt(sourceEnv, {
     envKey: 'API_PORT',
-    defaultValue: DEFAULT_API_PORT,
+    defaultValue: sourceEnv['PORT'] ? Number.parseInt(sourceEnv['PORT'], 10) : DEFAULT_API_PORT,
     min: 1,
     max: 65535,
   });
@@ -214,17 +231,18 @@ export function loadConfig(sourceEnv: Record<string, string | undefined> = proce
   // Web Server Configuration
   const webHost = readString(sourceEnv, {
     envKey: 'WEB_HOST',
-    defaultValue: DEFAULT_HOST,
+    defaultValue: sourceEnv['HOST'] || defaultServerHost,
   });
   const webPort = readInt(sourceEnv, {
     envKey: 'WEB_PORT',
-    defaultValue: DEFAULT_WEB_PORT,
+    defaultValue: sourceEnv['PORT'] ? Number.parseInt(sourceEnv['PORT'], 10) : DEFAULT_WEB_PORT,
     min: 1,
     max: 65535,
   });
+  const clientHost = apiHost === '0.0.0.0' ? 'localhost' : apiHost;
   const apiUrl = readString(sourceEnv, {
     envKey: 'VITE_API_URL',
-    defaultValue: `http://${apiHost}:${apiPort}`,
+    defaultValue: sourceEnv['API_URL'] || `http://${clientHost}:${apiPort}`,
   });
 
   const config: AppConfig = {
@@ -247,6 +265,9 @@ export function loadConfig(sourceEnv: Record<string, string | undefined> = proce
       maxPages: crawlerMaxPages,
       maxPageBytes: crawlerMaxPageBytes,
       politenessDelayMs: crawlerPolitenessDelayMs,
+      maxConcurrency: crawlerMaxConcurrency,
+      retryBudget: crawlerRetryBudget,
+      checkpointIntervalPages: crawlerCheckpointIntervalPages,
       userAgent: crawlerUserAgent,
       maxRedirects: crawlerMaxRedirects,
       maxRetries: crawlerMaxRetries,
@@ -300,6 +321,9 @@ export function sanitizeConfigForLogging(config: AppConfig): Record<string, unkn
       maxDepth: config.crawler.maxDepth,
       maxPages: config.crawler.maxPages,
       politenessDelayMs: config.crawler.politenessDelayMs,
+      maxConcurrency: config.crawler.maxConcurrency,
+      retryBudget: config.crawler.retryBudget,
+      checkpointIntervalPages: config.crawler.checkpointIntervalPages,
       userAgent: config.crawler.userAgent,
       maxRedirects: config.crawler.maxRedirects,
       maxRetries: config.crawler.maxRetries,

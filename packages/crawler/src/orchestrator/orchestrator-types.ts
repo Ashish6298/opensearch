@@ -19,10 +19,31 @@ export interface CrawlRunOptions {
   maxDepth?: number;
   /** Override politeness delay in milliseconds between requests */
   politenessDelayMs?: number;
+  /** Override worker concurrency (defaults to config.crawler.maxConcurrency) */
+  maxConcurrency?: number;
+  /** Override global retry budget (defaults to config.crawler.retryBudget) */
+  retryBudget?: number;
+  /** Interval in processed pages between state checkpoints */
+  checkpointIntervalPages?: number;
+  /** File path to save progress checkpoints (default: <crawlerDataDir>/checkpoint.json) */
+  checkpointPath?: string;
   /** Optional custom user-agent string */
   userAgent?: string;
   /** Optional abort signal for external cancellation */
   signal?: AbortSignal;
+}
+
+export interface CrawlCheckpoint {
+  version: 1;
+  runId: string;
+  savedAt: string;
+  stats: CrawlRunStats;
+  options: {
+    maxPages: number;
+    maxDepth: number;
+    politenessDelayMs: number;
+    maxConcurrency: number;
+  };
 }
 
 export interface CrawlRunStats {
@@ -40,6 +61,10 @@ export interface CrawlRunStats {
   pagesStored: number;
   /** Total fetch / network errors encountered */
   fetchErrors: number;
+  /** Total retries consumed from retry budget */
+  retriesConsumed: number;
+  /** Total times retry budget was exhausted */
+  retryBudgetExhaustedCount: number;
   /** Total URLs disallowed by robots.txt policy */
   robotsDisallowed: number;
   /** Total new outbound links discovered and queued */
@@ -50,6 +75,10 @@ export interface CrawlRunStats {
   queuePending: number;
   /** Total seen URLs in queue history */
   queueSeen: number;
+  /** Active concurrent worker count */
+  activeWorkers: number;
+  /** Number of progress checkpoints successfully written */
+  checkpointsSaved: number;
   /** Duration in milliseconds */
   durationMs: number;
 }

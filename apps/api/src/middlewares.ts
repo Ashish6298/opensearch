@@ -42,7 +42,7 @@ export function createCorsMiddleware(allowedOrigin = '*'): MiddlewareHandler {
 }
 
 export function createSecurityHeadersMiddleware(): MiddlewareHandler {
-  return (_req, res, next) => {
+  return (req, res, next) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader('X-XSS-Protection', '1; mode=block');
@@ -51,6 +51,15 @@ export function createSecurityHeadersMiddleware(): MiddlewareHandler {
       'Content-Security-Policy',
       "default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
     );
+
+    // Phase 31: Add HSTS header when accessed over HTTPS / TLS reverse proxy
+    const isHttps = req.raw.headers['x-forwarded-proto'] === 'https' ||
+                    (req.raw.socket as unknown as { encrypted?: boolean }).encrypted === true ||
+                    process.env.NODE_ENV === 'production';
+    if (isHttps) {
+      res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+    }
+
     return next();
   };
 }
