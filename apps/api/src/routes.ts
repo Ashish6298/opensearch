@@ -294,21 +294,21 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
   let finalResults = [...searchResultSet.items];
   let totalHits = searchResultSet.pagination.totalHits;
 
-  // If local index has 0 results or few results, query live web search
-  if (finalResults.length < pageSize && page === 1) {
+  // Query live web search to provide rich actual website destinations
+  if (page === 1) {
     try {
-      const liveItems = await fetchExternalWebResults(rawQuery, pageSize - finalResults.length);
+      const liveItems = await fetchExternalWebResults(rawQuery, pageSize);
       if (liveItems.length > 0) {
-        // Filter duplicates by URL
+        // If local results are solely encyclopedic/wikipedia and live results have actual sites, prioritize live sites
         const existingUrls = new Set(finalResults.map(r => r.url.toLowerCase()));
-        for (const item of liveItems) {
-          if (!existingUrls.has(item.url.toLowerCase())) {
-            existingUrls.add(item.url.toLowerCase());
-            item.rank = finalResults.length + 1;
-            finalResults.push(item);
-          }
-        }
-        totalHits = Math.max(totalHits, finalResults.length);
+        const uniqueLive = liveItems.filter(item => !existingUrls.has(item.url.toLowerCase()));
+        
+        // Put live actual websites directly at the top or merged
+        finalResults = [...uniqueLive, ...finalResults].slice(0, pageSize);
+        finalResults.forEach((item, idx) => {
+          item.rank = idx + 1;
+        });
+        totalHits = Math.max(totalHits, finalResults.length, liveItems.length);
       }
     } catch {
       // Fallback gracefully to local results
