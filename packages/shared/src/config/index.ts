@@ -199,14 +199,15 @@ export function loadConfig(sourceEnv: Record<string, string | undefined> = proce
     min: 10,
   });
 
-  // API Server Configuration
+  // API Server Configuration (Support PaaS PORT / HOST env variables)
+  const defaultServerHost = isProduction ? '0.0.0.0' : DEFAULT_HOST;
   const apiHost = readString(sourceEnv, {
     envKey: 'API_HOST',
-    defaultValue: DEFAULT_HOST,
+    defaultValue: sourceEnv['HOST'] || defaultServerHost,
   });
   const apiPort = readInt(sourceEnv, {
     envKey: 'API_PORT',
-    defaultValue: DEFAULT_API_PORT,
+    defaultValue: sourceEnv['PORT'] ? Number.parseInt(sourceEnv['PORT'], 10) : DEFAULT_API_PORT,
     min: 1,
     max: 65535,
   });
@@ -230,17 +231,17 @@ export function loadConfig(sourceEnv: Record<string, string | undefined> = proce
   // Web Server Configuration
   const webHost = readString(sourceEnv, {
     envKey: 'WEB_HOST',
-    defaultValue: DEFAULT_HOST,
+    defaultValue: sourceEnv['HOST'] || defaultServerHost,
   });
   const webPort = readInt(sourceEnv, {
     envKey: 'WEB_PORT',
-    defaultValue: DEFAULT_WEB_PORT,
+    defaultValue: sourceEnv['PORT'] ? Number.parseInt(sourceEnv['PORT'], 10) : DEFAULT_WEB_PORT,
     min: 1,
     max: 65535,
   });
   const apiUrl = readString(sourceEnv, {
     envKey: 'VITE_API_URL',
-    defaultValue: `http://${apiHost}:${apiPort}`,
+    defaultValue: sourceEnv['API_URL'] || `http://${apiHost}:${apiPort}`,
   });
 
   const config: AppConfig = {
