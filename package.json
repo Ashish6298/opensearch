@@ -4,6 +4,7 @@
   "private": true,
   "description": "OpenSearch — A public, general-purpose, privacy-first search engine built from scratch.",
   "type": "module",
+  "main": "api/index.js",
   "workspaces": [
     "apps/*",
     "packages/*"
