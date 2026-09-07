@@ -32,7 +32,7 @@ function getOrInitServers() {
     const memoryIndex = warmInMemoryIndex();
     const config = loadConfig({
       ...process.env,
-      CORS_ORIGIN: process.env.CORS_ORIGIN ?? '*',
+      CORS_ORIGIN: process.env.CORS_ORIGIN?.trim() || '*',
     });
 
     apiServerInstance = new ApiServer({
