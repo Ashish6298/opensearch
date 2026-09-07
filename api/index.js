@@ -1,5 +1,6 @@
 import { ApiServer } from '../apps/api/dist/server.js';
 import { WebServer } from '../apps/web/dist/server.js';
+import { loadConfig } from '../packages/shared/dist/index.js';
 import { CURATED_SEED_CORPUS } from '../packages/crawler/dist/orchestrator/seed-corpus.js';
 import { createDocumentProcessor, createInvertedIndex } from '../packages/indexer/dist/index.js';
 
@@ -29,12 +30,18 @@ function warmInMemoryIndex() {
 function getOrInitServers() {
   if (!apiServerInstance || !webServerInstance) {
     const memoryIndex = warmInMemoryIndex();
+    const config = loadConfig({
+      ...process.env,
+      CORS_ORIGIN: process.env.CORS_ORIGIN ?? '*',
+    });
 
     apiServerInstance = new ApiServer({
+      config,
       index: memoryIndex,
     });
 
     webServerInstance = new WebServer({
+      config,
       apiUrl: '/api/v1/search',
     });
   }

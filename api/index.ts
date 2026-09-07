@@ -9,6 +9,7 @@
 import { IncomingMessage, ServerResponse } from 'node:http';
 import { ApiServer } from '../apps/api/dist/server.js';
 import { WebServer } from '../apps/web/dist/server.js';
+import { loadConfig } from '@opensearch/shared';
 import { CURATED_SEED_CORPUS } from '../packages/crawler/dist/orchestrator/seed-corpus.js';
 import {
   createDocumentProcessor,
@@ -42,12 +43,18 @@ function warmInMemoryIndex(): InvertedIndex {
 function getOrInitServers(): { apiServer: ApiServer; webServer: WebServer } {
   if (!apiServerInstance || !webServerInstance) {
     const memoryIndex = warmInMemoryIndex();
+    const config = loadConfig({
+      ...process.env,
+      CORS_ORIGIN: process.env.CORS_ORIGIN ?? '*',
+    });
 
     apiServerInstance = new ApiServer({
+      config,
       index: memoryIndex,
     });
 
     webServerInstance = new WebServer({
+      config,
       apiUrl: '/api/v1/search',
     });
   }
