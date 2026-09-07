@@ -13,7 +13,7 @@
     "npm": ">=10.0.0"
   },
   "scripts": {
-    "build": "npm run build --workspaces --if-present",
+    "build": "tsc -b && npm --workspace=@opensearch/web run build:assets",
     "start": "npm run start:api",
     "start:api": "npm --workspace=@opensearch/api run start",
     "start:web": "npm --workspace=@opensearch/web run start",
