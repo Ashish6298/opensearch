@@ -34,8 +34,7 @@ export function createCrawlOrchestrator(
   const logger = options.logger ?? createLogger('@opensearch/crawler:orchestrator');
   const fetcher = options.fetcher ?? createFetcher({ config: options.config });
   const robotsEvaluator =
-    options.robotsEvaluator ??
-    createRobotsPolicyEvaluator({ config: options.config, fetcher });
+    options.robotsEvaluator ?? createRobotsPolicyEvaluator({ config: options.config, fetcher });
   const parser = options.parser ?? createHtmlParser();
 
   return new DefaultCrawlOrchestrator({

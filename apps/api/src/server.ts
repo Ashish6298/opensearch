@@ -194,7 +194,9 @@ export class ApiServer {
       }
       await storage.close();
     } catch (e) {
-      this.logger.warn('Could not load active index metadata on boot', { error: (e as Error).message });
+      this.logger.warn('Could not load active index metadata on boot', {
+        error: (e as Error).message,
+      });
     }
   }
 

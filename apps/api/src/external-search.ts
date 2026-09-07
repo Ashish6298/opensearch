@@ -12,7 +12,13 @@ export async function fetchGoogleLive(query: string, limit = 10): Promise<Search
     });
 
     if (suggestRes.ok) {
-      const data = (await suggestRes.json()) as [string, string[], string[], string[], Record<string, unknown>];
+      const data = (await suggestRes.json()) as [
+        string,
+        string[],
+        string[],
+        string[],
+        Record<string, unknown>,
+      ];
       const suggestions = data[1] || [];
       const descriptions = data[2] || [];
       const urls = data[3] || [];
@@ -45,7 +51,9 @@ export async function fetchGoogleLive(query: string, limit = 10): Promise<Search
         }
       }
     }
-  } catch {}
+  } catch (_err) {
+    // Ignore Google suggest network errors in ephemeral fallback
+  }
 
   // Method 2: DuckDuckGo HTML Web Search (Scrapes actual website domains like google, github, twitter, news)
   if (items.length < limit) {
@@ -63,7 +71,8 @@ export async function fetchGoogleLive(query: string, limit = 10): Promise<Search
 
       if (res.ok) {
         const html = await res.text();
-        const titleRegex = /<a[^>]+class="[^"]*result__a[^"]*"[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
+        const titleRegex =
+          /<a[^>]+class="[^"]*result__a[^"]*"[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
         const snippetRegex = /<a[^>]+class="[^"]*result__snippet[^"]*"[^>]*>([\s\S]*?)<\/a>/gi;
 
         const titles: Array<{ url: string; title: string }> = [];
@@ -74,7 +83,9 @@ export async function fetchGoogleLive(query: string, limit = 10): Promise<Search
             try {
               const u = new URL(rawHref, 'https://duckduckgo.com');
               rawHref = decodeURIComponent(u.searchParams.get('uddg') || rawHref);
-            } catch {}
+            } catch (_err) {
+              // Ignore URL parse error and preserve raw link
+            }
           }
           const title = (m[2] || '').replace(/<[^>]+>/g, '').trim();
           if (rawHref.startsWith('http') && title) {
@@ -115,7 +126,9 @@ export async function fetchGoogleLive(query: string, limit = 10): Promise<Search
           }
         }
       }
-    } catch {}
+    } catch (_err) {
+      // Ignore DuckDuckGo HTML scraping failures in ephemeral fallback
+    }
   }
 
   // Method 3: DuckDuckGo Instant Answers API
@@ -139,7 +152,9 @@ export async function fetchGoogleLive(query: string, limit = 10): Promise<Search
           let domain = '';
           try {
             domain = new URL(data.AbstractURL).hostname.replace(/^www\./, '');
-          } catch {}
+          } catch (_err) {
+            // Ignore domain parse failure
+          }
 
           if (!items.some(x => x.url === data.AbstractURL)) {
             items.push({
@@ -166,7 +181,9 @@ export async function fetchGoogleLive(query: string, limit = 10): Promise<Search
                 let domain = '';
                 try {
                   domain = new URL(topic.FirstURL).hostname.replace(/^www\./, '');
-                } catch {}
+                } catch (_err) {
+                  // Ignore domain parse failure
+                }
 
                 items.push({
                   documentId: `web-topic-${items.length + 1}`,
@@ -187,12 +204,17 @@ export async function fetchGoogleLive(query: string, limit = 10): Promise<Search
           }
         }
       }
-    } catch {}
+    } catch (_err) {
+      // Ignore DDG Instant Answers network failures in ephemeral fallback
+    }
   }
 
   return items.slice(0, limit);
 }
 
-export async function fetchExternalWebResults(query: string, limit = 10): Promise<SearchResultItem[]> {
+export async function fetchExternalWebResults(
+  query: string,
+  limit = 10,
+): Promise<SearchResultItem[]> {
   return fetchGoogleLive(query, limit);
 }

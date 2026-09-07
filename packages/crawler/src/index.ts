@@ -141,10 +141,7 @@ export {
 } from './orchestrator/seed-corpus.js';
 
 // ── Phase 25: Crawler Security Hardening ─────────────────────
-export type {
-  CrawlerSecurityPolicy,
-  SecurityCheckResult,
-} from './security/crawler-security.js';
+export type { CrawlerSecurityPolicy, SecurityCheckResult } from './security/crawler-security.js';
 
 export {
   DEFAULT_CRAWLER_SECURITY_POLICY,

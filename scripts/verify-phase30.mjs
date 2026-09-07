@@ -43,13 +43,27 @@ async function runPhase30Verification() {
   console.log('================================================================\n');
 
   // 1. Documentation Verification
-  assert(fs.existsSync('./docs/DEPLOYMENT.md'), 'Deployment documentation exists at docs/DEPLOYMENT.md');
+  assert(
+    fs.existsSync('./docs/DEPLOYMENT.md'),
+    'Deployment documentation exists at docs/DEPLOYMENT.md',
+  );
   const deployDoc = fs.readFileSync('./docs/DEPLOYMENT.md', 'utf-8');
-  assert(deployDoc.includes('Render') && deployDoc.includes('Fly.io') && deployDoc.includes('Free-Tier'), 'Deployment guide documents free-tier cloud platforms');
+  assert(
+    deployDoc.includes('Render') && deployDoc.includes('Fly.io') && deployDoc.includes('Free-Tier'),
+    'Deployment guide documents free-tier cloud platforms',
+  );
 
-  assert(fs.existsSync('./.env.example'), 'Environment variable documentation exists at .env.example');
+  assert(
+    fs.existsSync('./.env.example'),
+    'Environment variable documentation exists at .env.example',
+  );
   const envDoc = fs.readFileSync('./.env.example', 'utf-8');
-  assert(envDoc.includes('PORT') && envDoc.includes('CRAWLER_MAX_CONCURRENCY') && envDoc.includes('VITE_API_URL'), '.env.example documents all operational parameters');
+  assert(
+    envDoc.includes('PORT') &&
+      envDoc.includes('CRAWLER_MAX_CONCURRENCY') &&
+      envDoc.includes('VITE_API_URL'),
+    '.env.example documents all operational parameters',
+  );
 
   // 2. Production Config & PaaS Injection Check
   const prodConfig = loadConfig({
@@ -58,8 +72,14 @@ async function runPhase30Verification() {
     HOST: '0.0.0.0',
   });
   assert(prodConfig.isProduction === true, 'Configuration detects production mode');
-  assert(prodConfig.api.server.port === 8080 && prodConfig.api.server.host === '0.0.0.0', 'API service honors injected PORT and 0.0.0.0 HOST');
-  assert(prodConfig.web.server.port === 8080 && prodConfig.web.server.host === '0.0.0.0', 'Web service honors injected PORT and 0.0.0.0 HOST');
+  assert(
+    prodConfig.api.server.port === 8080 && prodConfig.api.server.host === '0.0.0.0',
+    'API service honors injected PORT and 0.0.0.0 HOST',
+  );
+  assert(
+    prodConfig.web.server.port === 8080 && prodConfig.web.server.host === '0.0.0.0',
+    'Web service honors injected PORT and 0.0.0.0 HOST',
+  );
 
   // 3. Health Endpoint & Index Readiness Verification
   const testDir = await mkdtemp(join(tmpdir(), 'opensearch-p30-gate-'));
@@ -98,7 +118,10 @@ async function runPhase30Verification() {
 
     const builder = createIndexBuilder({ config, storage });
     const buildRes = await builder.build();
-    assert(buildRes.status === 'success', 'Index builder successfully compiles production inverted index');
+    assert(
+      buildRes.status === 'success',
+      'Index builder successfully compiles production inverted index',
+    );
 
     const activeIndex = builder.getActiveIndex();
     assert(activeIndex !== null, 'Active inverted index loaded into memory');
@@ -109,17 +132,25 @@ async function runPhase30Verification() {
 
     // Query /health on API server
     const apiHealth = await new Promise((resolve, reject) => {
-      http.get(`http://127.0.0.1:${apiStarted.port}/health`, (res) => {
-        let data = '';
-        res.on('data', (c) => (data += c));
-        res.on('end', () => resolve({ status: res.statusCode, body: JSON.parse(data) }));
-      }).on('error', reject);
+      http
+        .get(`http://127.0.0.1:${apiStarted.port}/health`, res => {
+          let data = '';
+          res.on('data', c => (data += c));
+          res.on('end', () => resolve({ status: res.statusCode, body: JSON.parse(data) }));
+        })
+        .on('error', reject);
     });
 
     assert(apiHealth.status === 200, 'API /health returns HTTP 200');
     assert(apiHealth.body.status === 'ok', 'API health status is "ok"');
-    assert(apiHealth.body.components.index.status === 'ok', 'Health response confirms index component status is "ok"');
-    assert(apiHealth.body.totalDocumentsIndexed === 1, 'Health response reports indexed document count accurately');
+    assert(
+      apiHealth.body.components.index.status === 'ok',
+      'Health response confirms index component status is "ok"',
+    );
+    assert(
+      apiHealth.body.totalDocumentsIndexed === 1,
+      'Health response reports indexed document count accurately',
+    );
     assert(apiHealth.body.memoryUsageMb > 0, 'Health response reports real-time heap memory usage');
 
     // 4. Web Application Health & Asset Serving Verification
@@ -131,22 +162,32 @@ async function runPhase30Verification() {
     assert(webStarted.port > 0, 'Web server starts successfully in production mode');
 
     const webHealth = await new Promise((resolve, reject) => {
-      http.get(`http://127.0.0.1:${webStarted.port}/health`, (res) => {
-        let data = '';
-        res.on('data', (c) => (data += c));
-        res.on('end', () => resolve({ status: res.statusCode, body: JSON.parse(data) }));
-      }).on('error', reject);
+      http
+        .get(`http://127.0.0.1:${webStarted.port}/health`, res => {
+          let data = '';
+          res.on('data', c => (data += c));
+          res.on('end', () => resolve({ status: res.statusCode, body: JSON.parse(data) }));
+        })
+        .on('error', reject);
     });
-    assert(webHealth.status === 200 && webHealth.body.status === 'ok', 'Web /health responds with HTTP 200 and status "ok"');
+    assert(
+      webHealth.status === 200 && webHealth.body.status === 'ok',
+      'Web /health responds with HTTP 200 and status "ok"',
+    );
 
     const webShell = await new Promise((resolve, reject) => {
-      http.get(`http://127.0.0.1:${webStarted.port}/`, (res) => {
-        let data = '';
-        res.on('data', (c) => (data += c));
-        res.on('end', () => resolve({ status: res.statusCode, body: data }));
-      }).on('error', reject);
+      http
+        .get(`http://127.0.0.1:${webStarted.port}/`, res => {
+          let data = '';
+          res.on('data', c => (data += c));
+          res.on('end', () => resolve({ status: res.statusCode, body: data }));
+        })
+        .on('error', reject);
     });
-    assert(webShell.status === 200 && webShell.body.includes('OpenSearch'), 'Web server serves rendered HTML shell');
+    assert(
+      webShell.status === 200 && webShell.body.includes('OpenSearch'),
+      'Web server serves rendered HTML shell',
+    );
 
     await storage.close();
   } finally {
@@ -161,13 +202,15 @@ async function runPhase30Verification() {
 
   console.log(`\nVerification Summary: ${passedChecks}/${totalChecks} gates passed.`);
   if (passedChecks === totalChecks) {
-    console.log('Phase 30 is FULLY VERIFIED and READY for Phase 31 (Milestone 10 Production Release).\n');
+    console.log(
+      'Phase 30 is FULLY VERIFIED and READY for Phase 31 (Milestone 10 Production Release).\n',
+    );
   } else {
     process.exit(1);
   }
 }
 
-runPhase30Verification().catch((err) => {
+runPhase30Verification().catch(err => {
   console.error('Fatal verification error:', err);
   process.exit(1);
 });

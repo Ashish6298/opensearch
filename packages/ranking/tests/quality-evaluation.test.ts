@@ -66,7 +66,8 @@ describe('Phase 24 — Search Quality Evaluation Benchmark Suite', () => {
         url: 'https://opensearch.local/algorithms',
         urlHash: 'hash-003',
         title: 'Information Retrieval and BM25 Ranking',
-        description: 'Mathematical formulation of BM25 lexical ranking relevance and term frequency.',
+        description:
+          'Mathematical formulation of BM25 lexical ranking relevance and term frequency.',
         headings: 'Information Retrieval and Ranking Algorithms BM25',
         bodyText:
           'BM25 lexical ranking relevance calculates term frequency, document length normalization, and inverse document frequency scoring.',
@@ -94,7 +95,8 @@ describe('Phase 24 — Search Quality Evaluation Benchmark Suite', () => {
         url: 'https://opensearch.local/privacy-rights',
         urlHash: 'hash-005',
         title: 'Digital Privacy and User Rights',
-        description: 'Why privacy-first search engines protect civil liberties and avoid profiling.',
+        description:
+          'Why privacy-first search engines protect civil liberties and avoid profiling.',
         headings: 'Digital Privacy and User Rights Tracking Protection',
         bodyText:
           'Privacy-first search engines do not track users, log identifiable search history, or create behavioral profiling databases. Zero-tracking search guarantees privacy rights.',

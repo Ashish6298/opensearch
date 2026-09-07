@@ -80,9 +80,10 @@ export class WebServer {
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
 
     // Phase 31: Add HSTS header when accessed over HTTPS / TLS reverse proxy
-    const isHttps = req.headers['x-forwarded-proto'] === 'https' ||
-                    (req.socket as unknown as { encrypted?: boolean }).encrypted === true ||
-                    process.env.NODE_ENV === 'production';
+    const isHttps =
+      req.headers['x-forwarded-proto'] === 'https' ||
+      (req.socket as unknown as { encrypted?: boolean }).encrypted === true ||
+      process.env.NODE_ENV === 'production';
     if (isHttps) {
       res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
     }

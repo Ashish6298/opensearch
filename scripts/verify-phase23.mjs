@@ -61,11 +61,17 @@ async function runVerification() {
 
   // 1. Curated Seed List Validation
   console.log('► 1. Curated Seed List Validation');
-  assert(CURATED_SEED_CORPUS.length >= 3, `Curated corpus has ${CURATED_SEED_CORPUS.length} categories (>= 3)`);
+  assert(
+    CURATED_SEED_CORPUS.length >= 3,
+    `Curated corpus has ${CURATED_SEED_CORPUS.length} categories (>= 3)`,
+  );
   const seedUrls = getCuratedSeedUrls();
   assert(seedUrls.length >= 5, `Total curated seed URLs: ${seedUrls.length} (>= 5)`);
   const allSeeds = getAllCuratedSeeds();
-  assert(allSeeds.every(s => s.url && s.title && s.description && s.priority >= 1), 'All seeds contain mandatory metadata');
+  assert(
+    allSeeds.every(s => s.url && s.title && s.description && s.priority >= 1),
+    'All seeds contain mandatory metadata',
+  );
 
   // 2. Setup Multi-Topic Controlled Corpus Web Server
   console.log('\n► 2. Controlled Target Corpus Setup');
@@ -206,19 +212,41 @@ async function runVerification() {
     });
 
     assert(crawlSummary.status === 'completed', 'Crawl finished with status "completed"');
-    assert(crawlSummary.stats.pagesFetched >= 5, `Fetched ${crawlSummary.stats.pagesFetched} pages (>= 5)`);
-    assert(crawlSummary.stats.pagesStored >= 5, `Stored ${crawlSummary.stats.pagesStored} documents in DocumentRepository`);
+    assert(
+      crawlSummary.stats.pagesFetched >= 5,
+      `Fetched ${crawlSummary.stats.pagesFetched} pages (>= 5)`,
+    );
+    assert(
+      crawlSummary.stats.pagesStored >= 5,
+      `Stored ${crawlSummary.stats.pagesStored} documents in DocumentRepository`,
+    );
 
     // 4. Quality & Duplicate Checks
     console.log('\n► 4. Quality Checks & Duplicate Detection');
-    const { summary: qualitySummary, reports: qualityReports } = await analyzeCorpusQuality(storage);
+    const { summary: qualitySummary, reports: qualityReports } =
+      await analyzeCorpusQuality(storage);
 
-    assert(qualitySummary.totalDocuments >= 5, `Analyzed ${qualitySummary.totalDocuments} documents`);
-    assert(qualitySummary.validDocuments >= 4, `Found ${qualitySummary.validDocuments} valid documents`);
-    assert(qualitySummary.duplicateDocuments >= 1, `Detected ${qualitySummary.duplicateDocuments} duplicate document(s)`);
-    assert(qualitySummary.overallQualityScore >= 0.7, `Corpus overall quality score: ${qualitySummary.overallQualityScore} (>= 0.70)`);
+    assert(
+      qualitySummary.totalDocuments >= 5,
+      `Analyzed ${qualitySummary.totalDocuments} documents`,
+    );
+    assert(
+      qualitySummary.validDocuments >= 4,
+      `Found ${qualitySummary.validDocuments} valid documents`,
+    );
+    assert(
+      qualitySummary.duplicateDocuments >= 1,
+      `Detected ${qualitySummary.duplicateDocuments} duplicate document(s)`,
+    );
+    assert(
+      qualitySummary.overallQualityScore >= 0.7,
+      `Corpus overall quality score: ${qualitySummary.overallQualityScore} (>= 0.70)`,
+    );
     assert(qualitySummary.hasTitleRatio === 1, `100% of crawled pages contain valid titles`);
-    assert(qualitySummary.hasDescriptionRatio === 1, `100% of crawled pages contain meta descriptions`);
+    assert(
+      qualitySummary.hasDescriptionRatio === 1,
+      `100% of crawled pages contain meta descriptions`,
+    );
 
     // 5. Index Build Process
     console.log('\n► 5. Initial Public Index Build');
@@ -229,8 +257,14 @@ async function runVerification() {
     const buildSummary = await indexBuilder.build({ mode: 'full' });
 
     assert(buildSummary.status === 'success', 'Index builder produced status "success"');
-    assert(buildSummary.stats.documentsIndexed >= 5, `Indexed ${buildSummary.stats.documentsIndexed} documents`);
-    assert(buildSummary.stats.termsIndexed > 50, `Dictionary contains ${buildSummary.stats.termsIndexed} unique terms (> 50)`);
+    assert(
+      buildSummary.stats.documentsIndexed >= 5,
+      `Indexed ${buildSummary.stats.documentsIndexed} documents`,
+    );
+    assert(
+      buildSummary.stats.termsIndexed > 50,
+      `Dictionary contains ${buildSummary.stats.termsIndexed} unique terms (> 50)`,
+    );
 
     const activeIndex = indexBuilder.getActiveIndex();
     assert(activeIndex !== null, 'Active index loaded into memory');
@@ -269,14 +303,18 @@ async function runVerification() {
     assert(q2Data.results[0].title.includes('BM25'), 'Top result matches BM25 ranking article');
 
     // Test Query 3: Informational query "privacy zero-tracking"
-    const q3Res = await fetch(`http://127.0.0.1:${apiInfo.port}/api/v1/search?q=privacy+zero-tracking`);
+    const q3Res = await fetch(
+      `http://127.0.0.1:${apiInfo.port}/api/v1/search?q=privacy+zero-tracking`,
+    );
     assert(q3Res.status === 200, 'Query 3 ("privacy zero-tracking") returns 200 OK');
     const q3Data = await q3Res.json();
     assert(q3Data.meta.totalHits >= 1, `Query 3 returned ${q3Data.meta.totalHits} hit(s)`);
     assert(q3Data.results[0].title.includes('Privacy'), 'Top result matches Privacy article');
 
     // Test Query 4: Non-existent query "quantum teleportation"
-    const q4Res = await fetch(`http://127.0.0.1:${apiInfo.port}/api/v1/search?q=quantum+teleportation`);
+    const q4Res = await fetch(
+      `http://127.0.0.1:${apiInfo.port}/api/v1/search?q=quantum+teleportation`,
+    );
     assert(q4Res.status === 200, 'Query 4 (non-existent query) returns 200 OK');
     const q4Data = await q4Res.json();
     assert(q4Data.meta.totalHits === 0, 'Query 4 safely returns 0 hits');

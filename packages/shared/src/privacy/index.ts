@@ -40,8 +40,20 @@ export const PRIVACY_POLICY = {
   ],
   loggingPolicy: {
     retention: 'Transient in-memory / stdout only for operational debugging',
-    ipMasking: 'Last octet truncated for IPv4 (e.g. 192.168.1.0), host truncated for IPv6 (e.g. 2001:db8:abcd::)',
-    redactedFields: ['password', 'secret', 'token', 'key', 'authorization', 'cookie', 'credential', 'auth', 'apikey', 'private'],
+    ipMasking:
+      'Last octet truncated for IPv4 (e.g. 192.168.1.0), host truncated for IPv6 (e.g. 2001:db8:abcd::)',
+    redactedFields: [
+      'password',
+      'secret',
+      'token',
+      'key',
+      'authorization',
+      'cookie',
+      'credential',
+      'auth',
+      'apikey',
+      'private',
+    ],
   },
 } as const;
 
@@ -152,7 +164,9 @@ export function auditResponseHeaders(headers: Record<string, string | string[] |
     referrerPolicy !== 'no-referrer' &&
     referrerPolicy !== 'same-origin'
   ) {
-    issues.push(`Referrer-Policy "${referrerPolicy}" does not provide sufficient privacy protection`);
+    issues.push(
+      `Referrer-Policy "${referrerPolicy}" does not provide sufficient privacy protection`,
+    );
   }
 
   // 3. Check for Content-Security-Policy

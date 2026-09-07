@@ -49,8 +49,14 @@ async function runVerification() {
 
   // 1. IP Anonymization Algorithm Verification
   console.log('► 1. IP Address Anonymization Verification');
-  assert(anonymizeIpAddress('192.168.1.105') === '192.168.1.0', 'IPv4 address last octet masked to .0');
-  assert(anonymizeIpAddress('10.0.50.22') === '10.0.50.0', 'Private IPv4 address last octet masked to .0');
+  assert(
+    anonymizeIpAddress('192.168.1.105') === '192.168.1.0',
+    'IPv4 address last octet masked to .0',
+  );
+  assert(
+    anonymizeIpAddress('10.0.50.22') === '10.0.50.0',
+    'Private IPv4 address last octet masked to .0',
+  );
   assert(
     anonymizeIpAddress('2001:0db8:85a3:0000:0000:8a2e:0370:7334') === '2001:0db8:85a3::',
     'IPv6 host portion masked to /48 prefix',
@@ -91,22 +97,37 @@ async function runVerification() {
     // 3. Zero Cookies Audit
     console.log('\n► 3. Zero Cookie Header Audit');
     const apiSearchRes = await fetch(`http://127.0.0.1:${apiPort}/api/v1/search?q=privacy+search`);
-    assert(apiSearchRes.headers.get('set-cookie') === null, 'API /api/v1/search sends zero Set-Cookie headers');
+    assert(
+      apiSearchRes.headers.get('set-cookie') === null,
+      'API /api/v1/search sends zero Set-Cookie headers',
+    );
 
     const apiHealthRes = await fetch(`http://127.0.0.1:${apiPort}/health`);
-    assert(apiHealthRes.headers.get('set-cookie') === null, 'API /health sends zero Set-Cookie headers');
+    assert(
+      apiHealthRes.headers.get('set-cookie') === null,
+      'API /health sends zero Set-Cookie headers',
+    );
 
     const webIndexRes = await fetch(`http://127.0.0.1:${webPort}/`);
-    assert(webIndexRes.headers.get('set-cookie') === null, 'Web frontend sends zero Set-Cookie headers');
+    assert(
+      webIndexRes.headers.get('set-cookie') === null,
+      'Web frontend sends zero Set-Cookie headers',
+    );
 
     const webPrivacyRes = await fetch(`http://127.0.0.1:${webPort}/privacy`);
-    assert(webPrivacyRes.headers.get('set-cookie') === null, 'Web /privacy sends zero Set-Cookie headers');
+    assert(
+      webPrivacyRes.headers.get('set-cookie') === null,
+      'Web /privacy sends zero Set-Cookie headers',
+    );
 
     // 4. HTML Telemetry & Script Audit
     console.log('\n► 4. HTML Telemetry & External Script Audit');
     const htmlContent = await webIndexRes.text();
     const htmlAudit = auditHtmlPrivacy(htmlContent);
-    assert(htmlAudit.compliant, 'Web shell HTML contains 0 external script tags or tracking pixels');
+    assert(
+      htmlAudit.compliant,
+      'Web shell HTML contains 0 external script tags or tracking pixels',
+    );
     assert(!htmlContent.includes('google-analytics'), 'No Google Analytics references');
     assert(!htmlContent.includes('doubleclick'), 'No DoubleClick / ad trackers');
     assert(!htmlContent.includes('facebook.net'), 'No Facebook Pixels');
@@ -153,7 +174,10 @@ async function runVerification() {
     console.log('\n► 7. Privacy Policy Documentation & Delivery');
     const privacyDocPath = path.join(process.cwd(), 'docs', 'PRIVACY.md');
     assert(fs.existsSync(privacyDocPath), 'docs/PRIVACY.md exists and is documented');
-    assert(PRIVACY_POLICY.principles.length >= 6, 'Core privacy principles codified in PRIVACY_POLICY');
+    assert(
+      PRIVACY_POLICY.principles.length >= 6,
+      'Core privacy principles codified in PRIVACY_POLICY',
+    );
     assert(webPrivacyRes.status === 200, 'Web server delivers dedicated /privacy endpoint');
   } finally {
     if (apiServer) await apiServer.stop();

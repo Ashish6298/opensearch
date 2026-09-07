@@ -57,7 +57,8 @@ describe('Phase 31 — Production Deployment Integration Suite', () => {
       url: 'https://en.wikipedia.org/wiki/Search_engine',
       urlHash: 'hash-wiki-search',
       title: 'Search Engine — Wikipedia',
-      description: 'A search engine is an information retrieval software system designed to search web pages.',
+      description:
+        'A search engine is an information retrieval software system designed to search web pages.',
       headings: 'Search Engine Web Crawlers Inverted Index Ranking',
       bodyText: 'Web search engines crawl the public internet and build inverted index structures.',
       language: 'en',
@@ -110,7 +111,7 @@ describe('Phase 31 — Production Deployment Integration Suite', () => {
       method?: string;
       headers?: Record<string, string>;
       body?: string;
-    } = {}
+    } = {},
   ): Promise<{ statusCode: number; headers: http.IncomingHttpHeaders; body: string }> {
     return new Promise((resolve, reject) => {
       const req = http.request(
@@ -121,9 +122,9 @@ describe('Phase 31 — Production Deployment Integration Suite', () => {
           method: options.method || 'GET',
           headers: options.headers || {},
         },
-        (res) => {
+        res => {
           let data = '';
-          res.on('data', (chunk) => {
+          res.on('data', chunk => {
             data += chunk;
           });
           res.on('end', () => {
@@ -133,7 +134,7 @@ describe('Phase 31 — Production Deployment Integration Suite', () => {
               body: data,
             });
           });
-        }
+        },
       );
       req.on('error', reject);
       if (options.body) {
@@ -147,13 +148,15 @@ describe('Phase 31 — Production Deployment Integration Suite', () => {
     const res = await makeRequest(webPort, '/', {
       headers: {
         'x-forwarded-proto': 'https',
-        'host': 'search.example.com',
+        host: 'search.example.com',
       },
     });
 
     expect(res.statusCode).toBe(200);
     expect(res.headers['content-type']).toContain('text/html');
-    expect(res.headers['strict-transport-security']).toBe('max-age=31536000; includeSubDomains; preload');
+    expect(res.headers['strict-transport-security']).toBe(
+      'max-age=31536000; includeSubDomains; preload',
+    );
     expect(res.headers['x-frame-options']).toBe('DENY');
     expect(res.headers['x-content-type-options']).toBe('nosniff');
     expect(res.body).toContain('OpenSearch');
@@ -173,14 +176,16 @@ describe('Phase 31 — Production Deployment Integration Suite', () => {
     expect(body.components.index.status).toBe('ok');
     expect(body.totalDocumentsIndexed).toBe(2);
     expect(body.components.memory.status).toBe('ok');
-    expect(res.headers['strict-transport-security']).toBe('max-age=31536000; includeSubDomains; preload');
+    expect(res.headers['strict-transport-security']).toBe(
+      'max-age=31536000; includeSubDomains; preload',
+    );
   });
 
   it('verifies search execution works over public API with ranking and pagination', async () => {
     const res = await makeRequest(apiPort, '/api/v1/search?q=http+protocol', {
       headers: {
         'x-forwarded-proto': 'https',
-        'origin': 'https://search.example.com',
+        origin: 'https://search.example.com',
       },
     });
 
@@ -196,7 +201,7 @@ describe('Phase 31 — Production Deployment Integration Suite', () => {
     const preflight = await makeRequest(apiPort, '/api/v1/search', {
       method: 'OPTIONS',
       headers: {
-        'origin': 'https://search.example.com',
+        origin: 'https://search.example.com',
         'access-control-request-method': 'POST',
       },
     });

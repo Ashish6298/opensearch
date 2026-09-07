@@ -78,14 +78,16 @@ async function runVerification() {
       url: 'https://developer.mozilla.org/en-US/docs/Web/HTTP',
       title: 'HTTP Overview and Performance Optimization',
       headings: 'Headers Caching Compression Latency',
-      bodyText: 'Hypertext Transfer Protocol is the foundation of data exchange on the Web. Efficient caching minimizes latency.',
+      bodyText:
+        'Hypertext Transfer Protocol is the foundation of data exchange on the Web. Efficient caching minimizes latency.',
     },
     {
       id: 'doc-2',
       url: 'https://v8.dev/blog',
       title: 'V8 JavaScript Engine Speed & Compilation',
       headings: 'Just In Time TurboFan Sparkplug Garbage Collection',
-      bodyText: 'V8 compiles JavaScript directly to native machine code before executing it for blazing performance.',
+      bodyText:
+        'V8 compiles JavaScript directly to native machine code before executing it for blazing performance.',
     },
     {
       id: 'doc-3',
@@ -131,7 +133,10 @@ async function runVerification() {
     assert(res2.status === 200, 'Warm search request returned HTTP 200');
     assert(res2.headers.get('x-cache') === 'HIT', 'Warm search emitted X-Cache: HIT header');
     const data2 = await res2.json();
-    assert(data2.results[0].documentId === data1.results[0].documentId, 'Cached search returns identical results');
+    assert(
+      data2.results[0].documentId === data1.results[0].documentId,
+      'Cached search returns identical results',
+    );
     assert(durationWarm <= durationCold + 20, `Warm search returned rapidly (${durationWarm}ms)`);
 
     // 4. Component Health & Cache Diagnostics
@@ -139,9 +144,18 @@ async function runVerification() {
     const healthRes = await fetch(`http://127.0.0.1:${port}/health`);
     assert(healthRes.status === 200, 'Health endpoint returns HTTP 200');
     const healthData = await healthRes.json();
-    assert(healthData.components.queryCache.status === 'ok', 'Query cache component health is "ok"');
-    assert(healthData.components.queryCache.details.hits >= 1, 'Query cache hits recorded in health telemetry');
-    assert(healthData.components.queryCache.details.size >= 1, 'Query cache size tracked in health telemetry');
+    assert(
+      healthData.components.queryCache.status === 'ok',
+      'Query cache component health is "ok"',
+    );
+    assert(
+      healthData.components.queryCache.details.hits >= 1,
+      'Query cache hits recorded in health telemetry',
+    );
+    assert(
+      healthData.components.queryCache.details.size >= 1,
+      'Query cache size tracked in health telemetry',
+    );
 
     // 5. Memory Safety under High Volume
     console.log('\n► 5. Memory Boundedness & Bulk Search');
@@ -149,15 +163,24 @@ async function runVerification() {
       await fetch(`http://127.0.0.1:${port}/api/v1/search?q=query${i}`);
     }
     const highVolHealth = await (await fetch(`http://127.0.0.1:${port}/health`)).json();
-    assert(highVolHealth.components.queryCache.details.size <= 250, 'Cache entries bounded within max capacity (<= 250)');
+    assert(
+      highVolHealth.components.queryCache.details.size <= 250,
+      'Cache entries bounded within max capacity (<= 250)',
+    );
     assert(highVolHealth.components.memory.status === 'ok', 'Memory usage remains healthy ("ok")');
 
     // 6. Frontend Request Cancellation Verification
     console.log('\n► 6. Frontend Request Optimization');
     const appJsPath = path.join(process.cwd(), 'apps', 'web', 'src', 'app.js');
     const appJsContent = fs.readFileSync(appJsPath, 'utf-8');
-    assert(appJsContent.includes('AbortController'), 'Frontend app.js uses AbortController for request cancellation');
-    assert(appJsContent.includes('activeAbortController.abort()'), 'Frontend app.js cancels inflight requests upon new query');
+    assert(
+      appJsContent.includes('AbortController'),
+      'Frontend app.js uses AbortController for request cancellation',
+    );
+    assert(
+      appJsContent.includes('activeAbortController.abort()'),
+      'Frontend app.js cancels inflight requests upon new query',
+    );
   } finally {
     if (server) await server.stop();
     if (tempDir && fs.existsSync(tempDir)) {

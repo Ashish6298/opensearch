@@ -149,7 +149,8 @@ export class DefaultCrawlOrchestrator implements CrawlOrchestrator {
       10,
     );
     const retryBudget = options?.retryBudget ?? this.config.crawler.retryBudget ?? 50;
-    const checkpointInterval = options?.checkpointIntervalPages ?? this.config.crawler.checkpointIntervalPages ?? 10;
+    const checkpointInterval =
+      options?.checkpointIntervalPages ?? this.config.crawler.checkpointIntervalPages ?? 10;
     const checkpointPath =
       options?.checkpointPath ??
       path.join(this.config.storage.crawlerDataDir, 'crawl-checkpoint.json');

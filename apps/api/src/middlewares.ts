@@ -29,7 +29,10 @@ export function createCorsMiddleware(allowedOrigin = '*'): MiddlewareHandler {
       'Access-Control-Allow-Headers',
       'Content-Type, Authorization, X-Requested-With, X-Correlation-ID',
     );
-    res.setHeader('Access-Control-Expose-Headers', 'X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset, X-Cache, Retry-After');
+    res.setHeader(
+      'Access-Control-Expose-Headers',
+      'X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset, X-Cache, Retry-After',
+    );
     res.setHeader('Access-Control-Max-Age', '86400');
 
     if (req.method === 'OPTIONS') {
@@ -53,9 +56,10 @@ export function createSecurityHeadersMiddleware(): MiddlewareHandler {
     );
 
     // Phase 31: Add HSTS header when accessed over HTTPS / TLS reverse proxy
-    const isHttps = req.raw.headers['x-forwarded-proto'] === 'https' ||
-                    (req.raw.socket as unknown as { encrypted?: boolean }).encrypted === true ||
-                    process.env.NODE_ENV === 'production';
+    const isHttps =
+      req.raw.headers['x-forwarded-proto'] === 'https' ||
+      (req.raw.socket as unknown as { encrypted?: boolean }).encrypted === true ||
+      process.env.NODE_ENV === 'production';
     if (isHttps) {
       res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
     }

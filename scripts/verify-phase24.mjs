@@ -46,7 +46,10 @@ async function runVerification() {
 
   // 1. Dataset Coverage & Structure Validation
   console.log('► 1. Evaluation Dataset Validation');
-  assert(SEARCH_QUALITY_DATASET.length >= 7, `Evaluation dataset contains ${SEARCH_QUALITY_DATASET.length} benchmark queries (>= 7)`);
+  assert(
+    SEARCH_QUALITY_DATASET.length >= 7,
+    `Evaluation dataset contains ${SEARCH_QUALITY_DATASET.length} benchmark queries (>= 7)`,
+  );
 
   const categories = new Set(SEARCH_QUALITY_DATASET.map(q => q.category));
   assert(categories.has('informational'), 'Includes informational queries');
@@ -105,7 +108,8 @@ async function runVerification() {
         url: 'https://opensearch.local/algorithms',
         urlHash: 'vhash-003',
         title: 'Information Retrieval and BM25 Ranking',
-        description: 'Mathematical formulation of BM25 lexical ranking relevance and term frequency.',
+        description:
+          'Mathematical formulation of BM25 lexical ranking relevance and term frequency.',
         headings: 'Information Retrieval and Ranking Algorithms BM25',
         bodyText:
           'BM25 lexical ranking relevance calculates term frequency, document length normalization, and inverse document frequency scoring.',
@@ -133,7 +137,8 @@ async function runVerification() {
         url: 'https://opensearch.local/privacy-rights',
         urlHash: 'vhash-005',
         title: 'Digital Privacy and User Rights',
-        description: 'Why privacy-first search engines protect civil liberties and avoid profiling.',
+        description:
+          'Why privacy-first search engines protect civil liberties and avoid profiling.',
         headings: 'Digital Privacy and User Rights Tracking Protection',
         bodyText:
           'Privacy-first search engines do not track users, log identifiable search history, or create behavioral profiling databases. Zero-tracking search guarantees privacy rights.',
@@ -182,18 +187,36 @@ async function runVerification() {
 
     const report = await evaluator.evaluateDataset(SEARCH_QUALITY_DATASET);
 
-    assert(report.totalQueries === SEARCH_QUALITY_DATASET.length, `Executed all ${report.totalQueries} benchmark queries`);
-    assert(report.passedQueries === report.totalQueries, `All ${report.passedQueries} queries satisfied quality assertions (0 failures)`);
+    assert(
+      report.totalQueries === SEARCH_QUALITY_DATASET.length,
+      `Executed all ${report.totalQueries} benchmark queries`,
+    );
+    assert(
+      report.passedQueries === report.totalQueries,
+      `All ${report.passedQueries} queries satisfied quality assertions (0 failures)`,
+    );
     assert(report.passRate === 1.0, 'Search quality benchmark pass rate: 100%');
-    assert(report.meanReciprocalRank >= 0.85, `Mean Reciprocal Rank (MRR): ${report.meanReciprocalRank} (>= 0.85)`);
+    assert(
+      report.meanReciprocalRank >= 0.85,
+      `Mean Reciprocal Rank (MRR): ${report.meanReciprocalRank} (>= 0.85)`,
+    );
     assert(report.precisionAt1 >= 0.85, `Precision@1: ${report.precisionAt1} (>= 0.85)`);
-    assert(report.noResultFalsePositiveCount === 0, 'Zero false positive hits for out-of-vocabulary queries');
-    assert(report.averageLatencyMs < 50, `Average evaluation latency: ${report.averageLatencyMs}ms (< 50ms)`);
+    assert(
+      report.noResultFalsePositiveCount === 0,
+      'Zero false positive hits for out-of-vocabulary queries',
+    );
+    assert(
+      report.averageLatencyMs < 50,
+      `Average evaluation latency: ${report.averageLatencyMs}ms (< 50ms)`,
+    );
 
     // 4. Category-Specific Quality Verification
     console.log('\n► 4. Category-Specific Quality Breakdown');
     for (const summary of report.categorySummaries) {
-      assert(summary.passRate === 1.0, `Category '${summary.category}' pass rate: 100% (MRR: ${summary.meanReciprocalRank})`);
+      assert(
+        summary.passRate === 1.0,
+        `Category '${summary.category}' pass rate: 100% (MRR: ${summary.meanReciprocalRank})`,
+      );
     }
 
     // 5. Duplicate Suppression Verification
@@ -202,17 +225,31 @@ async function runVerification() {
     assert(Boolean(dupQuery), 'Duplicate content evaluation query present');
     const dupResult = await evaluator.evaluateQuery(dupQuery);
     assert(dupResult.passed, 'Duplicate query passed rank evaluation');
-    assert(dupResult.topRankUrl.includes('/privacy-rights'), 'Primary domain document outranked duplicate copy');
-    assert(dupResult.results.items.length >= 2, `Retrieved ${dupResult.results.items.length} candidate documents`);
+    assert(
+      dupResult.topRankUrl.includes('/privacy-rights'),
+      'Primary domain document outranked duplicate copy',
+    );
+    assert(
+      dupResult.results.items.length >= 2,
+      `Retrieved ${dupResult.results.items.length} candidate documents`,
+    );
     const doc1 = dupResult.results.items[0];
     const doc2 = dupResult.results.items[1];
-    assert(doc1.score >= doc2.score, `Primary doc score (${doc1.score}) >= Duplicate doc score (${doc2.score})`);
+    assert(
+      doc1.score >= doc2.score,
+      `Primary doc score (${doc1.score}) >= Duplicate doc score (${doc2.score})`,
+    );
 
     // 6. Snippet & Highlighting Verification
     console.log('\n► 6. Snippet & Highlighting Quality');
-    const techResult = await evaluator.evaluateQuery(SEARCH_QUALITY_DATASET.find(q => q.id === 'tech-01'));
+    const techResult = await evaluator.evaluateQuery(
+      SEARCH_QUALITY_DATASET.find(q => q.id === 'tech-01'),
+    );
     assert(techResult.snippetHighlightsFound, 'Technical snippet contains keyword highlights');
-    assert(techResult.results.items[0].highlightedSnippet.includes('<mark>'), 'Snippet formatting injected HTML <mark> tags properly');
+    assert(
+      techResult.results.items[0].highlightedSnippet.includes('<mark>'),
+      'Snippet formatting injected HTML <mark> tags properly',
+    );
   } finally {
     if (tempDir && fs.existsSync(tempDir)) {
       try {

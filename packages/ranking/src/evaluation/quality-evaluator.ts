@@ -122,7 +122,7 @@ export class SearchQualityEvaluator {
     let targetRank = 0;
     if (evalQuery.expectedTopUrlMatch) {
       const matchIndex = results.items.findIndex((item: SearchResultItem) =>
-        item.url.includes(evalQuery.expectedTopUrlMatch!)
+        item.url.includes(evalQuery.expectedTopUrlMatch!),
       );
       if (matchIndex >= 0) {
         targetRank = matchIndex + 1;
@@ -141,7 +141,7 @@ export class SearchQualityEvaluator {
     if (passed && evalQuery.expectedTitleKeywords && topItem) {
       const lowerTitle = topItem.title.toLowerCase();
       const hasAllKeywords = evalQuery.expectedTitleKeywords.every(k =>
-        lowerTitle.includes(k.toLowerCase())
+        lowerTitle.includes(k.toLowerCase()),
       );
       if (!hasAllKeywords) {
         passed = false;
@@ -155,7 +155,9 @@ export class SearchQualityEvaluator {
       const lowerSnippet = topItem.snippet.toLowerCase();
       const lowerHighlighted = (topItem.highlightedSnippet || '').toLowerCase();
       const foundTerms = evalQuery.expectSnippetsContaining.every(
-        term => lowerSnippet.includes(term.toLowerCase()) || lowerHighlighted.includes(term.toLowerCase())
+        term =>
+          lowerSnippet.includes(term.toLowerCase()) ||
+          lowerHighlighted.includes(term.toLowerCase()),
       );
       if (!foundTerms) {
         snippetHighlightsFound = false;
@@ -192,10 +194,7 @@ export class SearchQualityEvaluator {
     let falsePositiveCount = 0;
     let totalLatency = 0;
 
-    const categoryMap = new Map<
-      QueryCategory,
-      { total: number; passed: number; sumRR: number }
-    >();
+    const categoryMap = new Map<QueryCategory, { total: number; passed: number; sumRR: number }>();
 
     for (const item of dataset) {
       const cat = item.category;
@@ -235,7 +234,7 @@ export class SearchQualityEvaluator {
         passRate: stats.total > 0 ? Math.round((stats.passed / stats.total) * 100) / 100 : 0,
         meanReciprocalRank:
           stats.total > 0 ? Math.round((stats.sumRR / stats.total) * 100) / 100 : 0,
-      })
+      }),
     );
 
     return {
@@ -243,8 +242,7 @@ export class SearchQualityEvaluator {
       passedQueries: passedCount,
       failedQueries: total - passedCount,
       passRate: total > 0 ? Math.round((passedCount / total) * 100) / 100 : 0,
-      meanReciprocalRank:
-        total > 0 ? Math.round((totalReciprocalRank / total) * 1000) / 1000 : 0,
+      meanReciprocalRank: total > 0 ? Math.round((totalReciprocalRank / total) * 1000) / 1000 : 0,
       precisionAt1: total > 0 ? Math.round((rank1Count / total) * 100) / 100 : 0,
       noResultFalsePositiveCount: falsePositiveCount,
       averageLatencyMs: total > 0 ? Math.round((totalLatency / total) * 100) / 100 : 0,

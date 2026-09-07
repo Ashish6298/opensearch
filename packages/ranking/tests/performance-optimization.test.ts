@@ -48,14 +48,16 @@ describe('Phase 28 — Search Performance Optimization Suite', () => {
         url: 'https://developer.mozilla.org/en-US/docs/Web/JavaScript',
         title: 'JavaScript Documentation & Performance Guide',
         headings: 'V8 Engine Optimization Event Loop',
-        bodyText: 'JavaScript is a lightweight, interpreted, compiled language with first-class functions.',
+        bodyText:
+          'JavaScript is a lightweight, interpreted, compiled language with first-class functions.',
       },
       {
         id: 'doc-perf-2',
         url: 'https://nodejs.org/en/docs/guides/performance',
         title: 'Node.js Performance and Event Loop Guide',
         headings: 'Asynchronous I/O Memory Optimization',
-        bodyText: 'Learn how to profile Node.js applications, manage garbage collection, and reduce CPU latency.',
+        bodyText:
+          'Learn how to profile Node.js applications, manage garbage collection, and reduce CPU latency.',
       },
       {
         id: 'doc-perf-3',

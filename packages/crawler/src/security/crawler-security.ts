@@ -48,7 +48,8 @@ export class CrawlerSecurityValidator {
       ...DEFAULT_CRAWLER_SECURITY_POLICY,
       ...policy,
       allowedSchemes: policy.allowedSchemes ?? DEFAULT_CRAWLER_SECURITY_POLICY.allowedSchemes,
-      allowedContentTypes: policy.allowedContentTypes ?? DEFAULT_CRAWLER_SECURITY_POLICY.allowedContentTypes,
+      allowedContentTypes:
+        policy.allowedContentTypes ?? DEFAULT_CRAWLER_SECURITY_POLICY.allowedContentTypes,
     };
   }
 
@@ -182,17 +183,19 @@ export class CrawlerSecurityValidator {
    */
   sanitizeMalformedText(text: string): string {
     if (!text || typeof text !== 'string') return '';
-    return text
-      // Remove null bytes and dangerous control characters except standard whitespace
-      .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
-      // Normalize replacement characters
-      .replace(/\uFFFD/g, ' ')
-      .trim();
+    return (
+      text
+        // Remove null bytes and dangerous control characters except standard whitespace
+        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+        // Normalize replacement characters
+        .replace(/\uFFFD/g, ' ')
+        .trim()
+    );
   }
 }
 
 export function createCrawlerSecurityValidator(
-  policy?: Partial<CrawlerSecurityPolicy>
+  policy?: Partial<CrawlerSecurityPolicy>,
 ): CrawlerSecurityValidator {
   return new CrawlerSecurityValidator(policy);
 }

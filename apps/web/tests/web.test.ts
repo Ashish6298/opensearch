@@ -93,7 +93,9 @@ describe('Phase 19, 20 & 21 — Search UI & Accessibility Hardening Suite', () =
       expect(cardHtml).toContain('aria-labelledby="result-title-doc-1"');
       expect(cardHtml).toContain('id="result-title-doc-1"');
       expect(cardHtml).toContain('data-document-id="doc-1"');
-      expect(cardHtml).toContain('<span class="result-domain-badge" aria-label="Domain">example.com</span>');
+      expect(cardHtml).toContain(
+        '<span class="result-domain-badge" aria-label="Domain">example.com</span>',
+      );
       expect(cardHtml).toContain('example.com › docs › api-guide');
       expect(cardHtml).toContain('href="https://example.com/docs/api-guide"');
       expect(cardHtml).toContain('target="_blank"');
@@ -239,4 +241,3 @@ describe('Phase 19, 20 & 21 — Search UI & Accessibility Hardening Suite', () =
     });
   });
 });
-

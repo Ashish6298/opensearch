@@ -173,11 +173,21 @@ async function runVerification() {
     await orchestrator.initialize();
 
     const seedUrl = `http://127.0.0.1:${mockPort}/`;
-    const crawlSummary = await orchestrator.start({ seeds: [seedUrl], maxPages: 10, politenessDelayMs: 0 });
+    const crawlSummary = await orchestrator.start({
+      seeds: [seedUrl],
+      maxPages: 10,
+      politenessDelayMs: 0,
+    });
 
     assert(crawlSummary.status === 'completed', 'Crawler finished with status "completed"');
-    assert(crawlSummary.stats.pagesFetched >= 4, `Fetched ${crawlSummary.stats.pagesFetched} pages (>= 4)`);
-    assert(crawlSummary.stats.pagesStored >= 4, `Stored ${crawlSummary.stats.pagesStored} documents (>= 4)`);
+    assert(
+      crawlSummary.stats.pagesFetched >= 4,
+      `Fetched ${crawlSummary.stats.pagesFetched} pages (>= 4)`,
+    );
+    assert(
+      crawlSummary.stats.pagesStored >= 4,
+      `Stored ${crawlSummary.stats.pagesStored} documents (>= 4)`,
+    );
 
     const storedDocs = await storage.documents.list({ limit: 100 });
     assert(storedDocs.length >= 4, `Document repository contains ${storedDocs.length} records`);
@@ -191,9 +201,18 @@ async function runVerification() {
     const buildSummary = await indexBuilder.build({ mode: 'full' });
 
     assert(buildSummary.status === 'success', 'Index build completed with status "success"');
-    assert(buildSummary.stats.documentsIndexed >= 4, `Indexed ${buildSummary.stats.documentsIndexed} documents`);
-    assert(buildSummary.stats.termsIndexed > 0, `Generated dictionary with ${buildSummary.stats.termsIndexed} terms`);
-    assert(fs.existsSync(buildSummary.indexPath), `Active index persisted to ${buildSummary.indexPath}`);
+    assert(
+      buildSummary.stats.documentsIndexed >= 4,
+      `Indexed ${buildSummary.stats.documentsIndexed} documents`,
+    );
+    assert(
+      buildSummary.stats.termsIndexed > 0,
+      `Generated dictionary with ${buildSummary.stats.termsIndexed} terms`,
+    );
+    assert(
+      fs.existsSync(buildSummary.indexPath),
+      `Active index persisted to ${buildSummary.indexPath}`,
+    );
 
     const activeIndex = indexBuilder.getActiveIndex();
     assert(activeIndex !== null, 'Active index reference is available in memory');
@@ -223,7 +242,10 @@ async function runVerification() {
     const healthRes = await fetch(`http://127.0.0.1:${apiInfo.port}/health`);
     assert(healthRes.status === 200, 'Search API /health returns 200 OK');
     const healthData = await healthRes.json();
-    assert(healthData.totalDocumentsIndexed >= 4, `Health reports ${healthData.totalDocumentsIndexed} indexed documents`);
+    assert(
+      healthData.totalDocumentsIndexed >= 4,
+      `Health reports ${healthData.totalDocumentsIndexed} indexed documents`,
+    );
 
     // Query Search
     const searchRes = await fetch(`http://127.0.0.1:${apiInfo.port}/api/v1/search?q=BM25+ranking`);
@@ -231,8 +253,15 @@ async function runVerification() {
     const searchData = await searchRes.json();
     assert(searchData.meta.totalHits >= 1, `Query returned ${searchData.meta.totalHits} hit(s)`);
     assert(searchData.results.length >= 1, 'Result items array is non-empty');
-    assert(searchData.results[0].title.includes('BM25') || searchData.results[0].title.includes('Architecture'), 'Top result title matches expected query context');
-    assert(searchData.results[0].snippet.includes('<mark>') || searchData.results[0].snippet.length > 0, 'Snippet contains highlighted text or summary content');
+    assert(
+      searchData.results[0].title.includes('BM25') ||
+        searchData.results[0].title.includes('Architecture'),
+      'Top result title matches expected query context',
+    );
+    assert(
+      searchData.results[0].snippet.includes('<mark>') || searchData.results[0].snippet.length > 0,
+      'Snippet contains highlighted text or summary content',
+    );
 
     // 5. Public Web Application Integration
     console.log('\n► 5. Web Frontend End-to-End Integration');
@@ -246,7 +275,10 @@ async function runVerification() {
     assert(webRes.status === 200, 'Web frontend root responds with 200 OK');
     const webHtml = await webRes.text();
     assert(webHtml.includes('OpenSearch'), 'Frontend contains OpenSearch branding');
-    assert(webHtml.includes(`http://127.0.0.1:${apiInfo.port}/api/v1/search`), 'Frontend injected with live API endpoint URL');
+    assert(
+      webHtml.includes(`http://127.0.0.1:${apiInfo.port}/api/v1/search`),
+      'Frontend injected with live API endpoint URL',
+    );
 
     // 6. Cold-Restart & Index Reload Verification
     console.log('\n► 6. Pipeline Restart & Cold Index Persistence');
@@ -256,7 +288,10 @@ async function runVerification() {
     // Cold reload index directly from disk artifact
     const reloadedIndex = createInvertedIndex({ indexDir: buildSummary.indexPath });
     await reloadedIndex.load(buildSummary.indexPath);
-    assert(reloadedIndex.getStats().totalDocuments >= 4, 'Cold reloaded index preserved document count');
+    assert(
+      reloadedIndex.getStats().totalDocuments >= 4,
+      'Cold reloaded index preserved document count',
+    );
 
     const restartedApiServer = createApiServer({
       config,
@@ -270,11 +305,19 @@ async function runVerification() {
     });
     const restartedApiInfo = await restartedApiServer.start(0, '127.0.0.1');
 
-    const coldSearchRes = await fetch(`http://127.0.0.1:${restartedApiInfo.port}/api/v1/search?q=crawler+SSRF`);
+    const coldSearchRes = await fetch(
+      `http://127.0.0.1:${restartedApiInfo.port}/api/v1/search?q=crawler+SSRF`,
+    );
     assert(coldSearchRes.status === 200, 'Search on cold-restarted API server returns 200 OK');
     const coldSearchData = await coldSearchRes.json();
-    assert(coldSearchData.meta.totalHits >= 1, `Cold search query returned ${coldSearchData.meta.totalHits} hit(s)`);
-    assert(coldSearchData.results[0].title.includes('Crawler'), 'Cold search result correctly matched crawled document title');
+    assert(
+      coldSearchData.meta.totalHits >= 1,
+      `Cold search query returned ${coldSearchData.meta.totalHits} hit(s)`,
+    );
+    assert(
+      coldSearchData.results[0].title.includes('Crawler'),
+      'Cold search result correctly matched crawled document title',
+    );
 
     await restartedApiServer.stop();
   } finally {

@@ -66,24 +66,24 @@ This is not a proxy. This is not a meta-search engine wrapper. This is a **fully
 
 <br/>
 
-| Sector | Module | Quick Jump | Focus |
-| :--- | :--- | :--- | :--- |
-| **01 // Core Engine** | `feat:capabilities` | [⚡ **System Features**](#features) | BM25 ranking, zero cookies, LRU query caching & live fallback |
-| | `flow:lifecycle` | [🧬 **How It Works**](#how-it-works) | Query parsing, candidate retrieval & multi-tier hybrid scoring |
-| | `data:corpus` | [🌱 **Seed Corpus (113)**](#seed-corpus-categories) | 19 curated domain categories across tech, AI, news & reference |
-| | `sec:zero-log` | [🛡️ **Privacy Guarantee**](#privacy-guarantee) | Strict data minimization, zero tracking & IP anonymization |
-| **02 // Deep Dive** | `arch:boundaries` | [🏛️ **Architecture Tree**](#architecture) | Modular monorepo (`apps/*`, `packages/*`) & strict boundaries |
-| | `cmp:matrix` | [⚔️ **Competitive Matrix**](#how-opensearch-is-different) | Side-by-side comparison with Google, DuckDuckGo, Brave & SearXNG |
-| | `env:stack` | [🛠️ **Technology Stack**](#tech-stack) | Native TypeScript 5.7+, Node.js 20+, Vitest & zero-dep UI |
-| | `status:v1.0.0` | [🏁 **Milestone Roadmap**](#project-status) | Phases 1–34 verification log (100% production release gate) |
-| **03 // Operations** | `ops:bootstrap` | [🚀 **Getting Started**](#getting-started) | Repository clone, workspace installation & index seeding |
-| | `ops:runtime` | [💻 **Running the Stack**](#running-the-stack) | Dual-daemon launch (`api:3001` + `web:3000`) & curl healthchecks |
-| | `ops:tooling` | [📜 **Development Scripts**](#development-scripts) | Monorepo build, linting, formatting & automated test runners |
-| | `ops:cicd` | [🔄 **CI/CD Automation**](#continuous-integration--delivery) | Multi-node matrix test, verification gate & artifact delivery |
-| | `cfg:environment` | [⚙️ **Configuration (.env)**](#configuration) | Ports, index storage paths, rate limits & logging levels |
-| | `collab:git` | [🤝 **Contributing Guide**](#contributing) | Contribution workflow, PR guidelines & code standards |
-| | `legal:mit` | [⚖️ **Open Source License**](#license) | MIT permissive license details & commercial usage rights |
-| | `comm:conduct` | [📜 **Code of Conduct**](#code-of-conduct) | Community guidelines, pledge, standards & enforcement |
+| Sector                | Module              | Quick Jump                                                   | Focus                                                            |
+| :-------------------- | :------------------ | :----------------------------------------------------------- | :--------------------------------------------------------------- |
+| **01 // Core Engine** | `feat:capabilities` | [⚡ **System Features**](#features)                          | BM25 ranking, zero cookies, LRU query caching & live fallback    |
+|                       | `flow:lifecycle`    | [🧬 **How It Works**](#how-it-works)                         | Query parsing, candidate retrieval & multi-tier hybrid scoring   |
+|                       | `data:corpus`       | [🌱 **Seed Corpus (113)**](#seed-corpus-categories)          | 19 curated domain categories across tech, AI, news & reference   |
+|                       | `sec:zero-log`      | [🛡️ **Privacy Guarantee**](#privacy-guarantee)               | Strict data minimization, zero tracking & IP anonymization       |
+| **02 // Deep Dive**   | `arch:boundaries`   | [🏛️ **Architecture Tree**](#architecture)                    | Modular monorepo (`apps/*`, `packages/*`) & strict boundaries    |
+|                       | `cmp:matrix`        | [⚔️ **Competitive Matrix**](#how-opensearch-is-different)    | Side-by-side comparison with Google, DuckDuckGo, Brave & SearXNG |
+|                       | `env:stack`         | [🛠️ **Technology Stack**](#tech-stack)                       | Native TypeScript 5.7+, Node.js 20+, Vitest & zero-dep UI        |
+|                       | `status:v1.0.0`     | [🏁 **Milestone Roadmap**](#project-status)                  | Phases 1–34 verification log (100% production release gate)      |
+| **03 // Operations**  | `ops:bootstrap`     | [🚀 **Getting Started**](#getting-started)                   | Repository clone, workspace installation & index seeding         |
+|                       | `ops:runtime`       | [💻 **Running the Stack**](#running-the-stack)               | Dual-daemon launch (`api:3001` + `web:3000`) & curl healthchecks |
+|                       | `ops:tooling`       | [📜 **Development Scripts**](#development-scripts)           | Monorepo build, linting, formatting & automated test runners     |
+|                       | `ops:cicd`          | [🔄 **CI/CD Automation**](#continuous-integration--delivery) | Multi-node matrix test, verification gate & artifact delivery    |
+|                       | `cfg:environment`   | [⚙️ **Configuration (.env)**](#configuration)                | Ports, index storage paths, rate limits & logging levels         |
+|                       | `collab:git`        | [🤝 **Contributing Guide**](#contributing)                   | Contribution workflow, PR guidelines & code standards            |
+|                       | `legal:mit`         | [⚖️ **Open Source License**](#license)                       | MIT permissive license details & commercial usage rights         |
+|                       | `comm:conduct`      | [📜 **Code of Conduct**](#code-of-conduct)                   | Community guidelines, pledge, standards & enforcement            |
 
 ---
 
@@ -107,6 +107,7 @@ This is not a proxy. This is not a meta-search engine wrapper. This is a **fully
 <br/>
 
 ### `01` // 🔒 Privacy-First by Design
+
 > **Zero telemetry. Zero tracking. Mathematically minimized footprints.**
 
 ```console
@@ -118,12 +119,14 @@ $ status --privacy
 [ok] outbound_leaks     : blocked (rel="noopener noreferrer" + strict referrer policy)
 [ok] third_party_deps   : none (zero external CDNs, fonts, or tracking beacons)
 ```
+
 - **Air-Gapped Telemetry**: Searches are processed purely in-memory and discarded post-response.
 - **Auditable Security**: Full guarantees and architecture codified in [`docs/PRIVACY.md`](docs/PRIVACY.md).
 
 ---
 
 ### `02` // 🔍 Hybrid Search Engine (Local + Real-Time Web)
+
 > **Best of both worlds: local curated sovereign indexing backed by live multi-engine web fallback.**
 
 ```mermaid
@@ -148,19 +151,21 @@ graph LR
 ---
 
 ### `03` // 🕷️ Polite, Privacy-Respecting Crawler
+
 > **Safe, polite web extraction built strictly according to web standards.**
 
-| Guardrail | Mechanism | Specification |
-| :--- | :--- | :--- |
-| **Robots Compliance** | `RobotsEvaluator` | Respects `User-agent` directives, path rules & `Crawl-delay` |
-| **SSRF Shield** | `DnsResolverGuard` | Rejects private CIDRs (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`) at DNS level |
-| **Loop Prevention** | `RedirectTracker` | Circular redirect detection with hard hop limit (max 5 hops) |
-| **Resource Quota** | `StreamLimiter` | Streaming body size cap (`maxPageBytes: 2MB`), MIME-type filtering |
-| **Seed Corpus** | `113 Seeds` | Pre-calibrated over **19 categories** (Tech, AI, Docs, News, Finance, Open Source) |
+| Guardrail             | Mechanism          | Specification                                                                        |
+| :-------------------- | :----------------- | :----------------------------------------------------------------------------------- |
+| **Robots Compliance** | `RobotsEvaluator`  | Respects `User-agent` directives, path rules & `Crawl-delay`                         |
+| **SSRF Shield**       | `DnsResolverGuard` | Rejects private CIDRs (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`) at DNS level |
+| **Loop Prevention**   | `RedirectTracker`  | Circular redirect detection with hard hop limit (max 5 hops)                         |
+| **Resource Quota**    | `StreamLimiter`    | Streaming body size cap (`maxPageBytes: 2MB`), MIME-type filtering                   |
+| **Seed Corpus**       | `113 Seeds`        | Pre-calibrated over **19 categories** (Tech, AI, Docs, News, Finance, Open Source)   |
 
 ---
 
 ### `04` // 📊 Deterministic, Transparent Ranking
+
 > **No opaque black-box neural ranking. Pure explainable BM25 lexical relevance with structural boosts.**
 
 $$\text{Score}(D, Q) = \sum_{t \in Q} \text{IDF}(t) \cdot \frac{f(t, D) \cdot (k_1 + 1)}{f(t, D) + k_1 \cdot \left(1 - b + b \cdot \frac{|D|}{\text{avgdl}}\right)}$$
@@ -180,6 +185,7 @@ $$\text{Score}(D, Q) = \sum_{t \in Q} \text{IDF}(t) \cdot \frac{f(t, D) \cdot (k
 ---
 
 ### `05` // ⚡ Extreme Performance & Low Latency
+
 > **Engineered for instant typing feedback and deterministic memory bounds.**
 
 ```
@@ -191,6 +197,7 @@ Query Cache Telemetry (Hit Ratio: ~94% on warm traffic)
 │ CLIENT CONCURRENCY  : AbortController Typist Debounce  │
 └────────────────────────────────────────────────────────┘
 ```
+
 - **Sub-10ms Warm Hits**: In-memory bounded LRU cache with transparent `X-Cache: HIT / MISS` response headers.
 - **Typing Cancellation**: Frontend queries use `AbortController` to cancel in-flight HTTP requests during rapid keypresses.
 - **Telemetry Probing**: Live memory, cache hits, and process metrics exposed at `/health`.
@@ -198,6 +205,7 @@ Query Cache Telemetry (Hit Ratio: ~94% on warm traffic)
 ---
 
 ### `06` // 🛡️ Hardened Security Perimeter
+
 > **Defensive security applied at every network and parsing boundary.**
 
 - 🔒 **Defensive Headers**: `Content-Security-Policy`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`.
@@ -208,6 +216,7 @@ Query Cache Telemetry (Hit Ratio: ~94% on warm traffic)
 ---
 
 ### `07` // 🖥️ Terminal-Aesthetic Frontend (TUI Web)
+
 > **A distraction-free, keyboard-first search terminal.**
 
 - 🟢 **Phosphor Palette**: Deep `#0a0a0a` background with phosphor green (`#00ff66`) CLI highlights.
@@ -223,6 +232,7 @@ Query Cache Telemetry (Hit Ratio: ~94% on warm traffic)
 ---
 
 ### `08` // 🧪 Comprehensive Testing & Verification
+
 > **Production confidence backed by a rigorous 34-phase test harness.**
 
 - **360+ Automated Tests**: Comprehensive unit, integration, and security test suites running on **Vitest**.
@@ -314,16 +324,16 @@ Query Cache Telemetry (Hit Ratio: ~94% on warm traffic)
 
 ### Execution Pipeline Deep Dive
 
-| Stage | Module | Key Operations | Fallback / Behavior |
-| :--- | :--- | :--- | :--- |
-| **`01. Ingestion`** | `apps/api/middlewares` | Input sanitization, IP anonymization (`/24` or `/48`), size checks | Capped at 200 chars; oversized queries return `400 Bad Request` |
-| **`02. Parsing`** | `packages/indexer/query` | Unicode NFC normalization, exact quotes `"..."`, negation `-term` | Safe token stream generation without regex backtracking risks |
-| **`03. Caching`** | `apps/api/cache` | High-concurrency bounded LRU cache (500 entries) | Instantaneous 4ms response with `X-Cache: HIT` telemetry |
-| **`04. Retrieval`** | `packages/indexer/index` | Reading disk-persisted inverted postings, positional matches | Adaptive Boolean mode (switches from `AND` to `OR` if zero hits) |
-| **`05. Ranking`** | `packages/ranking/bm25` | Length-normalized BM25 scoring with 4 structural field weights | Deterministic float score computed per candidate document |
-| **`06. Fallback`** | `apps/api/external-search` | Ephemeral queries to Google Suggest & DuckDuckGo organic scraping | Only activated if local candidates are fewer than the query limit |
-| **`07. Synthesis`** | `apps/api/routes` | Merges local and live sets; deduplicates identical destination domains | Local crawled knowledge always preserves rank precedence |
-| **`08. Formatting`**| `packages/ranking/results`| Snippet generation around densest hit clusters, `<mark>` highlights | Strict HTML escaping prevents script injection or DOM clobbering |
+| Stage                | Module                     | Key Operations                                                         | Fallback / Behavior                                               |
+| :------------------- | :------------------------- | :--------------------------------------------------------------------- | :---------------------------------------------------------------- |
+| **`01. Ingestion`**  | `apps/api/middlewares`     | Input sanitization, IP anonymization (`/24` or `/48`), size checks     | Capped at 200 chars; oversized queries return `400 Bad Request`   |
+| **`02. Parsing`**    | `packages/indexer/query`   | Unicode NFC normalization, exact quotes `"..."`, negation `-term`      | Safe token stream generation without regex backtracking risks     |
+| **`03. Caching`**    | `apps/api/cache`           | High-concurrency bounded LRU cache (500 entries)                       | Instantaneous 4ms response with `X-Cache: HIT` telemetry          |
+| **`04. Retrieval`**  | `packages/indexer/index`   | Reading disk-persisted inverted postings, positional matches           | Adaptive Boolean mode (switches from `AND` to `OR` if zero hits)  |
+| **`05. Ranking`**    | `packages/ranking/bm25`    | Length-normalized BM25 scoring with 4 structural field weights         | Deterministic float score computed per candidate document         |
+| **`06. Fallback`**   | `apps/api/external-search` | Ephemeral queries to Google Suggest & DuckDuckGo organic scraping      | Only activated if local candidates are fewer than the query limit |
+| **`07. Synthesis`**  | `apps/api/routes`          | Merges local and live sets; deduplicates identical destination domains | Local crawled knowledge always preserves rank precedence          |
+| **`08. Formatting`** | `packages/ranking/results` | Snippet generation around densest hit clusters, `<mark>` highlights    | Strict HTML escaping prevents script injection or DOM clobbering  |
 
 ---
 
@@ -377,15 +387,15 @@ Query Cache Telemetry (Hit Ratio: ~94% on warm traffic)
 
 ### Module Registry & Boundary Contracts
 
-| Workspace | Package / Path | Role & Responsibilities | Key Dependencies |
-| :--- | :--- | :--- | :--- |
-| **`apps/api`** | `@opensearch/api`<br/>`apps/api/` | Exposes REST endpoints (`/api/v1/search`, `/health`), sliding-window rate limiting per IP, request bounds (64KB payload, 200-char query), and live multi-provider web fallback (`external-search.ts`). | `@opensearch/ranking`<br/>`@opensearch/shared` |
-| **`apps/web`** | `@opensearch/web`<br/>`apps/web/` | Self-contained, zero-dependency browser client mimicking a real developer CLI. Includes phosphor-green styling, skip-links, ARIA live-announcements, and keybinds. | Native Browser APIs |
-| **`crawler`** | `@opensearch/crawler`<br/>`packages/crawler/` | Polite autonomous web crawler. Implements `robots.txt` compliance, DNS-level SSRF defense, streaming body limits, and houses the **113-URL curated seed corpus**. | `@opensearch/storage`<br/>`@opensearch/shared` |
-| **`indexer`** | `@opensearch/indexer`<br/>`packages/indexer/` | Multilingual text normalization, positional posting lists, document frequency tracking, and disk-persisted inverted index compilation with atomic rebuilds. | `@opensearch/storage`<br/>`@opensearch/shared` |
-| **`ranking`** | `@opensearch/ranking`<br/>`packages/ranking/` | Mathematical BM25 scoring with multi-field structural weights (Title 3.0×, Headings 2.0×, Quoted phrase 1.5×), domain clustering dampening, and safe snippet formatting. | `@opensearch/shared` |
-| **`storage`** | `@opensearch/storage`<br/>`packages/storage/` | Zero-external-dependency persistence substrate. Provides transactional JSON repositories with POSIX/Windows atomic file-locking to prevent concurrent write corruption. | `@opensearch/shared` |
-| **`shared`** | `@opensearch/shared`<br/>`packages/shared/` | Shared domain primitives, configuration validators (`AppConfig`), centralized error definitions, cryptographically secure ID generators, and structured privacy loggers. | None (Root leaf) |
+| Workspace      | Package / Path                                | Role & Responsibilities                                                                                                                                                                                | Key Dependencies                               |
+| :------------- | :-------------------------------------------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :--------------------------------------------- |
+| **`apps/api`** | `@opensearch/api`<br/>`apps/api/`             | Exposes REST endpoints (`/api/v1/search`, `/health`), sliding-window rate limiting per IP, request bounds (64KB payload, 200-char query), and live multi-provider web fallback (`external-search.ts`). | `@opensearch/ranking`<br/>`@opensearch/shared` |
+| **`apps/web`** | `@opensearch/web`<br/>`apps/web/`             | Self-contained, zero-dependency browser client mimicking a real developer CLI. Includes phosphor-green styling, skip-links, ARIA live-announcements, and keybinds.                                     | Native Browser APIs                            |
+| **`crawler`**  | `@opensearch/crawler`<br/>`packages/crawler/` | Polite autonomous web crawler. Implements `robots.txt` compliance, DNS-level SSRF defense, streaming body limits, and houses the **113-URL curated seed corpus**.                                      | `@opensearch/storage`<br/>`@opensearch/shared` |
+| **`indexer`**  | `@opensearch/indexer`<br/>`packages/indexer/` | Multilingual text normalization, positional posting lists, document frequency tracking, and disk-persisted inverted index compilation with atomic rebuilds.                                            | `@opensearch/storage`<br/>`@opensearch/shared` |
+| **`ranking`**  | `@opensearch/ranking`<br/>`packages/ranking/` | Mathematical BM25 scoring with multi-field structural weights (Title 3.0×, Headings 2.0×, Quoted phrase 1.5×), domain clustering dampening, and safe snippet formatting.                               | `@opensearch/shared`                           |
+| **`storage`**  | `@opensearch/storage`<br/>`packages/storage/` | Zero-external-dependency persistence substrate. Provides transactional JSON repositories with POSIX/Windows atomic file-locking to prevent concurrent write corruption.                                | `@opensearch/shared`                           |
+| **`shared`**   | `@opensearch/shared`<br/>`packages/shared/`   | Shared domain primitives, configuration validators (`AppConfig`), centralized error definitions, cryptographically secure ID generators, and structured privacy loggers.                               | None (Root leaf)                               |
 
 <br/>
 
@@ -502,25 +512,33 @@ opensearch/
 ### Why OpenSearch Matters: The 5 Sovereignty Pillars
 
 #### 1. 🛑 Escape the Syndication Monopoly
+
 Virtually every privacy search brand (DuckDuckGo, Yahoo, Ecosia, Qwant) is a **syndication customer** of Microsoft Bing. If Bing alters its index, downranks open knowledge, or blocks an endpoint, these services follow suit. OpenSearch operates an independent crawler (`@opensearch/crawler`) and inverted index (`@opensearch/indexer`). **Your search index belongs to you.**
 
 #### 2. 🛡️ Genuine Data Isolation vs. Proxying
+
 Aggregators like SearXNG relay your unencrypted queries to 10+ third-party search engines simultaneously. While your client IP may be masked, your intent profile is broadcast across multiple Big Tech properties. OpenSearch evaluates your query **locally first**. Only when local knowledge is depleted does it fire an isolated, ephemeral web probe with zero persistent identifiers.
 
 #### 3. 📐 Open Mathematical Ranking vs. Black-Box ML
+
 Commercial search algorithms are closed commercial secrets optimized for ad impressions and user engagement time. OpenSearch uses pure, open-source **BM25 lexical scoring** ($k_1=1.2, b=0.75$) augmented with deterministic structural multipliers:
+
 - Full transparency: inspect exactly why a page ranked where it did via score decomposition.
 - Zero engagement traps: no algorithmic manipulation, clickbait bias, or sponsored result injections.
 
 #### 4. 💻 Complete Free-Tier Portability
+
 OpenSearch has **zero paid cloud dependencies**:
+
 - No Elasticsearch cluster bills.
 - No Pinecone / OpenAI vector API token fees.
 - No Redis cloud subscription or MongoDB instances.
 - Runs entirely within a lightweight Node.js runtime backed by ACID-safe file storage. Deploy it on a Raspberry Pi, a $4 VPS, or your local development machine for free.
 
 #### 5. 🎯 Curated & Extensible Corpus Control
+
 You decide the worldview of your search engine. By modifying `seed-corpus.ts`, you can curate an engine laser-focused on internal engineering docs, biomedical research, open-source codebases, or the general public web. Rebuild with a single command:
+
 ```bash
 node scripts/feed-corpus.mjs
 ```
@@ -558,16 +576,16 @@ node scripts/feed-corpus.mjs
 
 ### Deep Tier Breakdown & Technical Choices
 
-| Tier | Technology | Specification / Package | Engineering Rationale |
-| :--- | :--- | :--- | :--- |
-| **Language** | ![TypeScript](https://img.shields.io/badge/TypeScript-5.7+-3178C6?style=flat-square&logo=typescript&logoColor=white) | `typescript` (composite project mode) | Ensures rigorous interface contracts across workspace boundaries; compiles down to clean ESM/CJS without bundling overhead. |
-| **Runtime** | ![Node.js](https://img.shields.io/badge/Node.js-20+-339933?style=flat-square&logo=node.js&logoColor=white) | Native ECMAScript Modules (`ESM`) | Uses native `fetch()`, `AbortSignal.timeout()`, and high-performance crypto APIs with zero external runtime wrappers. |
-| **HTTP Transport** | **Native Node.js `node:http`** | Zero framework (`no Express / no Fastify`) | Delivers minimal attack surface, sub-millisecond route dispatch, and full control over raw HTTP request streaming and socket lifecycle. |
-| **Persistence** | **ACID File Adapter** | Custom `JsonStorageAdapter` | Atomic rename swaps (`fs.rename`), file-descriptor advisory locks (`flock`/`LockFile`), and zero dependency on memory-heavy databases (Postgres, Mongo, Redis). |
-| **Information Retrieval** | **Custom BM25 Engine** | `@opensearch/ranking` | Mathematical implementation of BM25 ($k_1=1.2, b=0.75$) with structural field boosts (Title 3.0×, Headings 2.0×) and zero black-box weights. |
-| **Presentation** | **Zero-Dependency Web TUI** | Pure HTML5, Vanilla CSS3 & JS | Near-black phosphor-green terminal UI styled with **JetBrains Mono**. Zero third-party tracker scripts, analytics, or external font stylesheets. |
-| **Test Engine** | ![Vitest](https://img.shields.io/badge/Vitest-2.1+-729B1B?style=flat-square&logo=vitest&logoColor=white) | `vitest` workspace harness | Fast concurrent unit and integration test runner executing 360 test assertions in under 4 seconds. |
-| **Code Integrity** | ![ESLint](https://img.shields.io/badge/ESLint-9.0+-4B32C3?style=flat-square&logo=eslint&logoColor=white) | Flat config (`eslint.config.mjs`) + Prettier | Enforces strict linting, zero implicit `any`, and clean formatting across all apps and internal packages. |
+| Tier                      | Technology                                                                                                           | Specification / Package                      | Engineering Rationale                                                                                                                                           |
+| :------------------------ | :------------------------------------------------------------------------------------------------------------------- | :------------------------------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Language**              | ![TypeScript](https://img.shields.io/badge/TypeScript-5.7+-3178C6?style=flat-square&logo=typescript&logoColor=white) | `typescript` (composite project mode)        | Ensures rigorous interface contracts across workspace boundaries; compiles down to clean ESM/CJS without bundling overhead.                                     |
+| **Runtime**               | ![Node.js](https://img.shields.io/badge/Node.js-20+-339933?style=flat-square&logo=node.js&logoColor=white)           | Native ECMAScript Modules (`ESM`)            | Uses native `fetch()`, `AbortSignal.timeout()`, and high-performance crypto APIs with zero external runtime wrappers.                                           |
+| **HTTP Transport**        | **Native Node.js `node:http`**                                                                                       | Zero framework (`no Express / no Fastify`)   | Delivers minimal attack surface, sub-millisecond route dispatch, and full control over raw HTTP request streaming and socket lifecycle.                         |
+| **Persistence**           | **ACID File Adapter**                                                                                                | Custom `JsonStorageAdapter`                  | Atomic rename swaps (`fs.rename`), file-descriptor advisory locks (`flock`/`LockFile`), and zero dependency on memory-heavy databases (Postgres, Mongo, Redis). |
+| **Information Retrieval** | **Custom BM25 Engine**                                                                                               | `@opensearch/ranking`                        | Mathematical implementation of BM25 ($k_1=1.2, b=0.75$) with structural field boosts (Title 3.0×, Headings 2.0×) and zero black-box weights.                    |
+| **Presentation**          | **Zero-Dependency Web TUI**                                                                                          | Pure HTML5, Vanilla CSS3 & JS                | Near-black phosphor-green terminal UI styled with **JetBrains Mono**. Zero third-party tracker scripts, analytics, or external font stylesheets.                |
+| **Test Engine**           | ![Vitest](https://img.shields.io/badge/Vitest-2.1+-729B1B?style=flat-square&logo=vitest&logoColor=white)             | `vitest` workspace harness                   | Fast concurrent unit and integration test runner executing 360 test assertions in under 4 seconds.                                                              |
+| **Code Integrity**        | ![ESLint](https://img.shields.io/badge/ESLint-9.0+-4B32C3?style=flat-square&logo=eslint&logoColor=white)             | Flat config (`eslint.config.mjs`) + Prettier | Enforces strict linting, zero implicit `any`, and clean formatting across all apps and internal packages.                                                       |
 
 ---
 
@@ -735,15 +753,15 @@ OpenSearch uses zero-secret, transparent environment files. Copy the blueprint t
 cp .env.example .env
 ```
 
-| Environment Key | Default Value | Purpose / Impact |
-| :--- | :--- | :--- |
-| `API_PORT` | `3001` | HTTP port for the Search REST API & Live Fallback service |
-| `WEB_PORT` | `3000` | HTTP port for the standalone web terminal interface |
-| `INDEX_DIR` | `./data/index` | Directory path hosting disk-persisted inverted index postings |
-| `STORAGE_DIR` | `./data/storage` | Path for atomic document and URL metadata JSON stores |
-| `LOG_LEVEL` | `info` | Logging verbosity (`debug`, `info`, `warn`, `error`) |
-| `RATE_LIMIT_MAX` | `100` | Sliding-window maximum request threshold per IP |
-| `CACHE_MAX_ENTRIES` | `500` | In-memory LRU query cache capacity limit |
+| Environment Key     | Default Value    | Purpose / Impact                                              |
+| :------------------ | :--------------- | :------------------------------------------------------------ |
+| `API_PORT`          | `3001`           | HTTP port for the Search REST API & Live Fallback service     |
+| `WEB_PORT`          | `3000`           | HTTP port for the standalone web terminal interface           |
+| `INDEX_DIR`         | `./data/index`   | Directory path hosting disk-persisted inverted index postings |
+| `STORAGE_DIR`       | `./data/storage` | Path for atomic document and URL metadata JSON stores         |
+| `LOG_LEVEL`         | `info`           | Logging verbosity (`debug`, `info`, `warn`, `error`)          |
+| `RATE_LIMIT_MAX`    | `100`            | Sliding-window maximum request threshold per IP               |
+| `CACHE_MAX_ENTRIES` | `500`            | In-memory LRU query cache capacity limit                      |
 
 > 🔒 **Security Notice:** `.env` files are ignored by version control via `.gitignore`. Never commit production secrets or host keys.
 
@@ -753,27 +771,27 @@ cp .env.example .env
 
 The baseline index comes pre-populated with high-utility knowledge repositories:
 
-| Sector | Target Count | Curated Domain Examples | Primary Focus |
-| :--- | :--- | :--- | :--- |
-| **Tech Documentation** | 12 | MDN, TypeScript, Node.js, Python, Rust, Go, Docker | Language specs, APIs, standard libraries |
-| **AI & Machine Learning** | 8 | OpenAI, HuggingFace, PyTorch, TensorFlow, Kaggle | Foundation models, datasets, research |
-| **Developer Ecosystem** | 8 | GitHub, Stack Overflow, npm, crates.io, VS Code | Repositories, package registries, troubleshooting |
-| **News & Global Events** | 9 | BBC, Reuters, The Guardian, TechCrunch, Hacker News | Real-time global reporting, tech journalism |
-| **Finance & Markets** | 6 | Yahoo Finance, CoinMarketCap, Investopedia, Bloomberg | Market tracking, economic definitions |
-| **Health & Medicine** | 6 | WHO, NIH, WebMD, Mayo Clinic, CDC | Peer-reviewed medical guidance |
-| **Science & Research** | 6 | NASA, arXiv, Nature, PubMed, Science.org | Preprints, astronomical data, academic papers |
-| **Open Source & Linux** | 7 | Linux Kernel, Apache, CNCF, Free Software Foundation | Kernel documentation, cloud native governance |
-| **Privacy & Security** | 6 | EFF, Privacy Guides, Tor Project, Have I Been Pwned | Threat intelligence, cryptographic protocols |
-| **Education & Encyclopedias** | 6 | Wikipedia, Khan Academy, MIT OpenCourseWare, edX | General open knowledge & academic courses |
-| **Food & Culinary** | 5 | Allrecipes, Food Network, Serious Eats, Tasty | Curated recipes & culinary technique |
-| **Travel & Transit** | 5 | OpenStreetMap, Google Flights, Booking.com, Lonely Planet | Global cartography, booking references |
-| **Entertainment & Media** | 6 | IMDb, Rotten Tomatoes, Spotify, YouTube | Film indexes, streaming discographies |
-| **Sports & Athletics** | 5 | ESPN, BBC Sport, NBA, FIFA, Formula 1 | League statistics, standings, match reports |
-| **Community & Forums** | 5 | Reddit (selected subreddits), Hacker News, Lobsters | Technical discussions & peer debates |
-| **Government & Public Services** | 4 | USA.gov, UK Gov, European Union Portal | Official public registries & policy documents |
-| **Weather & Meteorology** | 3 | National Weather Service, Weather.com | Atmospheric data, meteorological forecasts |
-| **Commerce & Marketplaces** | 3 | Amazon, eBay (structured meta-extracts only) | Catalog definitions (zero tracker cookies) |
-| **Reference & Linguistics** | 3 | Merriam-Webster, Wiktionary, Stanford Phil. | Lexicons, philosophical indexes, etymology |
+| Sector                           | Target Count | Curated Domain Examples                                   | Primary Focus                                     |
+| :------------------------------- | :----------- | :-------------------------------------------------------- | :------------------------------------------------ |
+| **Tech Documentation**           | 12           | MDN, TypeScript, Node.js, Python, Rust, Go, Docker        | Language specs, APIs, standard libraries          |
+| **AI & Machine Learning**        | 8            | OpenAI, HuggingFace, PyTorch, TensorFlow, Kaggle          | Foundation models, datasets, research             |
+| **Developer Ecosystem**          | 8            | GitHub, Stack Overflow, npm, crates.io, VS Code           | Repositories, package registries, troubleshooting |
+| **News & Global Events**         | 9            | BBC, Reuters, The Guardian, TechCrunch, Hacker News       | Real-time global reporting, tech journalism       |
+| **Finance & Markets**            | 6            | Yahoo Finance, CoinMarketCap, Investopedia, Bloomberg     | Market tracking, economic definitions             |
+| **Health & Medicine**            | 6            | WHO, NIH, WebMD, Mayo Clinic, CDC                         | Peer-reviewed medical guidance                    |
+| **Science & Research**           | 6            | NASA, arXiv, Nature, PubMed, Science.org                  | Preprints, astronomical data, academic papers     |
+| **Open Source & Linux**          | 7            | Linux Kernel, Apache, CNCF, Free Software Foundation      | Kernel documentation, cloud native governance     |
+| **Privacy & Security**           | 6            | EFF, Privacy Guides, Tor Project, Have I Been Pwned       | Threat intelligence, cryptographic protocols      |
+| **Education & Encyclopedias**    | 6            | Wikipedia, Khan Academy, MIT OpenCourseWare, edX          | General open knowledge & academic courses         |
+| **Food & Culinary**              | 5            | Allrecipes, Food Network, Serious Eats, Tasty             | Curated recipes & culinary technique              |
+| **Travel & Transit**             | 5            | OpenStreetMap, Google Flights, Booking.com, Lonely Planet | Global cartography, booking references            |
+| **Entertainment & Media**        | 6            | IMDb, Rotten Tomatoes, Spotify, YouTube                   | Film indexes, streaming discographies             |
+| **Sports & Athletics**           | 5            | ESPN, BBC Sport, NBA, FIFA, Formula 1                     | League statistics, standings, match reports       |
+| **Community & Forums**           | 5            | Reddit (selected subreddits), Hacker News, Lobsters       | Technical discussions & peer debates              |
+| **Government & Public Services** | 4            | USA.gov, UK Gov, European Union Portal                    | Official public registries & policy documents     |
+| **Weather & Meteorology**        | 3            | National Weather Service, Weather.com                     | Atmospheric data, meteorological forecasts        |
+| **Commerce & Marketplaces**      | 3            | Amazon, eBay (structured meta-extracts only)              | Catalog definitions (zero tracker cookies)        |
+| **Reference & Linguistics**      | 3            | Merriam-Webster, Wiktionary, Stanford Phil.               | Lexicons, philosophical indexes, etymology        |
 
 ---
 
@@ -816,13 +834,13 @@ $ audit --privacy-boundaries
 [PASS] OUTBOUND_LINK_AUDIT   : target="_blank" rel="noopener noreferrer" enforced
 ```
 
-| Privacy Vector | Big Tech Standard | OpenSearch Sovereign Standard | Technical Guarantee |
-| :--- | :--- | :--- | :--- |
-| **Search Profiling** | Builds behavioral profiles across weeks & months | **Never stored** | Search terms exist only in stack memory during request processing and are freed immediately upon response dispatch. |
-| **Session Identification** | Persistent tracking cookies, device fingerprinting, ETags | **Zero identity state** | The server emits zero `Set-Cookie` headers. No session identifiers or unique device fingerprints are ever generated or evaluated. |
-| **Client IP Addresses** | Full IPv4/IPv6 addresses logged with timestamps | **Subnet truncation** | IPv4 addresses have their final octet zeroed (`192.0.2.0/24`) and IPv6 are masked to `/48` before entering loggers. |
-| **Outbound Leaks** | Search queries leaked via HTTP `Referer` headers | **Referrer isolation** | Outbound links enforce `rel="noopener noreferrer"` and global responses carry `Referrer-Policy: no-referrer`. |
-| **Analytics & Telemetry** | Google Analytics, Sentry, Mixpanel, Datadog tracking | **Zero telemetry** | 100% self-hosted Node.js processes without external analytics beacons, third-party CDNs, or remote font loads. |
+| Privacy Vector             | Big Tech Standard                                         | OpenSearch Sovereign Standard | Technical Guarantee                                                                                                               |
+| :------------------------- | :-------------------------------------------------------- | :---------------------------- | :-------------------------------------------------------------------------------------------------------------------------------- |
+| **Search Profiling**       | Builds behavioral profiles across weeks & months          | **Never stored**              | Search terms exist only in stack memory during request processing and are freed immediately upon response dispatch.               |
+| **Session Identification** | Persistent tracking cookies, device fingerprinting, ETags | **Zero identity state**       | The server emits zero `Set-Cookie` headers. No session identifiers or unique device fingerprints are ever generated or evaluated. |
+| **Client IP Addresses**    | Full IPv4/IPv6 addresses logged with timestamps           | **Subnet truncation**         | IPv4 addresses have their final octet zeroed (`192.0.2.0/24`) and IPv6 are masked to `/48` before entering loggers.               |
+| **Outbound Leaks**         | Search queries leaked via HTTP `Referer` headers          | **Referrer isolation**        | Outbound links enforce `rel="noopener noreferrer"` and global responses carry `Referrer-Policy: no-referrer`.                     |
+| **Analytics & Telemetry**  | Google Analytics, Sentry, Mixpanel, Datadog tracking      | **Zero telemetry**            | 100% self-hosted Node.js processes without external analytics beacons, third-party CDNs, or remote font loads.                    |
 
 <br/>
 
@@ -849,18 +867,18 @@ $ audit --privacy-boundaries
 
 ### Milestone Lifecycle Matrix
 
-| Milestone | Scope & Engineering Focus | Phases Covered | Delivery Verification | Status |
-| :--- | :--- | :--- | :--- | :---: |
-| **Milestone 01** | **Monorepo & Storage Substrate** | Phases 1 – 3 | TS 5.7+ composite configs, JSON storage adapter, ACID file locks | `[PASSED]` |
-| **Milestone 02** | **Polite Crawler & Fetching Engine** | Phases 4 – 8 | RFC 3986 URL canon, SSRF DNS guards, robots.txt parser, HTML extractor | `[PASSED]` |
-| **Milestone 03** | **Search Index & Normalization** | Phases 9 – 11 | Multilingual tokenization, positional postings, incremental indexer | `[PASSED]` |
-| **Milestone 04** | **Query Processing & BM25 Ranking** | Phases 12 – 15 | Quoted phrases, negation, multi-field BM25 ($k_1=1.2, b=0.75$), snippets | `[PASSED]` |
-| **Milestone 05** | **HTTP REST API & Security Gate** | Phases 16 – 18 | Pure `node:http` router, sliding-window rate limiter, payload bounds | `[PASSED]` |
-| **Milestone 06** | **Public Terminal Web Interface** | Phases 19 – 21 | Responsive TUI, JetBrains Mono phosphor styling, full a11y & keybinds | `[PASSED]` |
-| **Milestone 07** | **End-to-End Search Pipeline** | Phases 22 – 24 | Cold-start crawl loop, 113 curated seed corpus, IR MRR quality benchmark | `[PASSED]` |
-| **Milestone 08** | **Security Hardening & Zero-Logs** | Phases 25 – 27 | CSP enforcement, circular redirect traps, IP subnet masking (/24 & /48) | `[PASSED]` |
-| **Milestone 09** | **High-Concurrency Performance** | Phases 28 – 30 | In-memory LRU query cache (<10ms warm hits), crawler memory backpressure | `[PASSED]` |
-| **Milestone 10** | **Production Release & Live Fallback**| Phases 31 – 34 | Google/DuckDuckGo live hybrid search, cross-env tests, release sign-off | `[PASSED]` |
+| Milestone        | Scope & Engineering Focus              | Phases Covered | Delivery Verification                                                    |   Status   |
+| :--------------- | :------------------------------------- | :------------- | :----------------------------------------------------------------------- | :--------: |
+| **Milestone 01** | **Monorepo & Storage Substrate**       | Phases 1 – 3   | TS 5.7+ composite configs, JSON storage adapter, ACID file locks         | `[PASSED]` |
+| **Milestone 02** | **Polite Crawler & Fetching Engine**   | Phases 4 – 8   | RFC 3986 URL canon, SSRF DNS guards, robots.txt parser, HTML extractor   | `[PASSED]` |
+| **Milestone 03** | **Search Index & Normalization**       | Phases 9 – 11  | Multilingual tokenization, positional postings, incremental indexer      | `[PASSED]` |
+| **Milestone 04** | **Query Processing & BM25 Ranking**    | Phases 12 – 15 | Quoted phrases, negation, multi-field BM25 ($k_1=1.2, b=0.75$), snippets | `[PASSED]` |
+| **Milestone 05** | **HTTP REST API & Security Gate**      | Phases 16 – 18 | Pure `node:http` router, sliding-window rate limiter, payload bounds     | `[PASSED]` |
+| **Milestone 06** | **Public Terminal Web Interface**      | Phases 19 – 21 | Responsive TUI, JetBrains Mono phosphor styling, full a11y & keybinds    | `[PASSED]` |
+| **Milestone 07** | **End-to-End Search Pipeline**         | Phases 22 – 24 | Cold-start crawl loop, 113 curated seed corpus, IR MRR quality benchmark | `[PASSED]` |
+| **Milestone 08** | **Security Hardening & Zero-Logs**     | Phases 25 – 27 | CSP enforcement, circular redirect traps, IP subnet masking (/24 & /48)  | `[PASSED]` |
+| **Milestone 09** | **High-Concurrency Performance**       | Phases 28 – 30 | In-memory LRU query cache (<10ms warm hits), crawler memory backpressure | `[PASSED]` |
+| **Milestone 10** | **Production Release & Live Fallback** | Phases 31 – 34 | Google/DuckDuckGo live hybrid search, cross-env tests, release sign-off  | `[PASSED]` |
 
 <br/>
 

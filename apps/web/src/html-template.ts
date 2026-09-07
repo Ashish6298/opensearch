@@ -27,15 +27,14 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="OpenSearch is a public, privacy-first search engine built from scratch.">
   <meta name="theme-color" content="#0d0d0d">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <title>${title}</title>
   <style>
     ${options.cssContent || '/* Inlined CSS */'}
   </style>
 </head>
 <body>
+  <a href="#search-input" id="skip-to-search" class="skip-link">Skip to search</a>
+  <a href="#results-area" id="skip-to-results" class="skip-link">Skip to results</a>
   <div id="a11y-announcer" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 
   <div class="terminal-app" id="terminal-window" role="main">
@@ -75,7 +74,8 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
         <!-- Search Command Prompt & Input Form -->
         <div class="cli-section search-section">
           <div class="cli-cmd">$ search ""</div>
-          <form class="terminal-search-form" id="search-form" role="search" aria-label="OpenSearch Form">
+          <form class="terminal-search-form" id="search-form" role="search" aria-label="Web Search Form">
+            <div id="search-hint" class="sr-only">Type a search query and press Enter</div>
             <div class="terminal-search-box">
               <span class="search-prompt-symbol" aria-hidden="true">&gt;</span>
               <input
@@ -88,9 +88,11 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
                 autocapitalize="off"
                 spellcheck="false"
                 aria-label="Search query"
+                aria-describedby="search-hint"
                 required
               />
-              <button type="submit" id="search-submit-btn" class="run-btn" aria-label="Run search query">RUN</button>
+              <button type="button" id="search-clear-btn" class="sr-only" aria-label="Clear search input">Clear</button>
+              <button type="submit" id="search-submit-btn" class="run-btn" aria-label="Submit search">RUN</button>
             </div>
           </form>
         </div>
@@ -112,7 +114,7 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
           </div>
 
           <div class="results-meta" id="results-meta" role="status" aria-live="polite"></div>
-          <section class="results-container" id="results-area" aria-label="Search Results"></section>
+          <section class="results-container" id="results-area" role="feed" aria-label="Search Results"></section>
           <div id="pagination-area" role="navigation" aria-label="Search pagination"></div>
         </div>
       </div>
