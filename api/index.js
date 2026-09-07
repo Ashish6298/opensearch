@@ -53,17 +53,31 @@ function getOrInitServers() {
 }
 
 export default async function handler(req, res) {
-  const { apiServer, webServer } = getOrInitServers();
-  const host = req.headers.host || 'localhost';
-  const parsedUrl = new URL(req.url || '/', `http://${host}`);
-  const pathname = parsedUrl.pathname;
+  try {
+    const { apiServer, webServer } = getOrInitServers();
+    const host = req.headers.host || 'localhost';
+    const parsedUrl = new URL(req.url || '/', `http://${host}`);
+    const pathname = parsedUrl.pathname;
 
-  // Route API requests to ApiServer Router
-  if (pathname.startsWith('/api/') || pathname === '/health' || pathname === '/status') {
-    await apiServer.getRouter().handleRequest(req, res, apiServer.getContext());
-    return;
+    // Route API requests to ApiServer Router
+    if (pathname.startsWith('/api/') || pathname === '/health' || pathname === '/status') {
+      await apiServer.getRouter().handleRequest(req, res, apiServer.getContext());
+      return;
+    }
+
+    // Route frontend / web requests to WebServer
+    await webServer.handleRequest(req, res);
+  } catch (error) {
+    console.error('OpenSearch serverless handler failed', error);
+    if (!res.headersSent) {
+      res.statusCode = 500;
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      res.end(
+        JSON.stringify({
+          error: 'Serverless handler initialization failed',
+          message: error instanceof Error ? error.message : String(error),
+        }),
+      );
+    }
   }
-
-  // Route frontend / web requests to WebServer
-  await webServer.handleRequest(req, res);
 }
