@@ -15,6 +15,7 @@
     "@opensearch/shared": "*",
     "@opensearch/indexer": "*",
     "@opensearch/ranking": "*",
-    "@opensearch/storage": "*"
+    "@opensearch/storage": "*",
+    "typescript": "^5.7.3"
   }
 }
