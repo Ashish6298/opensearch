@@ -98,6 +98,22 @@ export function loadConfig(sourceEnv: Record<string, string | undefined> = proce
     defaultValue: CRAWLER_LIMITS.DEFAULT_POLITENESS_DELAY_MS,
     min: CRAWLER_LIMITS.MIN_POLITENESS_DELAY_MS,
   });
+  const crawlerMaxConcurrency = readInt(sourceEnv, {
+    envKey: 'CRAWLER_MAX_CONCURRENCY',
+    defaultValue: CRAWLER_LIMITS.DEFAULT_MAX_CONCURRENCY,
+    min: 1,
+    max: CRAWLER_LIMITS.MAX_CONCURRENCY_CEILING,
+  });
+  const crawlerRetryBudget = readInt(sourceEnv, {
+    envKey: 'CRAWLER_RETRY_BUDGET',
+    defaultValue: CRAWLER_LIMITS.DEFAULT_MAX_RETRY_BUDGET,
+    min: 0,
+  });
+  const crawlerCheckpointIntervalPages = readInt(sourceEnv, {
+    envKey: 'CRAWLER_CHECKPOINT_INTERVAL_PAGES',
+    defaultValue: CRAWLER_LIMITS.DEFAULT_CHECKPOINT_INTERVAL_PAGES,
+    min: 1,
+  });
   const crawlerUserAgent = readString(sourceEnv, {
     envKey: 'CRAWLER_USER_AGENT',
     defaultValue: CRAWLER_LIMITS.DEFAULT_USER_AGENT,
@@ -247,6 +263,9 @@ export function loadConfig(sourceEnv: Record<string, string | undefined> = proce
       maxPages: crawlerMaxPages,
       maxPageBytes: crawlerMaxPageBytes,
       politenessDelayMs: crawlerPolitenessDelayMs,
+      maxConcurrency: crawlerMaxConcurrency,
+      retryBudget: crawlerRetryBudget,
+      checkpointIntervalPages: crawlerCheckpointIntervalPages,
       userAgent: crawlerUserAgent,
       maxRedirects: crawlerMaxRedirects,
       maxRetries: crawlerMaxRetries,
@@ -300,6 +319,9 @@ export function sanitizeConfigForLogging(config: AppConfig): Record<string, unkn
       maxDepth: config.crawler.maxDepth,
       maxPages: config.crawler.maxPages,
       politenessDelayMs: config.crawler.politenessDelayMs,
+      maxConcurrency: config.crawler.maxConcurrency,
+      retryBudget: config.crawler.retryBudget,
+      checkpointIntervalPages: config.crawler.checkpointIntervalPages,
       userAgent: config.crawler.userAgent,
       maxRedirects: config.crawler.maxRedirects,
       maxRetries: config.crawler.maxRetries,

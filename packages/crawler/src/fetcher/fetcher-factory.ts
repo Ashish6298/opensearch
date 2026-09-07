@@ -35,3 +35,5 @@ export function createHttpFetcher(options: FetcherFactoryOptions): HttpFetcher {
     logger,
   });
 }
+
+export const createFetcher = createHttpFetcher;

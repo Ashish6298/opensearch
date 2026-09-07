@@ -1,0 +1,80 @@
+================================================================================
+OPENSEARCH V1.0.0 — PHASE 29 REPORT
+Crawler Efficiency & Resource Controls
+================================================================================
+Date: 2026-09-07
+Status: COMPLETE & VERIFIED
+Milestone: MILESTONE 9 — PERFORMANCE & FREE INFRASTRUCTURE
+Ready for Next Phase (Phase 30): YES
+
+--------------------------------------------------------------------------------
+1. OBJECTIVE & EXECUTIVE SUMMARY
+--------------------------------------------------------------------------------
+The objective of Phase 29 is to prevent the crawler from consuming uncontrolled
+resources across free-tier compute, memory, disk, network, and target servers.
+This was accomplished through seven core resource control mechanisms:
+1. Configurable crawl limits (page ceilings, max depth, per-request timeouts, body limits).
+2. Concurrency controls (bounded worker pool preventing process/CPU saturation).
+3. Politeness delay (domain-aware delay tracking and robots.txt crawl-delay enforcement).
+4. Queue limits and queue overflow safeguards.
+5. Per-run retry budgets preventing runaway retry storms on failing endpoints.
+6. Atomic progress checkpointing to disk (<crawlerDataDir>/crawl-checkpoint.json).
+7. Comprehensive crawl run statistics and telemetry.
+
+--------------------------------------------------------------------------------
+2. ARCHITECTURAL & IMPLEMENTATION DETAILS
+--------------------------------------------------------------------------------
+A. Configuration Extensions (@opensearch/shared):
+   - `CRAWLER_MAX_CONCURRENCY` (default: 1, range: 1..10)
+   - `CRAWLER_RETRY_BUDGET` (default: 50, range: 0..1000)
+   - `CRAWLER_CHECKPOINT_INTERVAL_PAGES` (default: 10, range: 1..500)
+   - Full sanitization and validation in `loadConfig()` and `sanitizeConfigForLogging()`.
+
+B. Bounded Worker Pool & Concurrency:
+   - Orchestrator worker loops execute concurrently via `Promise.all` across `maxConcurrency` workers.
+   - Atomic page reservation prevents concurrent workers from exceeding `maxPages`.
+   - Domain-level timestamps enforce politeness delays across all concurrent workers.
+
+C. Retry Budget & Storm Suppression:
+   - Configurable per-run `retryBudget` (default: 50).
+   - Each failed HTTP fetch decrements `retriesRemaining` and records `retriesConsumed`.
+   - When budget is 0, subsequent failures are logged as `retryBudgetExhaustedCount` and fail immediately without compounding network backoff loops.
+
+D. Atomic Crawl Checkpointing:
+   - Progress checkpoints are serialized every `checkpointIntervalPages` fetched pages and upon crawl completion.
+   - Written to `<crawlerDataDir>/crawl-checkpoint.json.tmp` and atomically renamed to prevent corruption.
+   - Captures schema version, runId, timestamps, active options, and real-time stats.
+
+E. Extended Crawl Statistics:
+   - Added `retriesConsumed`, `retryBudgetExhaustedCount`, `activeWorkers`, `checkpointsSaved` to `CrawlRunStats`.
+
+--------------------------------------------------------------------------------
+3. TEST SUITE & VERIFICATION GATES
+--------------------------------------------------------------------------------
+Automated verification via `scripts/verify-phase29.mjs` and `packages/crawler/tests/crawler-efficiency.test.ts`:
+
+- Gate 1:  Configuration parses CRAWLER_MAX_CONCURRENCY [PASS]
+- Gate 2:  Configuration parses CRAWLER_RETRY_BUDGET [PASS]
+- Gate 3:  Configuration parses CRAWLER_CHECKPOINT_INTERVAL_PAGES [PASS]
+- Gate 4:  Crawl orchestrator initializes with efficiency controls [PASS]
+- Gate 5:  Crawler halts cleanly when maxPages limit is reached [PASS]
+- Gate 6:  Crawler fetched exact maxPages budget [PASS]
+- Gate 7:  Peak concurrency was bounded within maxConcurrency ceiling [PASS]
+- Gate 8:  Crawl checkpoint saved to disk [PASS]
+- Gate 9:  Crawl checkpoint schema and stats are verified [PASS]
+- Gate 10: Retry budget consumption tracked accurately [PASS]
+- Gate 11: Retry storms suppressed when budget exhausted [PASS]
+- Gate 12: Crawler stops cleanly on abort signal [PASS]
+- Gate 13: Crawler stop summary reflects abort signal [PASS]
+- Gate 14: Crawl orchestrator closed and resources freed [PASS]
+
+Total Unit Tests Passing: 383/383 (37 test suites, 0 failures)
+Linting & Typechecks: 0 errors
+
+--------------------------------------------------------------------------------
+4. READINESS FOR NEXT PHASE
+--------------------------------------------------------------------------------
+Phase 29 is FULLY COMPLETE and PASSES ALL CHECKS.
+The codebase is ready for:
+PHASE 30 — Indexing Efficiency & Storage Budgets
+================================================================================

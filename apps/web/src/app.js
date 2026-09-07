@@ -34,6 +34,7 @@
   let currentQuery = '';
   let currentPage = 1;
   let activeAbortController = null;
+  let isLoading = false;
 
   function init() {
     // Check URL parameters for pre-filled query and page (e.g. ?q=test&page=2)
