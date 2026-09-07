@@ -1011,6 +1011,21 @@ export const CURATED_SEED_CORPUS: SeedCategory[] = [
     ],
   },
   {
+    id: 'video-media',
+    name: 'Video & Media',
+    description: 'Public video, educational media, and online streaming resources.',
+    seeds: [
+      {
+        url: 'https://www.youtube.com/',
+        title: 'YouTube',
+        description:
+          'Online video platform for educational content, music, tutorials, news, entertainment, and creators.',
+        priority: 1,
+        tags: ['youtube', 'video', 'music', 'education', 'streaming', 'entertainment'],
+      },
+    ],
+  },
+  {
     id: 'environment',
     name: 'Environment & Sustainability',
     description: 'Environmental science, climate, renewable energy, and sustainability resources.',
