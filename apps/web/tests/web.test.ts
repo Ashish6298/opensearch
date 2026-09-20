@@ -239,5 +239,24 @@ describe('Phase 19, 20 & 21 — Search UI & Accessibility Hardening Suite', () =
       expect(js).toContain("e.key === 'Escape'");
       expect(js).toContain('renderSearchResults');
     });
+
+    it('serves autocomplete dropdown markup and scripts (Phase 35)', async () => {
+      const res = await fetch(`${baseUrl}/`);
+      expect(res.status).toBe(200);
+      const html = await res.text();
+      expect(html).toContain('id="autocomplete-dropdown"');
+      expect(html).toContain('aria-autocomplete="list"');
+      expect(html).toContain('aria-controls="autocomplete-dropdown"');
+
+      const cssRes = await fetch(`${baseUrl}/style.css`);
+      const css = await cssRes.text();
+      expect(css).toContain('.autocomplete-dropdown');
+      expect(css).toContain('.autocomplete-item');
+
+      const jsRes = await fetch(`${baseUrl}/app.js`);
+      const js = await jsRes.text();
+      expect(js).toContain('fetchSuggestions');
+      expect(js).toContain('renderSuggestions');
+    });
   });
 });

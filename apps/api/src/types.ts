@@ -6,7 +6,7 @@
  */
 
 import { IncomingMessage, ServerResponse } from 'node:http';
-import { InvertedIndex } from '@opensearch/indexer';
+import { InvertedIndex, PrefixTrie, SuggestionMatch } from '@opensearch/indexer';
 import {
   CandidateRetriever,
   QueryParser,
@@ -77,6 +77,7 @@ export interface RouteDefinition {
 
 export interface SearchServices {
   index: InvertedIndex;
+  prefixTrie?: PrefixTrie;
   queryParser: QueryParser;
   candidateRetriever: CandidateRetriever;
   rankingEngine: RankingEngine;
@@ -110,6 +111,16 @@ export interface HealthCheckResponse extends SystemStatus {
     rateLimiter: ComponentHealth;
     memory: ComponentHealth;
     queryCache?: ComponentHealth;
+  };
+}
+
+export interface SuggestApiResponse {
+  query: string;
+  suggestions: SuggestionMatch[];
+  meta: {
+    count: number;
+    durationMs: number;
+    timestamp: string;
   };
 }
 

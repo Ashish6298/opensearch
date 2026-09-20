@@ -89,11 +89,22 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
                 spellcheck="false"
                 aria-label="Search query"
                 aria-describedby="search-hint"
+                aria-autocomplete="list"
+                aria-controls="autocomplete-dropdown"
+                aria-expanded="false"
                 required
               />
               <button type="button" id="search-clear-btn" class="sr-only" aria-label="Clear search input">Clear</button>
               <button type="submit" id="search-submit-btn" class="run-btn" aria-label="Submit search">RUN</button>
             </div>
+            <!-- Phase 35: Terminal Autocomplete Dropdown -->
+            <div
+              id="autocomplete-dropdown"
+              class="autocomplete-dropdown"
+              role="listbox"
+              aria-label="Search suggestions"
+              style="display:none;"
+            ></div>
           </form>
         </div>
 

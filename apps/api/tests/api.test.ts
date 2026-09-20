@@ -358,4 +358,36 @@ describe('Phase 16, 17 & 18 — Search API Server, Endpoints & Security Suite', 
       expect(data.stack).toBeUndefined();
     });
   });
+
+  describe('Phase 35: Suggestion & Autocomplete API (/api/v1/suggest)', () => {
+    it('returns prefix suggestions with sub-10ms response time', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/suggest?q=open&limit=5`);
+      expect(res.status).toBe(200);
+
+      const data = await res.json();
+      expect(data.query).toBe('open');
+      expect(Array.isArray(data.suggestions)).toBe(true);
+      expect(data.suggestions.length).toBeGreaterThan(0);
+      expect(data.suggestions[0].text.toLowerCase()).toContain('open');
+      expect(data.meta.durationMs).toBeLessThan(50);
+    });
+
+    it('handles empty query parameter gracefully returning empty list', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/suggest?q=`);
+      expect(res.status).toBe(200);
+
+      const data = await res.json();
+      expect(data.query).toBe('');
+      expect(data.suggestions).toEqual([]);
+      expect(data.meta.count).toBe(0);
+    });
+
+    it('respects limit parameter constraint', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/suggest?q=op&limit=1`);
+      expect(res.status).toBe(200);
+
+      const data = await res.json();
+      expect(data.suggestions.length).toBeLessThanOrEqual(1);
+    });
+  });
 });

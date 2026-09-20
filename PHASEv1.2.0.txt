@@ -1,0 +1,425 @@
+================================================================================
+PROJECT — OPENSEARCH
+VERSION — V1.2.0
+FILE — PHASE ROADMAP (PHASEv1.2.0.txt)
+BASE VERSION — Continues from V1.0.0 (Phases 1–34 Completed)
+================================================================================
+
+IMPLEMENTATION RULE
+--------------------------------------------------------------------------------
+OpenSearch V1.0.0 concluded with Phase 34 (PHASE_34_V1_0_0_FINAL_RELEASE_REPORT.txt).
+V1.2.0 extends the verified foundation starting at Phase 35 through Phase 45.
+
+Implement phases sequentially. Do not skip a phase unless its verification
+requirements are already demonstrably satisfied.
+
+Every phase must:
+1. Implement only its defined scope.
+2. Preserve existing functionality and maintain zero-external-dependency purity.
+3. Keep terminal aesthetic consistent, robust, and accessible.
+4. Run appropriate test suites (unit, integration, and performance) after implementation.
+5. Fix all failures and type-check errors caused by the phase before completion.
+6. Generate and save a .txt implementation/test report in the repository:
+   report/PHASE_v1.2.0_<phase_number>_<short_name>_REPORT.txt
+   (Example: report/PHASE_v1.2.0_35_PREFIX_SUGGEST_AUTOCOMPLETE_REPORT.txt)
+7. Leave the project buildable, runnable, and testable (`npm run build`, `npm test`).
+8. Clearly state PASS/FAIL for each verification gate.
+
+
+================================================================================
+MILESTONE 11 (V1.2.0) — SEARCH QUALITY & QUERY UNDERSTANDING
+================================================================================
+
+PHASE 35 — Prefix Trie Index & Search Autocomplete Subsystem
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Provide instant, low-latency prefix search suggestions and auto-completions as
+the user types in the search query box without external search dependencies.
+
+IMPLEMENT:
+- In-memory Prefix Trie / Radix Tree data structure within @opensearch/indexer:
+  * Insertion of indexed document titles, headings, and curated seed dictionary terms.
+  * Frequency-weighted suggestion scoring (popular queries and exact prefix matches rank first).
+  * Fast substring / prefix traversal with maximum candidate depth limits.
+- Public Search Suggestion API endpoint:
+  * Route: `GET /api/v1/suggest`
+  * Query parameters: `q` (query prefix), `limit` (default 5, max 10).
+  * Response format: JSON containing query string, matched terms, and durationMs.
+  * Rate-limiting and query validation integration.
+- Frontend Autocomplete Dropdown in @opensearch/web:
+  * Accessible terminal-themed suggestion box anchored to #search-input.
+  * Debounced input handling (150ms debounce) with fetch cancellation via AbortController.
+  * Keyboard navigation for suggestions (ArrowDown, ArrowUp, Enter, Escape).
+  * ARIA attributes (role="listbox", aria-autocomplete="list", aria-expanded).
+
+DO NOT:
+- Block main search endpoint when suggest queries fail.
+- Store sensitive user keystroke history.
+- Exceed 10ms latency for in-memory Trie traversals.
+
+VERIFY:
+- Trie data structure passes comprehensive unit tests (insertion, search, case-insensitivity, unicode).
+- `GET /api/v1/suggest?q=open` returns relevant completions in < 10ms.
+- Suggestion dropdown renders properly and allows ArrowDown/Enter navigation.
+- Empty or single-character queries handle boundaries gracefully.
+
+OUTPUT:
+Deterministic prefix autocomplete subsystem with unit tests, UI integration, and
+report saved to report/PHASE_v1.2.0_35_PREFIX_SUGGEST_AUTOCOMPLETE_REPORT.txt.
+
+
+PHASE 36 — Typo Tolerance & "Did You Mean?" Correction Engine
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Detect query misspellings and provide relevant search suggestions or fuzzy
+candidate retrieval when queries produce zero or low-relevance results.
+
+IMPLEMENT:
+- Fuzzy String Matching & Edit Distance in @opensearch/ranking & @opensearch/indexer:
+  * Optimized Damerau-Levenshtein distance algorithm (handling insertions, deletions, substitutions, and adjacent transpositions).
+  * Fast candidate dictionary vocabulary lookup with max edit distance threshold (default distance <= 2).
+  * Frequency and BM25 popularity scoring to select the best correction candidate.
+- API Schema Integration:
+  * Add `didYouMean` optional field to `SearchApiResponse`:
+    `didYouMean?: { suggestedQuery: string; originalQuery: string; confidence: number; }`
+  * Automatic suggestion generation when `totalHits === 0` or candidate confidence falls below threshold.
+- Frontend Result Suggestion Banner:
+  * Terminal prompt notification: `[suggestion] Did you mean: <a href="?q=...">corrected term</a> ?`
+  * One-click search execution for the suggested query.
+
+DO NOT:
+- Perform exhaustive distance scans on multi-word long queries without length guards.
+- Alter query interpretation destructively without user awareness.
+
+VERIFY:
+- Common typos (e.g. "pythn" -> "python", "typescrt" -> "typescript") accurately suggest target keywords.
+- Response payload accurately populates `didYouMean`.
+- UI renders clickable suggestion banner without visual glitches.
+- Search benchmarks show < 15ms overhead on misspelled query paths.
+
+OUTPUT:
+Accurate typo detection and recommendation system with report saved to
+report/PHASE_v1.2.0_36_TYPO_TOLERANCE_DID_YOU_MEAN_REPORT.txt.
+
+
+PHASE 37 — Advanced Query Operators & Filter Parser
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Enable precision filtering using syntax operators (`site:`, `intitle:`, `exact:`, `filetype:`)
+to give developers and researchers granular control over retrieval.
+
+IMPLEMENT:
+- Extended Query Lexer & Parser in @opensearch/indexer:
+  * Tokenization of structured query operators:
+    - `site:<domain>`: Restrict search results to specific hostname / domain.
+    - `intitle:<word>`: Match terms occurring strictly in the HTML <title> tag.
+    - `"exact phrase"`: Strict sequential phrase token matching.
+    - `-term` / `NOT term`: Absolute term exclusion filters.
+  * Clean extraction of raw search terms vs filter constraints.
+- Candidate Retrieval Filtering in @opensearch/ranking:
+  * Post-retrieval and pre-scoring filter pipeline enforcing operator constraints.
+  * Domain hierarchy matching (e.g., `site:docs.rs` or `site:github.com`).
+- Highlighting & UI Metadata:
+  * Highlight filtered attributes and display active filters in the search summary meta line.
+
+DO NOT:
+- Throw 500 exceptions on malformed syntax; gracefully fall back to literal term search.
+- Break existing phrase quotes or negation functionality.
+
+VERIFY:
+- Queries with `site:github.com` strictly return documents matching the domain filter.
+- `intitle:` constraints properly check document title metadata.
+- Complex mixed queries (e.g. `site:nodejs.org intitle:api streams -legacy`) parse and filter accurately.
+
+OUTPUT:
+Robust operator parsing engine with report saved to
+report/PHASE_v1.2.0_37_QUERY_OPERATORS_FILTER_REPORT.txt.
+
+
+PHASE 38 — Instant Answers, Direct Conversions & Bangs Subsystem
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Provide zero-click instant answers for direct calculations/conversions and
+DuckDuckGo-style `!bang` shortcuts for quick developer redirects.
+
+IMPLEMENT:
+- Bang Command Registry in @opensearch/shared / @opensearch/api:
+  * Mapped catalog of 50+ essential developer bangs:
+    - `!gh` -> GitHub (`https://github.com/search?q={query}`)
+    - `!npm` -> NPM (`https://www.npmjs.com/search?q={query}`)
+    - `!mdn` -> MDN Web Docs (`https://developer.mozilla.org/search?q={query}`)
+    - `!w` / `!wiki` -> Wikipedia (`https://en.wikipedia.org/wiki/Special:Search?search={query}`)
+    - `!so` -> StackOverflow (`https://stackoverflow.com/search?q={query}`)
+    - `!caniuse` -> Can I Use (`https://caniuse.com/?search={query}`)
+- Instant Calculator & Unit Converter in @opensearch/api:
+  * Safe mathematical expression evaluator (arithmetic: `+`, `-`, `*`, `/`, `^`, `%`, `sqrt`).
+  * Unix timestamp / Epoch converter (e.g., `epoch 1700000000` -> UTC date string).
+  * Color code converter (e.g., `#38bdf8` -> `rgb(56, 189, 248)` / `hsl(199, 95%, 60%)`).
+- Direct Answer Card UI in @opensearch/web:
+  * Terminal direct answer card rendered at top of results:
+    `[instant-answer] 25 * 40 = 1000` or `[bang-redirect] Redirecting to GitHub...`
+  * Client-side fast redirection for bang queries.
+
+DO NOT:
+- Use unsafe `eval()` for mathematical expressions; implement a deterministic tokenizer/AST evaluator.
+- Delay standard search execution if instant answer evaluation is not applicable.
+
+VERIFY:
+- Bang queries issue fast redirection or API response with target redirect URL.
+- Math expressions compute correctly and reject invalid/malicious input safely.
+- Epoch and unit conversions provide accurate formatted output.
+
+OUTPUT:
+Instant answer calculator engine and bangs subsystem with report saved to
+report/PHASE_v1.2.0_38_INSTANT_ANSWERS_BANGS_REPORT.txt.
+
+
+================================================================================
+MILESTONE 12 (V1.2.0) — TERMINAL UI, ACCESSIBILITY & THEMES
+================================================================================
+
+PHASE 39 — Full Keyboard Navigation (Vim/Terminal Mode)
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Empower power users to navigate, select, preview, and open search results
+entirely via keyboard without touching the mouse.
+
+IMPLEMENT:
+- Keyboard Event Manager in apps/web/src/app.js:
+  * Keybindings:
+    - `j` / `ArrowDown`: Move active selection to next result card.
+    - `k` / `ArrowUp`: Move active selection to previous result card.
+    - `Enter`: Open currently active result URL in new tab.
+    - `v`: Toggle expanded snippet / detail view on active card.
+    - `/`: Focus search input box and select text.
+    - `Escape`: Clear active selection / blur search box / close modals.
+    - `?`: Open keyboard shortcuts cheat-sheet overlay modal.
+- Visual Terminal Cursor & Active Card State in apps/web/src/style.css:
+  * High-contrast active prompt marker (e.g. `> [2]` with glowing border / accent outline).
+  * Auto-scrolling to keep active selected card comfortably in viewport.
+- Shortcuts Modal Dialog:
+  * Terminal-styled modal dialog displaying all available key commands and usage tips.
+
+DO NOT:
+- Interfere with typing when user is actively typing inside `#search-input`.
+- Break standard browser accessibility tabs or screen reader traversal.
+
+VERIFY:
+- Arrow keys and `j`/`k` properly cycle through 10 result items.
+- Pressing `Enter` opens the correct highlighted result.
+- Pressing `?` toggles shortcut modal and `Escape` closes it.
+
+OUTPUT:
+Seamless terminal keyboard navigation mode with report saved to
+report/PHASE_v1.2.0_39_KEYBOARD_NAVIGATION_REPORT.txt.
+
+
+PHASE 40 — Multi-Theme Terminal Switcher
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Provide built-in, eye-friendly retro terminal color schemes with zero-cookie
+local state persistence.
+
+IMPLEMENT:
+- Theme Engine & CSS Variables in apps/web/src/style.css:
+  * Implement distinct terminal palettes:
+    1. **Matrix Phosphor** (Default Green `#22c55e` on Deep Black `#050505`)
+    2. **Cyberpunk Amber** (CRT Warm Amber `#f59e0b` on Dark Charcoal `#0c0a09`)
+    3. **Dracula Neon** (Cyan `#38bdf8` / Purple `#c084fc` on Slate `#0f172a`)
+    4. **Nord Frost** (Frost Blue `#88c0d0` / White on Polar Night `#2e3440`)
+    5. **Monokai High Contrast** (Yellow `#eab308` / Magenta on Pitch Black `#000000`)
+- Theme Selector Control in apps/web:
+  * Terminal prompt switcher button in header (`[theme: matrix]`).
+  * Instant CSS variable swap on `document.documentElement` without page reload.
+  * Local storage persistence (`localStorage.getItem('opensearch_theme')`) with zero tracking.
+
+DO NOT:
+- Use cookies or track user theme preferences externally.
+- Introduce flash of unstyled content (FOUC) on initial page load.
+
+VERIFY:
+- Switching themes updates colors instantly across all UI components.
+- Preference persists across browser reloads.
+- Color contrast ratios meet WCAG 2.1 AA accessibility standards for all themes.
+
+OUTPUT:
+Customizable multi-theme terminal styling engine with report saved to
+report/PHASE_v1.2.0_40_MULTI_THEME_SWITCHER_REPORT.txt.
+
+
+================================================================================
+MILESTONE 13 (V1.2.0) — CRAWLER EFFICIENCY & SITEMAP INGESTION
+================================================================================
+
+PHASE 41 — Automated Sitemap.xml Discovery & Ingestion
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Enable the crawler to discover, fetch, parse, and queue URLs from `sitemap.xml`
+and `sitemap_index.xml` declared in `robots.txt` or standard domain root paths.
+
+IMPLEMENT:
+- XML / Text Sitemap Parser in @opensearch/crawler:
+  * Streaming XML parser for standard `<urlset>` and `<sitemapindex>` schemas.
+  * Extraction of `<loc>`, `<lastmod>`, `<changefreq>`, and `<priority>`.
+  * Support for gzip-compressed sitemaps (`.xml.gz`).
+- Robots.txt Sitemap Auto-Discovery:
+  * Extract `Sitemap:` directives from parsed `robots.txt` files.
+  * Queue discovered sitemaps into crawler frontier with priority weighting.
+- Frontier De-duplication & Hierarchy Limits:
+  * Prevent recursive sitemap loops with depth caps.
+  * Respect crawl-delay and per-domain polite rate limits during sitemap ingestion.
+
+DO NOT:
+- Overload seed servers by bulk-fetching sitemap URLs concurrently without delay.
+- Ingest sitemap URLs that violate robots.txt `Disallow:` directives.
+
+VERIFY:
+- Standard XML sitemaps and sitemap indexes parse cleanly into structured URL lists.
+- Priority and lastmod metadata are correctly stored in URL repository.
+- Crawler respects politeness limits when walking discovered sitemap links.
+
+OUTPUT:
+Automated sitemap ingestion pipeline with report saved to
+report/PHASE_v1.2.0_41_SITEMAP_DISCOVERY_INGESTION_REPORT.txt.
+
+
+PHASE 42 — Conditional Re-Crawling & ETag Cache Validation
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Optimize crawler bandwidth, CPU cycles, and remote server load by using HTTP
+conditional requests (`ETag` and `If-Modified-Since`) for re-crawling.
+
+IMPLEMENT:
+- HTTP Caching & Conditional Header Support in @opensearch/crawler:
+  * Store `ETag` and `Last-Modified` headers alongside document metadata in @opensearch/storage.
+  * Pass `If-None-Match: <etag>` and `If-Modified-Since: <date>` during re-crawl fetches.
+- HTTP 304 Not Modified Fast Path:
+  * Handle HTTP 304 response by updating document `lastCrawledAt` timestamp without re-downloading or re-parsing HTML body text.
+- Change Detection & Index Refresh:
+  * When content changes (HTTP 200 with new checksum), trigger incremental index update in @opensearch/indexer.
+
+DO NOT:
+- Re-index documents when HTTP 304 is received.
+- Drop existing document index tokens on failed transient network re-crawls.
+
+VERIFY:
+- Re-crawl requests send correct caching headers.
+- HTTP 304 responses preserve existing index entries and update crawl timestamps.
+- Modified documents correctly re-index with updated content.
+
+OUTPUT:
+High-efficiency conditional re-crawling subsystem with report saved to
+report/PHASE_v1.2.0_42_CONDITIONAL_RECRAWLING_REPORT.txt.
+
+
+================================================================================
+MILESTONE 14 (V1.2.0) — DEVELOPER PLATFORM & ZERO-DEPENDENCY DOCUMENTATION
+================================================================================
+
+PHASE 43 — OpenAPI 3.1.0 Specification & Interactive Sandbox (/docs)
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Expose a complete, zero-dependency OpenAPI 3.1.0 JSON specification and an
+interactive terminal-styled API documentation page at `/docs` without external API keys.
+
+IMPLEMENT:
+- OpenAPI 3.1.0 JSON Spec Generator in @opensearch/api:
+  * Route: `GET /api/v1/openapi.json`
+  * Fully describes all endpoints (`/api/v1/search`, `/api/v1/suggest`, `/health`, `/api/v1/status`).
+  * Request parameters, query validation constraints, response schemas, and error structures.
+- Interactive Zero-Dependency Documentation UI at `GET /docs`:
+  * Fast, lightweight semantic HTML/CSS documentation shell matching terminal theme.
+  * **Interactive "Try It" Sandbox**: Send live test requests to the API with custom parameters directly from the browser.
+  * **Copy-Ready Code Snippets**: Pre-built examples for:
+    - cURL (bash)
+    - JavaScript (fetch / Node.js)
+    - Python (requests / urllib)
+    - Go (net/http)
+    - Rust (reqwest)
+  * Complete response schema tables and status code reference.
+- Unified Vercel & Node Server Routing:
+  * Connect `/docs` and `/api/v1/openapi.json` seamlessly in `api/index.ts`, `apps/api`, and `apps/web`.
+
+DO NOT:
+- Depend on heavy external CDN packages (e.g. Swagger UI or Redoc bundles) that could compromise privacy or fail offline.
+- Require any paid API keys or third-party authentication.
+
+VERIFY:
+- `GET /api/v1/openapi.json` returns valid OpenAPI 3.1 JSON schema.
+- `GET /docs` renders the interactive sandbox and code snippet tabs.
+- Live sandbox triggers real searches and displays formatted JSON responses.
+
+OUTPUT:
+Self-contained, interactive developer documentation portal and OpenAPI spec with report saved to
+report/PHASE_v1.2.0_43_OPENAPI_SPEC_DOCS_REPORT.txt.
+
+
+PHASE 44 — OpenSearch Standalone CLI Tool
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Provide a lightweight, zero-install terminal command-line tool (`npx @opensearch/cli`)
+allowing developers to search the web directly from bash/zsh/PowerShell.
+
+IMPLEMENT:
+- Standalone CLI package in packages/cli or scripts:
+  * Binary entrypoint with zero-dependency argument parser.
+  * Commands:
+    - `opensearch <query>`: Execute search and output formatted terminal results.
+    - `opensearch <query> --limit <num>`: Control number of results.
+    - `opensearch <query> --json`: Output raw JSON for piping into `jq`.
+    - `opensearch --health`: Check public cluster health and index stats.
+  * ANSI color-coded terminal output matching the web terminal aesthetic.
+  * Support for piping search queries through stdin (`echo "query" | opensearch`).
+
+DO NOT:
+- Introduce heavy dependencies that inflate `npx` install time.
+- Track user terminal environment or query logs.
+
+VERIFY:
+- CLI command executes queries against local or configured remote API.
+- ANSI color formatting displays cleanly in standard terminal emulators.
+- `--json` flag formats valid, parseable JSON for shell pipelines.
+
+OUTPUT:
+Fast, intuitive command-line client with report saved to
+report/PHASE_v1.2.0_44_STANDALONE_CLI_TOOL_REPORT.txt.
+
+
+================================================================================
+MILESTONE 15 (V1.2.0) — VERSION CONVERGENCE & RELEASE READINESS
+================================================================================
+
+PHASE 45 — End-to-End Integration, Benchmarking & V1.2.0 Release Verification
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Execute comprehensive regression testing, load benchmarking, documentation updates,
+and prepare the stable OpenSearch v1.2.0 production release.
+
+IMPLEMENT:
+- Complete Test Suite Execution:
+  * Unit tests across all packages and apps (`npm test`).
+  * End-to-end integration tests covering autocomplete, typo suggestions, operators, sitemaps, and /docs.
+  * TypeScript strict project-reference build check (`npm run build`).
+  * Formatting and lint verification (`npm run format:check`, `npm run lint`).
+- Performance Benchmarking:
+  * Autocomplete suggestion latency under 5ms (P99).
+  * Main search latency under 20ms for local index hits (P99).
+  * Zero memory leaks during repeated sitemap crawls and concurrent queries.
+- Documentation & Release Artifacts:
+  * Update `README.md` with v1.2.0 feature highlights, keyboard shortcuts, and `/docs` guide.
+  * Update `docs/API.md` and release notes.
+  * Bump version to `1.2.0` across monorepo `package.json` files.
+
+DO NOT:
+- Release with broken tests or unresolved lint/typecheck errors.
+- Degrade existing V1.0.0 search speed or zero-tracking privacy guarantees.
+
+VERIFY:
+- All 11 new phases (Phase 35 to Phase 45) pass verification gates with dedicated report files.
+- Monorepo builds cleanly from root on all platforms (Windows, Linux, macOS).
+- Production deployment on Vercel runs without serverless errors.
+
+OUTPUT:
+Fully verified, production-ready OpenSearch v1.2.0 release with report saved to
+report/PHASE_v1.2.0_45_V1_2_0_FINAL_RELEASE_REPORT.txt.
+================================================================================

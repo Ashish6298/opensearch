@@ -172,6 +172,7 @@ body {
 
 .terminal-search-form {
   width: 100%;
+  position: relative;
 }
 
 .terminal-search-box {
@@ -182,6 +183,65 @@ body {
   padding: 14px 18px;
   background-color: transparent;
   width: 100%;
+}
+
+/* Phase 35: Autocomplete Dropdown */
+.autocomplete-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background-color: #121212;
+  border: 1.5px solid var(--border-terminal);
+  border-top-color: var(--accent-green);
+  border-radius: 4px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  z-index: 1000;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.autocomplete-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-family: var(--font-mono);
+  color: var(--text-muted-70);
+  cursor: pointer;
+  transition:
+    background-color 0.1s ease,
+    color 0.1s ease;
+  user-select: none;
+  border-bottom: 1px dotted rgba(255, 255, 255, 0.08);
+}
+
+.autocomplete-item:last-child {
+  border-bottom: none;
+}
+
+.autocomplete-item.active,
+.autocomplete-item:hover {
+  background-color: rgba(48, 209, 88, 0.12);
+  color: var(--accent-green);
+}
+
+.autocomplete-item-prefix {
+  color: var(--accent-green);
+  margin-right: 8px;
+  font-weight: 700;
+}
+
+.autocomplete-item-text {
+  flex: 1;
+}
+
+.autocomplete-item-hint {
+  font-size: 11px;
+  color: var(--text-muted-40);
+  margin-left: 12px;
 }
 
 .search-prompt-symbol {
