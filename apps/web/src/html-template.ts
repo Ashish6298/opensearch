@@ -125,6 +125,8 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
           </div>
 
           <div class="results-meta" id="results-meta" role="status" aria-live="polite"></div>
+          <!-- Phase 36: Did You Mean Notification Banner -->
+          <div class="did-you-mean-banner" id="did-you-mean-banner" role="status" aria-live="polite" style="display:none;"></div>
           <section class="results-container" id="results-area" role="feed" aria-label="Search Results"></section>
           <div id="pagination-area" role="navigation" aria-label="Search pagination"></div>
         </div>

@@ -390,4 +390,25 @@ describe('Phase 16, 17 & 18 — Search API Server, Endpoints & Security Suite', 
       expect(data.suggestions.length).toBeLessThanOrEqual(1);
     });
   });
+
+  describe('Phase 36: Typo Tolerance & "Did You Mean?" API', () => {
+    it('populates didYouMean suggestion on misspelled search queries', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/search?q=crawlr`);
+      expect(res.status).toBe(200);
+
+      const data = await res.json();
+      expect(data.didYouMean).toBeDefined();
+      expect(data.didYouMean.suggestedQuery).toBe('crawler');
+      expect(data.didYouMean.originalQuery).toBe('crawlr');
+      expect(data.didYouMean.confidence).toBeGreaterThanOrEqual(0.6);
+    });
+
+    it('returns didYouMean as null when the query is spelled correctly', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/search?q=storage`);
+      expect(res.status).toBe(200);
+
+      const data = await res.json();
+      expect(data.didYouMean).toBeNull();
+    });
+  });
 });

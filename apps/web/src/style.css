@@ -352,6 +352,35 @@ body {
   border-bottom: none;
 }
 
+/* Phase 36: Did You Mean Notification Banner */
+.did-you-mean-banner {
+  font-size: 14px;
+  font-family: var(--font-mono);
+  color: var(--text-muted-70);
+  padding: 10px 14px;
+  background-color: rgba(48, 209, 88, 0.08);
+  border-left: 3px solid var(--accent-green);
+  border-radius: 2px;
+  margin-top: 4px;
+}
+
+.did-you-mean-prefix {
+  color: var(--accent-green);
+  font-weight: 700;
+  margin-right: 6px;
+}
+
+.did-you-mean-link {
+  color: #58a6ff;
+  text-decoration: underline;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.did-you-mean-link:hover {
+  color: #79c0ff;
+}
+
 .results-container {
   display: flex;
   flex-direction: column;

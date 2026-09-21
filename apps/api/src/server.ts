@@ -22,6 +22,7 @@ import {
   createResultGenerator,
   createQueryCache,
   LruQueryCache,
+  createTypoToleranceEngine,
 } from '@opensearch/ranking';
 import { AppConfig, createLogger, loadConfig, Logger } from '@opensearch/shared';
 import {
@@ -129,6 +130,7 @@ export class ApiServer {
       defaultMaxCandidates: this.config.search.maxCandidates,
     });
     const rankingEngine = createRankingEngine(index);
+    const typoEngine = createTypoToleranceEngine(index);
     const resultGenerator = createResultGenerator({
       pagination: {
         pageSize: this.config.search.defaultPageSize,
@@ -138,6 +140,7 @@ export class ApiServer {
     return {
       index,
       prefixTrie,
+      typoEngine,
       queryParser,
       candidateRetriever,
       rankingEngine,

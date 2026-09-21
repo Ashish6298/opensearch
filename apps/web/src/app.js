@@ -20,6 +20,7 @@
   const errorRetryBtn = document.getElementById('error-retry-btn');
   const resultsArea = document.getElementById('results-area');
   const resultsMeta = document.getElementById('results-meta');
+  const didYouMeanBanner = document.getElementById('did-you-mean-banner');
   const paginationArea = document.getElementById('pagination-area');
   const a11yAnnouncer = document.getElementById('a11y-announcer');
 
@@ -347,6 +348,10 @@
     if (loadingIndicator) loadingIndicator.style.display = 'none';
     if (emptyState) emptyState.style.display = 'none';
     if (errorState) errorState.style.display = 'none';
+    if (didYouMeanBanner) {
+      didYouMeanBanner.style.display = 'none';
+      didYouMeanBanner.innerHTML = '';
+    }
   }
 
   async function performSearch(query, page = 1) {
@@ -400,6 +405,28 @@
     const totalHits = data.meta?.totalHits || 0;
     const durationMs = data.meta?.durationMs || 0;
     const pagination = data.pagination;
+    const didYouMean = data.didYouMean;
+
+    // Render Did You Mean banner if present
+    if (didYouMean && didYouMean.suggestedQuery && didYouMeanBanner) {
+      const safeSuggested = escapeHtml(didYouMean.suggestedQuery);
+      didYouMeanBanner.innerHTML = `
+        <span class="did-you-mean-prefix">[suggestion]</span>
+        Did you mean: <a href="?q=${encodeURIComponent(didYouMean.suggestedQuery)}" class="did-you-mean-link" id="did-you-mean-link">${safeSuggested}</a> ?
+      `;
+      didYouMeanBanner.style.display = 'block';
+
+      const dymLink = document.getElementById('did-you-mean-link');
+      if (dymLink) {
+        dymLink.addEventListener('click', function (e) {
+          e.preventDefault();
+          searchInput.value = didYouMean.suggestedQuery;
+          currentPage = 1;
+          updateUrl(didYouMean.suggestedQuery, currentPage);
+          performSearch(didYouMean.suggestedQuery, currentPage);
+        });
+      }
+    }
 
     if (hits.length === 0) {
       if (emptyQueryText) {

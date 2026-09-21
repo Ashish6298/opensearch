@@ -18,6 +18,18 @@ export type { QueryNormalizerOptions } from './query/query-normalizer.js';
 
 export { DefaultQueryParser, createQueryParser } from './query/query-parser.js';
 
+// ── Phase 36: Typo Tolerance & Did You Mean (V1.2.0) ────────────────────
+export type {
+  TypoCorrectionCandidate,
+  DidYouMeanResult,
+  TypoToleranceOptions,
+} from './query/typo-corrector.js';
+export {
+  damerauLevenshteinDistance,
+  TypoToleranceEngine,
+  createTypoToleranceEngine,
+} from './query/typo-corrector.js';
+
 // ── Phase 13: Candidate Retrieval ───────────────────────────────────────
 export type {
   RetrievalMode,

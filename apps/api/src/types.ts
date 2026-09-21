@@ -15,6 +15,8 @@ import {
   SearchResultItem,
   PaginationMeta,
   LruQueryCache,
+  TypoToleranceEngine,
+  DidYouMeanResult,
 } from '@opensearch/ranking';
 import { AppConfig, Logger, SystemStatus } from '@opensearch/shared';
 import { MemoryRateLimiter } from './rate-limiter.js';
@@ -78,6 +80,7 @@ export interface RouteDefinition {
 export interface SearchServices {
   index: InvertedIndex;
   prefixTrie?: PrefixTrie;
+  typoEngine?: TypoToleranceEngine;
   queryParser: QueryParser;
   candidateRetriever: CandidateRetriever;
   rankingEngine: RankingEngine;
@@ -132,6 +135,7 @@ export interface SearchApiResponse {
     phrases: string[];
     negatedTerms: string[];
   };
+  didYouMean?: DidYouMeanResult | null;
   results: SearchResultItem[];
   pagination: PaginationMeta;
   meta: {

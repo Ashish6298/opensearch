@@ -354,6 +354,13 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
     }
   }
 
+  // 7. Typo Tolerance & Did You Mean Evaluation (Phase 36)
+  let didYouMean = null;
+  const typoEngine = context.services.typoEngine;
+  if (typoEngine && (totalHits === 0 || totalHits < pageSize / 2)) {
+    didYouMean = typoEngine.suggestCorrection(rawQuery);
+  }
+
   const responsePayload: SearchApiResponse = {
     query: {
       raw: rawQuery,
@@ -362,6 +369,7 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
       phrases: parsedQuery.phrases.map(p => p.rawPhrase),
       negatedTerms: parsedQuery.negatedTerms,
     },
+    didYouMean,
     results: finalResults,
     pagination: {
       ...searchResultSet.pagination,

@@ -258,5 +258,22 @@ describe('Phase 19, 20 & 21 — Search UI & Accessibility Hardening Suite', () =
       expect(js).toContain('fetchSuggestions');
       expect(js).toContain('renderSuggestions');
     });
+
+    it('serves Did You Mean banner markup and styles (Phase 36)', async () => {
+      const res = await fetch(`${baseUrl}/`);
+      expect(res.status).toBe(200);
+      const html = await res.text();
+      expect(html).toContain('id="did-you-mean-banner"');
+
+      const cssRes = await fetch(`${baseUrl}/style.css`);
+      const css = await cssRes.text();
+      expect(css).toContain('.did-you-mean-banner');
+      expect(css).toContain('.did-you-mean-link');
+
+      const jsRes = await fetch(`${baseUrl}/app.js`);
+      const js = await jsRes.text();
+      expect(js).toContain('didYouMeanBanner');
+      expect(js).toContain('did-you-mean-link');
+    });
   });
 });
