@@ -1,0 +1,73 @@
+================================================================================
+OPENSEARCH V1.2.0 — PHASE 41 VERIFICATION AND IMPLEMENTATION REPORT
+================================================================================
+Phase: 41 — Automated Sitemap.xml Discovery & Ingestion
+Milestone: Milestone 13 — Crawler Efficiency & Sitemap Ingestion
+Date: 2026-09-21
+Status: COMPLETE & VERIFIED
+Test Suite Status: 476 Passing (46 Test Suites, 100% Pass Rate)
+Zero External Dependencies: VERIFIED (Strict native Node.js zlib/URL/crypto/http)
+================================================================================
+
+1. EXECUTIVE SUMMARY
+--------------------------------------------------------------------------------
+Phase 41 adds automated sitemap discovery, streaming XML/text parsing, and recursive
+sitemap ingestion into the @opensearch/crawler package. When crawling domains or seeds,
+the crawler automatically identifies sitemap declarations from parsed `robots.txt`
+(`Sitemap:` directives) or probes canonical root endpoints (`/sitemap.xml`). Discovered
+sitemaps are fetched, decompressed (if `.xml.gz`), parsed into structured entries
+(`<loc>`, `<lastmod>`, `<changefreq>`, `<priority>`), filtered against robots policies,
+and enqueued into the Frontier with priority weighting.
+
+2. KEY DELIVERABLES & ARCHITECTURE
+--------------------------------------------------------------------------------
+A. Sitemap Data Models & Contracts (packages/crawler/src/sitemap/sitemap-types.ts)
+   - SitemapUrlEntry: Schema with loc, lastmod, changefreq, priority, and sourceSitemap.
+   - SitemapIndexEntry: Schema with loc and lastmod for nested child sitemaps.
+   - ParsedSitemap: Discriminated union ('urlset' | 'sitemapindex' | 'text').
+   - SitemapFetchResult & IngestSitemapsSummary: Structured metrics & crawl outcomes.
+
+B. Streaming XML & Gzip Sitemap Parser (packages/crawler/src/sitemap/sitemap-parser.ts)
+   - Handles standard <urlset> and <sitemapindex> schemas with regex extraction.
+   - Clean entity unescaping (&amp;, &lt;, &gt;, &quot;, &apos;), whitespace trimming.
+   - URL normalization and validation against RFC specifications.
+   - Supports plain text sitemaps (.txt with one URL per line).
+   - Transparent gzip decompression via Node.js native `zlib.gunzipSync` for .xml.gz files.
+   - Configurable limits (maxEntries default: 50,000, maxFileSizeBytes default: 50MB).
+
+C. Sitemap Ingestion Service (packages/crawler/src/sitemap/sitemap-service.ts)
+   - Domain auto-discovery combining robots.txt directives and fallback /sitemap.xml.
+   - Recursive sitemap index handling with strict depth caps (default: 3 levels) to
+     prevent infinite recursive index loops.
+   - Per-domain max sitemap ingestion limits (default: 20 sitemaps/domain).
+   - Robots.txt compliance integration: evaluated before URLs enter the frontier queue.
+   - Deduplication and repository persistence in UrlRepository.
+
+D. Crawl Orchestrator Integration (packages/crawler/src/orchestrator/crawl-orchestrator.ts)
+   - Ingests sitemaps prior to seed frontier expansion during crawl runs.
+   - Extends CrawlRunSummary with `sitemapsIngested` and `sitemapUrlsDiscovered` metrics.
+
+3. AUTOMATED VERIFICATION RESULTS
+--------------------------------------------------------------------------------
+A. Test Execution:
+   - Command: `npm test`
+   - Test Files: 46 passed (46)
+   - Total Tests: 476 passed (476)
+   - Sitemap Parser Tests: packages/crawler/tests/sitemap-parser.test.ts (7 tests passed):
+     * Standard <urlset> with loc, lastmod, changefreq, and priority.
+     * <sitemapindex> parsing with nested child sitemaps.
+     * Plain text sitemap parsing with comments & blank lines.
+     * Gzip compressed (.xml.gz) sitemap decompression & parsing.
+     * Malformed/corrupted XML error handling and recovery.
+     * Entity unescaping (&amp;, &lt;, etc.) and whitespace cleansing.
+     * Respecting maxEntries limits.
+
+B. Build & Typecheck:
+   - Command: `npm run build` (`tsc -b`)
+   - Composite build completed with 0 errors across all workspace packages.
+
+4. READINESS ASSESSMENT FOR NEXT PHASE
+--------------------------------------------------------------------------------
+Phase 41 is 100% complete and verified.
+Ready for Phase 42: Conditional Re-Crawling & ETag Cache Validation.
+================================================================================

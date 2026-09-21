@@ -26,6 +26,7 @@ import { computeUrlHash } from '../url/url-fingerprint.js';
 import { HttpFetcher } from '../fetcher/fetcher-types.js';
 import { RobotsPolicyEvaluator } from '../robots/robots-types.js';
 import { HtmlParser } from '../parser/parser-types.js';
+import { SitemapService, createSitemapService } from '../sitemap/sitemap-service.js';
 import {
   CrawlCheckpoint,
   CrawlOrchestrator,
@@ -47,6 +48,7 @@ export interface CrawlOrchestratorOptions {
   fetcher: HttpFetcher;
   robotsEvaluator: RobotsPolicyEvaluator;
   parser: HtmlParser;
+  sitemapService?: SitemapService;
   logger?: Logger;
 }
 
@@ -57,6 +59,7 @@ export class DefaultCrawlOrchestrator implements CrawlOrchestrator {
   private readonly fetcher: HttpFetcher;
   private readonly robotsEvaluator: RobotsPolicyEvaluator;
   private readonly parser: HtmlParser;
+  private readonly sitemapService: SitemapService;
   private readonly logger: Logger;
 
   private isRunning = false;
@@ -76,6 +79,15 @@ export class DefaultCrawlOrchestrator implements CrawlOrchestrator {
     this.robotsEvaluator = options.robotsEvaluator;
     this.parser = options.parser;
     this.logger = options.logger ?? createLogger('@opensearch/crawler:orchestrator');
+    this.sitemapService =
+      options.sitemapService ??
+      createSitemapService({
+        fetcher: this.fetcher,
+        robotsEvaluator: this.robotsEvaluator,
+        queue: this.queue,
+        storage: this.storage,
+        logger: this.logger,
+      });
 
     this.stats = this.createInitialStats('idle');
   }
@@ -172,6 +184,28 @@ export class DefaultCrawlOrchestrator implements CrawlOrchestrator {
     // Enqueue initial seeds if provided in options
     if (options?.seeds && options.seeds.length > 0) {
       await this.addSeeds(options.seeds);
+
+      // Phase 41: Auto-discover and ingest sitemaps from seed origins
+      const discoverSitemaps = options?.discoverSitemaps ?? true;
+      if (discoverSitemaps) {
+        const seedDomains = new Set<string>();
+        for (const s of options.seeds) {
+          try {
+            const p = new URL(s);
+            seedDomains.add(p.hostname);
+          } catch {}
+        }
+
+        for (const dom of seedDomains) {
+          try {
+            const sitemapSummary = await this.sitemapService.ingestDomainSitemaps(dom);
+            this.stats.sitemapsIngested += sitemapSummary.sitemapsParsed;
+            this.stats.sitemapUrlsDiscovered += sitemapSummary.urlsExtracted;
+          } catch (err) {
+            this.logger.debug('Sitemap discovery error for domain', { dom, err });
+          }
+        }
+      }
     }
 
     let summaryStatus: 'completed' | 'stopped' | 'limit_reached' | 'failed' = 'completed';
@@ -685,6 +719,8 @@ export class DefaultCrawlOrchestrator implements CrawlOrchestrator {
       pagesStored: 0,
       fetchErrors: 0,
       robotsDisallowed: 0,
+      sitemapsIngested: 0,
+      sitemapUrlsDiscovered: 0,
       linksDiscovered: 0,
       duplicatesSkipped: 0,
       queuePending: 0,

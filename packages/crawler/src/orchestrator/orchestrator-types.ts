@@ -29,6 +29,8 @@ export interface CrawlRunOptions {
   checkpointPath?: string;
   /** Optional custom user-agent string */
   userAgent?: string;
+  /** Whether to automatically discover and ingest sitemaps from robots.txt / domain roots (default: true) */
+  discoverSitemaps?: boolean;
   /** Optional abort signal for external cancellation */
   signal?: AbortSignal;
 }
@@ -67,6 +69,10 @@ export interface CrawlRunStats {
   retryBudgetExhaustedCount: number;
   /** Total URLs disallowed by robots.txt policy */
   robotsDisallowed: number;
+  /** Total sitemaps discovered and ingested (Phase 41) */
+  sitemapsIngested: number;
+  /** Total URLs discovered via sitemaps (Phase 41) */
+  sitemapUrlsDiscovered: number;
   /** Total new outbound links discovered and queued */
   linksDiscovered: number;
   /** Total duplicate links skipped */

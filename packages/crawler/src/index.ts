@@ -148,3 +148,22 @@ export {
   CrawlerSecurityValidator,
   createCrawlerSecurityValidator,
 } from './security/crawler-security.js';
+
+// ── Phase 41: Sitemap Discovery & Ingestion ───────────────────
+export type {
+  SitemapUrlEntry,
+  SitemapIndexEntry,
+  ParsedSitemap,
+  SitemapParserOptions,
+  SitemapFetchResult,
+} from './sitemap/sitemap-types.js';
+
+export { SitemapParser, createSitemapParser } from './sitemap/sitemap-parser.js';
+
+export type {
+  SitemapServiceOptions,
+  IngestSitemapsSummary,
+} from './sitemap/sitemap-service.js';
+
+export { SitemapService, createSitemapService } from './sitemap/sitemap-service.js';
+
