@@ -20,6 +20,7 @@
   const errorRetryBtn = document.getElementById('error-retry-btn');
   const resultsArea = document.getElementById('results-area');
   const resultsMeta = document.getElementById('results-meta');
+  const instantAnswerCard = document.getElementById('instant-answer-card');
   const didYouMeanBanner = document.getElementById('did-you-mean-banner');
   const paginationArea = document.getElementById('pagination-area');
   const a11yAnnouncer = document.getElementById('a11y-announcer');
@@ -348,6 +349,10 @@
     if (loadingIndicator) loadingIndicator.style.display = 'none';
     if (emptyState) emptyState.style.display = 'none';
     if (errorState) errorState.style.display = 'none';
+    if (instantAnswerCard) {
+      instantAnswerCard.style.display = 'none';
+      instantAnswerCard.innerHTML = '';
+    }
     if (didYouMeanBanner) {
       didYouMeanBanner.style.display = 'none';
       didYouMeanBanner.innerHTML = '';
@@ -406,6 +411,56 @@
     const durationMs = data.meta?.durationMs || 0;
     const pagination = data.pagination;
     const didYouMean = data.didYouMean;
+    const instantAnswer = data.instantAnswer;
+
+    // Phase 38: Render Instant Answer / Bang Card if present
+    if (instantAnswer && instantAnswerCard) {
+      let swatchHtml = '';
+      if (instantAnswer.previewCss) {
+        swatchHtml = `<span class="instant-answer-swatch" style="background-color: ${escapeHtml(instantAnswer.previewCss)};"></span>`;
+      }
+
+      let detailsHtml = '';
+      if (instantAnswer.secondaryDetails) {
+        detailsHtml = '<div class="instant-answer-details">';
+        for (const [key, val] of Object.entries(instantAnswer.secondaryDetails)) {
+          detailsHtml += `
+            <div class="instant-answer-detail-row">
+              <span class="instant-answer-detail-key">${escapeHtml(key)}:</span>
+              <span class="instant-answer-detail-val">${escapeHtml(String(val))}</span>
+            </div>
+          `;
+        }
+        detailsHtml += '</div>';
+      }
+
+      let actionHtml = '';
+      if (instantAnswer.redirectUrl) {
+        const safeRedirect = escapeHtml(instantAnswer.redirectUrl);
+        actionHtml = `
+          <div>
+            <a href="${safeRedirect}" target="_blank" rel="noopener noreferrer" class="instant-answer-redirect-btn" id="bang-redirect-btn">
+              &gt; Open in ${escapeHtml(instantAnswer.secondaryDetails?.['Target Service'] || 'External Service')}
+            </a>
+          </div>
+        `;
+      }
+
+      instantAnswerCard.innerHTML = `
+        <div class="instant-answer-header">
+          <span class="instant-answer-badge">${escapeHtml(instantAnswer.badge || '[instant-answer]')}</span>
+          <span class="instant-answer-title">${escapeHtml(instantAnswer.title || '')}</span>
+        </div>
+        <div class="instant-answer-result">
+          ${swatchHtml}
+          <span>${escapeHtml(instantAnswer.primaryResult || '')}</span>
+        </div>
+        ${detailsHtml}
+        ${actionHtml}
+      `;
+      instantAnswerCard.style.display = 'block';
+      announceA11y(`Instant answer: ${instantAnswer.primaryResult}`);
+    }
 
     // Render Did You Mean banner if present
     if (didYouMean && didYouMean.suggestedQuery && didYouMeanBanner) {
@@ -429,14 +484,16 @@
     }
 
     if (hits.length === 0) {
-      if (emptyQueryText) {
-        emptyQueryText.textContent = currentQuery;
+      if (!instantAnswer) {
+        if (emptyQueryText) {
+          emptyQueryText.textContent = currentQuery;
+        }
+        if (emptyState) emptyState.style.display = 'block';
+        announceA11y(`No search results found for ${currentQuery}.`);
       }
-      if (emptyState) emptyState.style.display = 'block';
       if (resultsMeta) resultsMeta.textContent = '';
       if (resultsArea) resultsArea.innerHTML = '';
       if (paginationArea) paginationArea.innerHTML = '';
-      announceA11y(`No search results found for ${currentQuery}.`);
       return;
     }
 

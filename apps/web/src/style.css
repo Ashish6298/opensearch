@@ -352,6 +352,106 @@ body {
   border-bottom: none;
 }
 
+/* Phase 38: Instant Answers & Direct Calculation/Bang Card */
+.instant-answer-card {
+  font-family: var(--font-mono);
+  background-color: rgba(48, 209, 88, 0.05);
+  border: 1px solid rgba(48, 209, 88, 0.25);
+  border-left: 3px solid var(--accent-green);
+  border-radius: 4px;
+  padding: 14px 18px;
+  margin-top: 6px;
+  margin-bottom: 8px;
+}
+
+.instant-answer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.instant-answer-badge {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--accent-green);
+  background: rgba(48, 209, 88, 0.12);
+  padding: 2px 6px;
+  border-radius: 2px;
+}
+
+.instant-answer-title {
+  font-size: 12px;
+  color: var(--text-muted-40);
+}
+
+.instant-answer-result {
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 4px 0 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  word-break: break-word;
+}
+
+.instant-answer-swatch {
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  vertical-align: middle;
+}
+
+.instant-answer-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 6px 16px;
+  font-size: 12px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+.instant-answer-detail-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.instant-answer-detail-key {
+  color: var(--text-muted-40);
+}
+
+.instant-answer-detail-val {
+  color: var(--text-muted-70);
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.instant-answer-redirect-btn {
+  display: inline-block;
+  background: rgba(48, 209, 88, 0.15);
+  color: var(--accent-green);
+  border: 1px solid var(--accent-green);
+  border-radius: 3px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  margin-top: 6px;
+}
+
+.instant-answer-redirect-btn:hover {
+  background: var(--accent-green);
+  color: #000000;
+}
+
 /* Phase 36: Did You Mean Notification Banner */
 .did-you-mean-banner {
   font-size: 14px;

@@ -39,7 +39,7 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
 
   <div class="terminal-app" id="terminal-window" role="main">
     <!-- Version indicator in top corner (No navbar) -->
-    <div class="corner-version">v1.0.0</div>
+    <div class="corner-version">v1.2.0</div>
 
     <!-- Main Content Area -->
     <main class="terminal-main">
@@ -125,6 +125,8 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
           </div>
 
           <div class="results-meta" id="results-meta" role="status" aria-live="polite"></div>
+          <!-- Phase 38: Instant Answers & Direct Calculation/Bang Card -->
+          <div class="instant-answer-card" id="instant-answer-card" role="region" aria-label="Instant answer" style="display:none;"></div>
           <!-- Phase 36: Did You Mean Notification Banner -->
           <div class="did-you-mean-banner" id="did-you-mean-banner" role="status" aria-live="polite" style="display:none;"></div>
           <section class="results-container" id="results-area" role="feed" aria-label="Search Results"></section>
@@ -136,7 +138,7 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
     <!-- Terminal Footer -->
     <footer class="terminal-footer">
       <div class="footer-container">
-        <span class="footer-text"><a href="/about">about</a> · <a href="/privacy">privacy</a> · <a href="/health" target="_blank" rel="noopener noreferrer">status</a> · <a href="https://github.com/Ashish6298/opensearch" target="_blank" rel="noopener noreferrer">source</a> — v1.0.0</span>
+        <span class="footer-text"><a href="/about">about</a> · <a href="/privacy">privacy</a> · <a href="/health" target="_blank" rel="noopener noreferrer">status</a> · <a href="https://github.com/Ashish6298/opensearch" target="_blank" rel="noopener noreferrer">source</a> — v1.2.0</span>
       </div>
     </footer>
   </div>

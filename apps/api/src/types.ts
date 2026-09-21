@@ -18,6 +18,9 @@ import {
   TypoToleranceEngine,
   DidYouMeanResult,
   QueryFilter,
+  InstantAnswerEngine,
+  InstantAnswerPayload,
+  BangResult,
 } from '@opensearch/ranking';
 import { AppConfig, Logger, SystemStatus } from '@opensearch/shared';
 import { MemoryRateLimiter } from './rate-limiter.js';
@@ -82,6 +85,7 @@ export interface SearchServices {
   index: InvertedIndex;
   prefixTrie?: PrefixTrie;
   typoEngine?: TypoToleranceEngine;
+  instantAnswerEngine?: InstantAnswerEngine;
   queryParser: QueryParser;
   candidateRetriever: CandidateRetriever;
   rankingEngine: RankingEngine;
@@ -137,6 +141,8 @@ export interface SearchApiResponse {
     negatedTerms: string[];
     filters?: QueryFilter;
   };
+  instantAnswer?: InstantAnswerPayload | null;
+  bang?: BangResult | null;
   didYouMean?: DidYouMeanResult | null;
   results: SearchResultItem[];
   pagination: PaginationMeta;
