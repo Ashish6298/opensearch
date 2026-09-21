@@ -31,6 +31,14 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
   <style>
     ${options.cssContent || '/* Inlined CSS */'}
   </style>
+  <script>
+    (function () {
+      try {
+        var theme = localStorage.getItem('opensearch_theme') || 'matrix';
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body>
   <a href="#search-input" id="skip-to-search" class="skip-link">Skip to search</a>
@@ -38,8 +46,11 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
   <div id="a11y-announcer" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 
   <div class="terminal-app" id="terminal-window" role="main">
-    <!-- Version indicator in top corner (No navbar) -->
-    <div class="corner-version">v1.2.0</div>
+    <!-- Header Controls in Top Corner (Theme Switcher & Version) -->
+    <div class="corner-header-controls">
+      <button type="button" class="theme-switcher-btn" id="theme-switcher-btn" aria-label="Toggle color theme (Current: matrix)" title="Click to cycle theme (Matrix, Amber, Dracula, Nord, Monokai)">[theme: matrix]</button>
+      <div class="corner-version">v1.2.0</div>
+    </div>
 
     <!-- Main Content Area -->
     <main class="terminal-main">
@@ -174,6 +185,10 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
             <div class="shortcut-row">
               <span class="shortcut-key"><kbd>ESC</kbd></span>
               <span class="shortcut-desc">Clear selection / close modal / blur input</span>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-key"><kbd>t</kbd></span>
+              <span class="shortcut-desc">Cycle terminal color theme (Matrix, Amber, Dracula, Nord, Monokai)</span>
             </div>
             <div class="shortcut-row">
               <span class="shortcut-key"><kbd>?</kbd></span>

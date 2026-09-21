@@ -28,6 +28,7 @@
   const shortcutsModal = document.getElementById('shortcuts-modal');
   const shortcutsToggleBtn = document.getElementById('shortcuts-toggle-btn');
   const shortcutsCloseBtn = document.getElementById('shortcuts-close-btn');
+  const themeSwitcherBtn = document.getElementById('theme-switcher-btn');
 
   // Configuration
   const rawApiUrl = window.__OPENSEARCH_API_URL__ || '';
@@ -38,6 +39,7 @@
     : '/api/v1/search';
   const SUGGEST_ENDPOINT = API_ENDPOINT.replace('/search', '/suggest');
   const PAGE_SIZE = 10;
+  const THEMES = ['matrix', 'amber', 'dracula', 'nord', 'monokai'];
 
   // State
   let currentQuery = '';
@@ -49,8 +51,11 @@
   let currentSuggestions = [];
   let currentActiveResultIndex = -1;
   let currentResultItems = [];
+  let currentTheme = 'matrix';
 
   function init() {
+    initTheme();
+
     // Check URL parameters for pre-filled query and page
     const params = new URLSearchParams(window.location.search);
     const initialQuery = params.get('q') || '';
@@ -128,6 +133,13 @@
       });
     }
 
+    // Phase 40: Theme Switcher click trigger
+    if (themeSwitcherBtn) {
+      themeSwitcherBtn.addEventListener('click', function () {
+        cycleTheme();
+      });
+    }
+
     // Keyboard navigation (Autocomplete & search input keys)
     searchInput.addEventListener('keydown', function (e) {
       if (!autocompleteDropdown || autocompleteDropdown.style.display === 'none') {
@@ -151,7 +163,7 @@
       }
     });
 
-    // Global keyboard navigation (Phase 39: Vim/Terminal Mode)
+    // Global keyboard navigation (Phase 39: Vim/Terminal Mode & Phase 40: Theme Hotkey)
     window.addEventListener('keydown', function (e) {
       const isInputFocused =
         document.activeElement === searchInput ||
@@ -203,6 +215,13 @@
         e.preventDefault();
         searchInput.focus();
         searchInput.select();
+        return;
+      }
+
+      // 't' key: cycle color theme (Phase 40)
+      if (e.key === 't') {
+        e.preventDefault();
+        cycleTheme();
         return;
       }
 
@@ -293,6 +312,45 @@
         if (paginationArea) paginationArea.innerHTML = '';
       }
     });
+  }
+
+  function initTheme() {
+    try {
+      const savedTheme = localStorage.getItem('opensearch_theme');
+      if (savedTheme && THEMES.includes(savedTheme)) {
+        currentTheme = savedTheme;
+      } else {
+        currentTheme = 'matrix';
+      }
+    } catch (e) {
+      currentTheme = 'matrix';
+    }
+    applyTheme(currentTheme, false);
+  }
+
+  function applyTheme(themeName, announce = true) {
+    if (!THEMES.includes(themeName)) return;
+    currentTheme = themeName;
+    document.documentElement.setAttribute('data-theme', themeName);
+
+    try {
+      localStorage.setItem('opensearch_theme', themeName);
+    } catch (e) {}
+
+    if (themeSwitcherBtn) {
+      themeSwitcherBtn.textContent = `[theme: ${themeName}]`;
+      themeSwitcherBtn.setAttribute('aria-label', `Toggle color theme (Current: ${themeName})`);
+    }
+
+    if (announce) {
+      announceA11y(`Color theme switched to ${themeName}.`);
+    }
+  }
+
+  function cycleTheme() {
+    const currentIndex = THEMES.indexOf(currentTheme);
+    const nextIndex = (currentIndex + 1) % THEMES.length;
+    applyTheme(THEMES[nextIndex], true);
   }
 
   function announceA11y(message) {

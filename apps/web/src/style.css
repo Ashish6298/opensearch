@@ -1,18 +1,101 @@
 /* OpenSearch V1.0.0 — Full Screen Terminal CLI Design System */
 
 :root {
-  --bg-page: #0d0d0d;
-  --bg-terminal: #0d0d0d;
-  --border-terminal: #2a2a2a;
-  --accent-green: #30d158;
-  --accent-green-hover: #3cf067;
-  --text-muted-70: rgba(255, 255, 255, 0.8);
-  --text-muted-50: rgba(255, 255, 255, 0.6);
+  --bg-page: #050505;
+  --bg-terminal: #050505;
+  --bg-panel: #111111;
+  --border-terminal: #222222;
+  --accent-green: #22c55e;
+  --accent-green-hover: #4ade80;
+  --accent-link: #38bdf8;
+  --accent-link-hover: #7dd3fc;
+  --text-muted-70: rgba(255, 255, 255, 0.85);
+  --text-muted-50: rgba(255, 255, 255, 0.65);
   --text-muted-40: rgba(255, 255, 255, 0.5);
   --text-dim: rgba(255, 255, 255, 0.35);
   --font-mono:
     'JetBrains Mono', 'Fira Code', 'IBM Plex Mono', 'Cascadia Code', Menlo, Monaco, Consolas,
     'Courier New', monospace;
+}
+
+/* 1. Matrix Phosphor Theme (Default Green) */
+html[data-theme='matrix'] {
+  --bg-page: #050505;
+  --bg-terminal: #050505;
+  --bg-panel: #0d120d;
+  --border-terminal: #1c2e1c;
+  --accent-green: #22c55e;
+  --accent-green-hover: #4ade80;
+  --accent-link: #38bdf8;
+  --accent-link-hover: #7dd3fc;
+  --text-muted-70: rgba(230, 255, 230, 0.85);
+  --text-muted-50: rgba(200, 240, 200, 0.65);
+  --text-muted-40: rgba(180, 220, 180, 0.5);
+  --text-dim: rgba(150, 200, 150, 0.35);
+}
+
+/* 2. Cyberpunk Amber Theme */
+html[data-theme='amber'] {
+  --bg-page: #0c0a09;
+  --bg-terminal: #0c0a09;
+  --bg-panel: #1c1917;
+  --border-terminal: #442a15;
+  --accent-green: #f59e0b;
+  --accent-green-hover: #fbbf24;
+  --accent-link: #38bdf8;
+  --accent-link-hover: #7dd3fc;
+  --text-muted-70: rgba(254, 243, 199, 0.88);
+  --text-muted-50: rgba(253, 230, 138, 0.68);
+  --text-muted-40: rgba(252, 211, 77, 0.5);
+  --text-dim: rgba(245, 158, 11, 0.35);
+}
+
+/* 3. Dracula Neon Theme */
+html[data-theme='dracula'] {
+  --bg-page: #0f172a;
+  --bg-terminal: #0f172a;
+  --bg-panel: #1e293b;
+  --border-terminal: #334155;
+  --accent-green: #38bdf8;
+  --accent-green-hover: #7dd3fc;
+  --accent-link: #c084fc;
+  --accent-link-hover: #d8b4fe;
+  --text-muted-70: rgba(241, 245, 249, 0.88);
+  --text-muted-50: rgba(203, 213, 225, 0.68);
+  --text-muted-40: rgba(148, 163, 184, 0.5);
+  --text-dim: rgba(100, 116, 139, 0.35);
+}
+
+/* 4. Nord Frost Theme */
+html[data-theme='nord'] {
+  --bg-page: #2e3440;
+  --bg-terminal: #2e3440;
+  --bg-panel: #3b4252;
+  --border-terminal: #4c566a;
+  --accent-green: #88c0d0;
+  --accent-green-hover: #8fbcbb;
+  --accent-link: #81a1c1;
+  --accent-link-hover: #5e81ac;
+  --text-muted-70: rgba(236, 239, 244, 0.9);
+  --text-muted-50: rgba(229, 233, 240, 0.7);
+  --text-muted-40: rgba(216, 222, 233, 0.55);
+  --text-dim: rgba(144, 155, 172, 0.4);
+}
+
+/* 5. Monokai High Contrast Theme */
+html[data-theme='monokai'] {
+  --bg-page: #000000;
+  --bg-terminal: #000000;
+  --bg-panel: #121212;
+  --border-terminal: #333333;
+  --accent-green: #eab308;
+  --accent-green-hover: #facc15;
+  --accent-link: #f43f5e;
+  --accent-link-hover: #fb7185;
+  --text-muted-70: rgba(255, 255, 255, 0.92);
+  --text-muted-50: rgba(245, 245, 245, 0.72);
+  --text-muted-40: rgba(200, 200, 200, 0.55);
+  --text-dim: rgba(150, 150, 150, 0.38);
 }
 
 * {
@@ -59,11 +142,41 @@ body {
   background-color: var(--bg-terminal);
 }
 
-/* Version in the corner */
-.corner-version {
+/* Header Controls in the corner */
+.corner-header-controls {
   position: absolute;
   top: 20px;
   right: 28px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  user-select: none;
+  font-family: var(--font-mono);
+}
+
+/* Phase 40: Theme Switcher Button */
+.theme-switcher-btn {
+  font-size: 13px;
+  color: var(--accent-green);
+  background: transparent;
+  border: 1px solid var(--border-terminal);
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.theme-switcher-btn:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+  border-color: var(--accent-green);
+}
+
+/* Version in the corner */
+.corner-version {
   font-size: 13px;
   color: var(--text-muted-40);
   border: 1px solid var(--border-terminal);
@@ -471,14 +584,14 @@ body {
 }
 
 .did-you-mean-link {
-  color: #58a6ff;
+  color: var(--accent-link);
   text-decoration: underline;
   font-weight: 600;
   cursor: pointer;
 }
 
 .did-you-mean-link:hover {
-  color: #79c0ff;
+  color: var(--accent-link-hover);
 }
 
 .results-container {
@@ -532,7 +645,7 @@ body {
 }
 
 .result-title-link {
-  color: #58a6ff;
+  color: var(--accent-link);
   text-decoration: none;
   font-weight: 600;
   font-size: 16px;
@@ -540,7 +653,7 @@ body {
 
 .result-title-link:hover {
   text-decoration: underline;
-  color: #79c0ff;
+  color: var(--accent-link-hover);
 }
 
 .result-url-line {
