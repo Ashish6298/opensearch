@@ -6,7 +6,7 @@
  */
 
 import { IncomingMessage, ServerResponse } from 'node:http';
-import { InvertedIndex } from '@opensearch/indexer';
+import { InvertedIndex, PrefixTrie, SuggestionMatch } from '@opensearch/indexer';
 import {
   CandidateRetriever,
   QueryParser,
@@ -15,6 +15,12 @@ import {
   SearchResultItem,
   PaginationMeta,
   LruQueryCache,
+  TypoToleranceEngine,
+  DidYouMeanResult,
+  QueryFilter,
+  InstantAnswerEngine,
+  InstantAnswerPayload,
+  BangResult,
 } from '@opensearch/ranking';
 import { AppConfig, Logger, SystemStatus } from '@opensearch/shared';
 import { MemoryRateLimiter } from './rate-limiter.js';
@@ -77,6 +83,9 @@ export interface RouteDefinition {
 
 export interface SearchServices {
   index: InvertedIndex;
+  prefixTrie?: PrefixTrie;
+  typoEngine?: TypoToleranceEngine;
+  instantAnswerEngine?: InstantAnswerEngine;
   queryParser: QueryParser;
   candidateRetriever: CandidateRetriever;
   rankingEngine: RankingEngine;
@@ -113,6 +122,16 @@ export interface HealthCheckResponse extends SystemStatus {
   };
 }
 
+export interface SuggestApiResponse {
+  query: string;
+  suggestions: SuggestionMatch[];
+  meta: {
+    count: number;
+    durationMs: number;
+    timestamp: string;
+  };
+}
+
 export interface SearchApiResponse {
   query: {
     raw: string;
@@ -120,7 +139,11 @@ export interface SearchApiResponse {
     terms: string[];
     phrases: string[];
     negatedTerms: string[];
+    filters?: QueryFilter;
   };
+  instantAnswer?: InstantAnswerPayload | null;
+  bang?: BangResult | null;
+  didYouMean?: DidYouMeanResult | null;
   results: SearchResultItem[];
   pagination: PaginationMeta;
   meta: {

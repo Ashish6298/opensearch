@@ -6,6 +6,7 @@
 export type {
   ParsedPhrase,
   ParsedQuery,
+  QueryFilter,
   QueryParserOptions,
   QueryParser,
 } from './query/query-types.js';
@@ -17,6 +18,18 @@ export {
 export type { QueryNormalizerOptions } from './query/query-normalizer.js';
 
 export { DefaultQueryParser, createQueryParser } from './query/query-parser.js';
+
+// ── Phase 36: Typo Tolerance & Did You Mean (V1.2.0) ────────────────────
+export type {
+  TypoCorrectionCandidate,
+  DidYouMeanResult,
+  TypoToleranceOptions,
+} from './query/typo-corrector.js';
+export {
+  damerauLevenshteinDistance,
+  TypoToleranceEngine,
+  createTypoToleranceEngine,
+} from './query/typo-corrector.js';
 
 // ── Phase 13: Candidate Retrieval ───────────────────────────────────────
 export type {
@@ -102,3 +115,39 @@ export { SearchQualityEvaluator } from './evaluation/quality-evaluator.js';
 export type { CacheEntry, CacheStats, QueryCacheOptions } from './cache/query-cache.js';
 
 export { LruQueryCache, createQueryCache } from './cache/query-cache.js';
+
+// ── Phase 38: Instant Answers, Conversions & Bangs (V1.2.0) ─────────────
+export type {
+  BangDefinition,
+  BangResult,
+} from './answers/bang-registry.js';
+export {
+  BANG_CATALOG,
+  evaluateBang,
+} from './answers/bang-registry.js';
+
+export type {
+  MathEvaluationResult,
+} from './answers/math-evaluator.js';
+export {
+  MathEvaluator,
+} from './answers/math-evaluator.js';
+
+export type {
+  EpochConversionResult,
+  ColorConversionResult,
+  UnitConversionResult,
+  ConversionResult,
+} from './answers/conversion-evaluator.js';
+export {
+  ConversionEvaluator,
+} from './answers/conversion-evaluator.js';
+
+export type {
+  InstantAnswerPayload,
+} from './answers/instant-answer-engine.js';
+export {
+  InstantAnswerEngine,
+  createInstantAnswerEngine,
+} from './answers/instant-answer-engine.js';
+

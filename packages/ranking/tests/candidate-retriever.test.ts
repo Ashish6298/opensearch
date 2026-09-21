@@ -169,4 +169,53 @@ describe('Candidate Retrieval (Phase 13)', () => {
 
     expect(result.candidates).toHaveLength(1);
   });
+
+  describe('Operator Filtering (Phase 37)', () => {
+    it('should filter candidate documents by site:<domain> restriction', () => {
+      // Add extra document with different domain
+      index.addDocument(
+        processor.process({
+          id: 'doc-github',
+          url: 'https://github.com/opensearch/core',
+          title: 'GitHub Repository Architecture',
+          headings: 'Codebase',
+          description: 'GitHub source code repository.',
+          bodyText: 'OpenSearch source code and architecture on github.',
+        }),
+      );
+
+      const siteQuery = queryParser.parse('architecture site:github.com');
+      const result = retriever.retrieve(siteQuery);
+
+      expect(result.candidates).toHaveLength(1);
+      expect(result.candidates[0]?.documentId).toBe('doc-github');
+    });
+
+    it('should filter candidate documents strictly by intitle:<word>', () => {
+      const intitleQuery = queryParser.parse('opensearch intitle:crawler');
+      const result = retriever.retrieve(intitleQuery);
+
+      // Only doc-crawl has 'Crawler' in title
+      expect(result.candidates).toHaveLength(1);
+      expect(result.candidates[0]?.documentId).toBe('doc-crawl');
+    });
+
+    it('should filter candidate documents with operator-only query (e.g. site:opensearch.dev)', () => {
+      const siteOnlyQuery = queryParser.parse('site:opensearch.dev');
+      const result = retriever.retrieve(siteOnlyQuery);
+
+      expect(result.candidates.length).toBeGreaterThanOrEqual(3);
+      for (const candidate of result.candidates) {
+        expect(candidate.documentMeta.url).toContain('opensearch.dev');
+      }
+    });
+
+    it('should correctly filter multi-constraint mixed queries', () => {
+      const complexQuery = queryParser.parse('site:opensearch.dev intitle:crawler -architecture');
+      const result = retriever.retrieve(complexQuery);
+
+      expect(result.candidates).toHaveLength(1);
+      expect(result.candidates[0]?.documentId).toBe('doc-crawl');
+    });
+  });
 });

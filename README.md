@@ -18,12 +18,12 @@
 [![TypeScript](https://img.shields.io/badge/Language-TypeScript_5.7+-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Runtime-Node.js_20+-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Build CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub_Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)](.github/workflows/ci.yml)
-[![Tests Passing](https://img.shields.io/badge/Tests-360_Passing-00ff66?style=for-the-badge&logo=vitest&logoColor=white)](packages/)
+[![Tests](https://img.shields.io/badge/Tests-467_Passing-00ff66.svg?style=for-the-badge&logo=vitest&logoColor=black)](https://github.com/Ashish6298/opensearch)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-00ff66?style=for-the-badge&logo=opensourceinitiative&logoColor=white)](LICENSE.md)
 [![Code of Conduct](https://img.shields.io/badge/Conduct-Contributor_Covenant_2.1-blue?style=for-the-badge&logo=handshake&logoColor=white)](CODE_OF_CONDUCT.md)
 [![Telemetry](https://img.shields.io/badge/Tracking-Zero_Telemetry-ff3333?style=for-the-badge&logo=ghostery&logoColor=white)](docs/PRIVACY.md)
-[![Status: V1.0.0](https://img.shields.io/badge/Release-v1.0.0_Production-brightgreen?style=for-the-badge&logo=git&logoColor=white)](PHASE.txt)
+[![Status: V1.2.0 In-Progress](https://img.shields.io/badge/Release-v1.2.0_Development-brightgreen?style=for-the-badge&logo=git&logoColor=white)](PHASEv1.2.0.txt)
 
 </div>
 

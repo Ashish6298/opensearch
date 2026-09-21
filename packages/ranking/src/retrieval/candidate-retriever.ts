@@ -11,9 +11,9 @@
  * 7. Safe fallback for missing terms, empty queries, or empty indices
  */
 
-import { InvertedIndex, Posting } from '@opensearch/indexer';
+import { IndexedDocumentMeta, InvertedIndex, Posting } from '@opensearch/indexer';
 import { SEARCH_LIMITS } from '@opensearch/shared';
-import { ParsedPhrase, ParsedQuery } from '../query/query-types.js';
+import { ParsedPhrase, ParsedQuery, QueryFilter } from '../query/query-types.js';
 import {
   CandidateDocument,
   CandidateRetriever,
@@ -50,8 +50,15 @@ export class IndexCandidateRetriever implements CandidateRetriever {
     const missingTerms: string[] = [];
     let totalPostingsEvaluated = 0;
 
-    // Fast-path: empty query
-    if (query.isEmpty || searchedTerms.length === 0) {
+    const hasActiveFilters = Boolean(
+      query.filters?.site ||
+        query.filters?.filetype ||
+        (query.filters?.intitle && query.filters.intitle.length > 0) ||
+        (query.filters?.exact && query.filters.exact.length > 0),
+    );
+
+    // Fast-path: empty query without any filters
+    if (query.isEmpty || (searchedTerms.length === 0 && !hasActiveFilters)) {
       return {
         candidates: [],
         stats: {
@@ -65,7 +72,20 @@ export class IndexCandidateRetriever implements CandidateRetriever {
       };
     }
 
-    // 1. Retrieve posting lists for each unique positive query term
+    // 1. Identify excluded documents matching any negated term
+    const excludedDocIds = new Set<string>();
+    if (applyNegationFilter && query.negatedTerms.length > 0) {
+      for (const negTerm of query.negatedTerms) {
+        const negPostings = this.index.getPostings(negTerm);
+        if (negPostings) {
+          for (const np of negPostings) {
+            excludedDocIds.add(np.documentId);
+          }
+        }
+      }
+    }
+
+    // 2. Retrieve posting lists for each unique positive query term
     const termPostingsMap = new Map<string, Posting[]>();
 
     for (const term of query.uniqueTerms) {
@@ -80,6 +100,47 @@ export class IndexCandidateRetriever implements CandidateRetriever {
 
     // Fast-path: no terms found in index dictionary
     if (termPostingsMap.size === 0) {
+      // If we have active filters (e.g. site:, intitle:, filetype:), scan all documents
+      const hasActiveFilters = Boolean(
+        query.filters.site ||
+          query.filters.filetype ||
+          (query.filters.intitle && query.filters.intitle.length > 0) ||
+          (query.filters.exact && query.filters.exact.length > 0),
+      );
+
+      if (hasActiveFilters) {
+        const allDocMetas = this.index.getAllDocumentMeta();
+        const matchingDocMetas = allDocMetas.filter(
+          docMeta =>
+            !excludedDocIds.has(docMeta.documentId) &&
+            this.matchesFilters(docMeta, query.filters),
+        );
+
+        const filterCandidates: CandidateDocument[] = matchingDocMetas
+          .slice(0, maxCandidates)
+          .map(docMeta => ({
+            documentId: docMeta.documentId,
+            documentMeta: docMeta,
+            matchedTerms: [],
+            termPostings: new Map<string, Posting>(),
+            matchCount: 0,
+            isFullMatch: true,
+            phraseMatches: true,
+          }));
+
+        return {
+          candidates: filterCandidates,
+          stats: {
+            searchedTerms,
+            missingTerms,
+            totalPostingsEvaluated: 0,
+            candidateCount: filterCandidates.length,
+            effectiveMode: 'union',
+            durationMs: Date.now() - startMs,
+          },
+        };
+      }
+
       return {
         candidates: [],
         stats: {
@@ -93,19 +154,6 @@ export class IndexCandidateRetriever implements CandidateRetriever {
       };
     }
 
-    // 2. Identify excluded documents matching any negated term
-    const excludedDocIds = new Set<string>();
-    if (applyNegationFilter && query.negatedTerms.length > 0) {
-      for (const negTerm of query.negatedTerms) {
-        const negPostings = this.index.getPostings(negTerm);
-        if (negPostings) {
-          for (const np of negPostings) {
-            excludedDocIds.add(np.documentId);
-          }
-        }
-      }
-    }
-
     // 3. Aggregate all candidate matches per document
     // docId -> { term -> Posting }
     const docMatches = new Map<string, Map<string, Posting>>();
@@ -114,6 +162,12 @@ export class IndexCandidateRetriever implements CandidateRetriever {
       for (const posting of postings) {
         const docId = posting.documentId;
         if (excludedDocIds.has(docId)) {
+          continue;
+        }
+
+        // Apply metadata filters (site:, intitle:, filetype:, exact:)
+        const docMeta = this.index.getDocumentMeta(docId);
+        if (docMeta && !this.matchesFilters(docMeta, query.filters)) {
           continue;
         }
 
@@ -135,6 +189,10 @@ export class IndexCandidateRetriever implements CandidateRetriever {
       for (const docId of docIds) {
         const docMeta = this.index.getDocumentMeta(docId);
         if (!docMeta) {
+          continue;
+        }
+
+        if (!this.matchesFilters(docMeta, query.filters)) {
           continue;
         }
 
@@ -286,6 +344,70 @@ export class IndexCandidateRetriever implements CandidateRetriever {
       }
 
       if (!phraseFoundInAnyField) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Evaluates query operator filters (site:, intitle:, filetype:, exact:)
+   * against document metadata.
+   */
+  private matchesFilters(docMeta: IndexedDocumentMeta, filters: QueryFilter): boolean {
+    if (!filters) {
+      return true;
+    }
+
+    // 1. site:<domain> filter (hierarchy matching)
+    if (filters.site) {
+      const siteFilter = filters.site.toLowerCase().trim();
+      let matchedSite = false;
+      try {
+        const parsed = new URL(docMeta.url);
+        const host = parsed.hostname.toLowerCase();
+        if (host === siteFilter || host.endsWith('.' + siteFilter)) {
+          matchedSite = true;
+        }
+      } catch {
+        // Fallback for relative or non-URL string identifiers
+        const urlLower = docMeta.url.toLowerCase();
+        if (urlLower.includes(siteFilter)) {
+          matchedSite = true;
+        }
+      }
+      if (!matchedSite) {
+        return false;
+      }
+    }
+
+    // 2. intitle:<word> filter (strictly matches in HTML title)
+    if (filters.intitle && filters.intitle.length > 0) {
+      const titleLower = (docMeta.title || '').toLowerCase();
+      for (const titleTerm of filters.intitle) {
+        if (!titleLower.includes(titleTerm.toLowerCase())) {
+          return false;
+        }
+      }
+    }
+
+    // 3. filetype:<ext> filter (e.g., pdf, json, md)
+    if (filters.filetype) {
+      const ext = filters.filetype.toLowerCase().replace(/^\./, '').trim();
+      let matchedExt = false;
+      try {
+        const parsed = new URL(docMeta.url);
+        const pathname = parsed.pathname.toLowerCase();
+        if (pathname.endsWith('.' + ext)) {
+          matchedExt = true;
+        }
+      } catch {
+        if (docMeta.url.toLowerCase().endsWith('.' + ext)) {
+          matchedExt = true;
+        }
+      }
+      if (!matchedExt) {
         return false;
       }
     }

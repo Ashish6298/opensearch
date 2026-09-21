@@ -358,4 +358,93 @@ describe('Phase 16, 17 & 18 — Search API Server, Endpoints & Security Suite', 
       expect(data.stack).toBeUndefined();
     });
   });
+
+  describe('Phase 35: Suggestion & Autocomplete API (/api/v1/suggest)', () => {
+    it('returns prefix suggestions with sub-10ms response time', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/suggest?q=open&limit=5`);
+      expect(res.status).toBe(200);
+
+      const data = await res.json();
+      expect(data.query).toBe('open');
+      expect(Array.isArray(data.suggestions)).toBe(true);
+      expect(data.suggestions.length).toBeGreaterThan(0);
+      expect(data.suggestions[0].text.toLowerCase()).toContain('open');
+      expect(data.meta.durationMs).toBeLessThan(50);
+    });
+
+    it('handles empty query parameter gracefully returning empty list', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/suggest?q=`);
+      expect(res.status).toBe(200);
+
+      const data = await res.json();
+      expect(data.query).toBe('');
+      expect(data.suggestions).toEqual([]);
+      expect(data.meta.count).toBe(0);
+    });
+
+    it('respects limit parameter constraint', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/suggest?q=op&limit=1`);
+      expect(res.status).toBe(200);
+
+      const data = await res.json();
+      expect(data.suggestions.length).toBeLessThanOrEqual(1);
+    });
+  });
+
+  describe('Phase 36: Typo Tolerance & "Did You Mean?" API', () => {
+    it('populates didYouMean suggestion on misspelled search queries', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/search?q=crawlr`);
+      expect(res.status).toBe(200);
+
+      const data = await res.json();
+      expect(data.didYouMean).toBeDefined();
+      expect(data.didYouMean.suggestedQuery).toBe('crawler');
+      expect(data.didYouMean.originalQuery).toBe('crawlr');
+      expect(data.didYouMean.confidence).toBeGreaterThanOrEqual(0.6);
+    });
+
+    it('returns didYouMean as null when the query is spelled correctly', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/search?q=storage`);
+      expect(res.status).toBe(200);
+
+      const data = await res.json();
+      expect(data.didYouMean).toBeNull();
+    });
+  });
+
+  describe('Phase 38: Instant Answers, Direct Conversions & Bangs API', () => {
+    it('evaluates bang shortcuts and returns target redirect URL in response', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/search?q=!gh+opensearch`);
+      expect(res.status).toBe(200);
+
+      const data = await res.json();
+      expect(data.instantAnswer).toBeDefined();
+      expect(data.instantAnswer.type).toBe('bang');
+      expect(data.instantAnswer.badge).toBe('[bang-redirect]');
+      expect(data.instantAnswer.redirectUrl).toBe('https://github.com/search?q=opensearch');
+      expect(data.bang).toBeDefined();
+      expect(data.bang.isBang).toBe(true);
+      expect(data.bang.serviceName).toBe('GitHub');
+    });
+
+    it('evaluates mathematical expressions into zero-click calculation answers', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/search?q=25+*+40`);
+      expect(res.status).toBe(200);
+
+      const data = await res.json();
+      expect(data.instantAnswer).toBeDefined();
+      expect(data.instantAnswer.type).toBe('calculation');
+      expect(data.instantAnswer.primaryResult).toBe('1,000');
+    });
+
+    it('evaluates epoch and color conversions', async () => {
+      const res = await fetch(`${baseUrl}/api/v1/search?q=%2338bdf8`);
+      expect(res.status).toBe(200);
+
+      const data = await res.json();
+      expect(data.instantAnswer).toBeDefined();
+      expect(data.instantAnswer.type).toBe('color');
+      expect(data.instantAnswer.previewCss).toBe('#38bdf8');
+    });
+  });
 });

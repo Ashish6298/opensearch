@@ -8,7 +8,12 @@
 import { createServer, Server } from 'node:http';
 import path from 'node:path';
 import fs from 'node:fs';
-import { createInvertedIndex, InvertedIndex } from '@opensearch/indexer';
+import {
+  createInvertedIndex,
+  createPrefixTrie,
+  InvertedIndex,
+  PrefixTrie,
+} from '@opensearch/indexer';
 import { createStorageAdapter } from '@opensearch/storage';
 import {
   createCandidateRetriever,
@@ -17,6 +22,8 @@ import {
   createResultGenerator,
   createQueryCache,
   LruQueryCache,
+  createTypoToleranceEngine,
+  createInstantAnswerEngine,
 } from '@opensearch/ranking';
 import { AppConfig, createLogger, loadConfig, Logger } from '@opensearch/shared';
 import {
@@ -28,7 +35,13 @@ import {
 } from './middlewares.js';
 import { createRateLimiter, MemoryRateLimiter } from './rate-limiter.js';
 import { Router } from './router.js';
-import { handleApiRoot, handleHealthCheck, handleSearch, handleSystemStatus } from './routes.js';
+import {
+  handleApiRoot,
+  handleHealthCheck,
+  handleSearch,
+  handleSuggest,
+  handleSystemStatus,
+} from './routes.js';
 import { ApiAppContext, ApiServerOptions, SearchApiResponse, SearchServices } from './types.js';
 
 export class ApiServer {
@@ -106,6 +119,10 @@ export class ApiServer {
 
   private initializeSearchServices(customIndex?: InvertedIndex): SearchServices {
     const index = customIndex ?? createInvertedIndex({ indexDir: this.config.storage.indexDir });
+    const prefixTrie = createPrefixTrie();
+
+    // Populate initial prefix trie with vocabulary
+    this.populatePrefixTrieFromIndex(index, prefixTrie);
 
     const queryParser = createQueryParser({
       maxQueryLength: this.config.search.maxQueryLength,
@@ -114,6 +131,8 @@ export class ApiServer {
       defaultMaxCandidates: this.config.search.maxCandidates,
     });
     const rankingEngine = createRankingEngine(index);
+    const typoEngine = createTypoToleranceEngine(index);
+    const instantAnswerEngine = createInstantAnswerEngine();
     const resultGenerator = createResultGenerator({
       pagination: {
         pageSize: this.config.search.defaultPageSize,
@@ -122,12 +141,23 @@ export class ApiServer {
 
     return {
       index,
+      prefixTrie,
+      typoEngine,
+      instantAnswerEngine,
       queryParser,
       candidateRetriever,
       rankingEngine,
       resultGenerator,
       queryCache: this.queryCache,
     };
+  }
+
+  private populatePrefixTrieFromIndex(index: InvertedIndex, trie: PrefixTrie): void {
+    const terms = index.getTerms();
+    for (const term of terms) {
+      const df = index.getDocumentFrequency(term);
+      trie.insert(term, Math.max(10, df * 5), 'term');
+    }
   }
 
   /**
@@ -185,6 +215,9 @@ export class ApiServer {
         }
 
         await this.services.index.load(resolvedIndexPath);
+        if (this.services.prefixTrie) {
+          this.populatePrefixTrieFromIndex(this.services.index, this.services.prefixTrie);
+        }
         this.logger.info('Active search index loaded from storage', {
           buildId: activeMeta.buildId,
           totalDocuments: activeMeta.documentCount,
@@ -219,6 +252,7 @@ export class ApiServer {
     this.router.get('/api/v1/status', handleSystemStatus);
     this.router.get('/api/v1/search', handleSearch);
     this.router.post('/api/v1/search', handleSearch);
+    this.router.get('/api/v1/suggest', handleSuggest);
   }
 
   /**

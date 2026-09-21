@@ -10,7 +10,12 @@
  */
 
 import { HTTP_STATUS, PROJECT_NAME, PROJECT_VERSION, ValidationError } from '@opensearch/shared';
-import { HealthCheckResponse, RouteHandler, SearchApiResponse } from './types.js';
+import {
+  HealthCheckResponse,
+  RouteHandler,
+  SearchApiResponse,
+  SuggestApiResponse,
+} from './types.js';
 import { fetchExternalWebResults } from './external-search.js';
 
 export const handleHealthCheck: RouteHandler = (_req, res, context) => {
@@ -48,7 +53,7 @@ export const handleHealthCheck: RouteHandler = (_req, res, context) => {
   const response: HealthCheckResponse = {
     name: PROJECT_NAME,
     version: PROJECT_VERSION,
-    phase: 'Milestone 9 — Performance & Free Infrastructure (Phase 28: Performance)',
+    phase: 'Milestone 11 — Search Quality & Query Understanding (Phase 35: Autocomplete)',
     status: overallStatus,
     timestamp: new Date().toISOString(),
     uptimeSeconds,
@@ -61,6 +66,7 @@ export const handleHealthCheck: RouteHandler = (_req, res, context) => {
       'GET /api/v1/status',
       'GET /api/v1/search',
       'POST /api/v1/search',
+      'GET /api/v1/suggest',
     ],
     components: {
       index: {
@@ -113,10 +119,41 @@ export const handleApiRoot: RouteHandler = (_req, res, context) => {
       health: '/health',
       status: '/api/v1/status',
       search: '/api/v1/search',
+      suggest: '/api/v1/suggest',
     },
     timestamp: new Date().toISOString(),
     environment: context.config.env,
   });
+};
+
+export const handleSuggest: RouteHandler = (req, res, context) => {
+  const startMs = Date.now();
+  const qParam = req.query['q'] ?? req.query['query'];
+  const rawQuery = Array.isArray(qParam) ? (qParam[0] ?? '') : (qParam ?? '');
+
+  let limit = 5;
+  const limitParam = req.query['limit'] ?? req.query['size'];
+  if (limitParam) {
+    const parsed = parseInt(Array.isArray(limitParam) ? limitParam[0]! : limitParam, 10);
+    if (!isNaN(parsed) && parsed > 0) {
+      limit = Math.min(parsed, 10);
+    }
+  }
+
+  const prefixTrie = context.services?.prefixTrie;
+  const suggestions = prefixTrie ? prefixTrie.suggest(rawQuery, limit) : [];
+
+  const payload: SuggestApiResponse = {
+    query: rawQuery,
+    suggestions,
+    meta: {
+      count: suggestions.length,
+      durationMs: Date.now() - startMs,
+      timestamp: new Date().toISOString(),
+    },
+  };
+
+  res.status(HTTP_STATUS.OK).json(payload);
 };
 
 export const handleSystemStatus: RouteHandler = (_req, res, context) => {
@@ -317,6 +354,28 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
     }
   }
 
+  // 7. Instant Answers & Bang Shortcuts Evaluation (Phase 38)
+  const instantAnswerEngine = context.services.instantAnswerEngine;
+  const instantAnswer = instantAnswerEngine ? instantAnswerEngine.evaluate(rawQuery) : null;
+  const bang = instantAnswer && instantAnswer.type === 'bang'
+    ? {
+        isBang: true as const,
+        bangKey: instantAnswer.secondaryDetails?.['Bang Trigger']?.toString().replace('!', '') || '',
+        matchedTrigger: instantAnswer.secondaryDetails?.['Bang Trigger']?.toString().replace('!', '') || '',
+        serviceName: instantAnswer.secondaryDetails?.['Target Service']?.toString() || '',
+        category: 'developer',
+        searchQuery: instantAnswer.secondaryDetails?.['Search Target']?.toString() || '',
+        redirectUrl: instantAnswer.redirectUrl || '',
+      }
+    : null;
+
+  // 8. Typo Tolerance & Did You Mean Evaluation (Phase 36)
+  let didYouMean = null;
+  const typoEngine = context.services.typoEngine;
+  if (typoEngine && (totalHits === 0 || totalHits < pageSize / 2) && !instantAnswer) {
+    didYouMean = typoEngine.suggestCorrection(rawQuery);
+  }
+
   const responsePayload: SearchApiResponse = {
     query: {
       raw: rawQuery,
@@ -324,7 +383,11 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
       terms: parsedQuery.terms,
       phrases: parsedQuery.phrases.map(p => p.rawPhrase),
       negatedTerms: parsedQuery.negatedTerms,
+      filters: parsedQuery.filters,
     },
+    instantAnswer,
+    bang,
+    didYouMean,
     results: finalResults,
     pagination: {
       ...searchResultSet.pagination,

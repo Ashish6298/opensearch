@@ -81,9 +81,53 @@ export class DefaultQueryParser implements QueryParser {
       return this.createEmptyParsedQuery(inputStr, isClamped);
     }
 
-    // 4. Phrase extraction
+    // 4. Operator extraction (site:, intitle:, filetype:, exact:) (Phase 37)
+    const filters: { site?: string; intitle?: string[]; exact?: string[]; filetype?: string } = {};
+    let textAfterOperators = normalized;
+
+    // 4a. site:<domain>
+    const siteMatch = /(?:^|\s)site:([a-z0-9.-]+)/i.exec(textAfterOperators);
+    if (siteMatch && siteMatch[1]) {
+      filters.site = siteMatch[1].toLowerCase().trim();
+      textAfterOperators = textAfterOperators.replace(/(?:^|\s)site:[a-z0-9.-]+/gi, ' ');
+    }
+
+    // 4b. filetype:<ext>
+    const filetypeMatch = /(?:^|\s)filetype:([a-z0-9]+)/i.exec(textAfterOperators);
+    if (filetypeMatch && filetypeMatch[1]) {
+      filters.filetype = filetypeMatch[1].toLowerCase().trim();
+      textAfterOperators = textAfterOperators.replace(/(?:^|\s)filetype:[a-z0-9]+/gi, ' ');
+    }
+
+    // 4c. intitle:<word>
+    const intitleMatches = textAfterOperators.matchAll(/(?:^|\s)intitle:([\p{L}\p{N}_-]+)/giu);
+    const intitles: string[] = [];
+    for (const match of intitleMatches) {
+      if (match[1]) {
+        intitles.push(match[1].toLowerCase().trim());
+      }
+    }
+    if (intitles.length > 0) {
+      filters.intitle = intitles;
+      textAfterOperators = textAfterOperators.replace(/(?:^|\s)intitle:[\p{L}\p{N}_-]+/giu, ' ');
+    }
+
+    // 4d. exact:<word>
+    const exactMatches = textAfterOperators.matchAll(/(?:^|\s)exact:([\p{L}\p{N}_-]+)/giu);
+    const exacts: string[] = [];
+    for (const match of exactMatches) {
+      if (match[1]) {
+        exacts.push(match[1].toLowerCase().trim());
+      }
+    }
+    if (exacts.length > 0) {
+      filters.exact = exacts;
+      textAfterOperators = textAfterOperators.replace(/(?:^|\s)exact:[\p{L}\p{N}_-]+/giu, ' ');
+    }
+
+    // 5. Phrase extraction
     const phrases: ParsedPhrase[] = [];
-    let textAfterPhrases = normalized;
+    let textAfterPhrases = textAfterOperators;
 
     if (
       this.enablePhraseExtraction &&
@@ -93,7 +137,7 @@ export class DefaultQueryParser implements QueryParser {
       const phraseRegex = /["']([^"']+)["']/g;
       let phraseMatch: RegExpExecArray | null;
 
-      while ((phraseMatch = phraseRegex.exec(normalized)) !== null) {
+      while ((phraseMatch = phraseRegex.exec(textAfterPhrases)) !== null) {
         const matchedGroup = phraseMatch[1];
         if (matchedGroup) {
           const rawPhraseText = matchedGroup.trim();
@@ -113,7 +157,7 @@ export class DefaultQueryParser implements QueryParser {
       textAfterPhrases = textAfterPhrases.replace(/["']([^"']+)["']/g, ' ');
     }
 
-    // 5. Tokenization & Negation handling
+    // 6. Tokenization & Negation handling
     const terms: string[] = [];
     const negatedTerms: string[] = [];
 
@@ -164,8 +208,29 @@ export class DefaultQueryParser implements QueryParser {
       }
     }
 
+    // Include intitle and exact terms in terms list for index lookup
+    if (filters.intitle) {
+      for (const it of filters.intitle) {
+        if (!terms.includes(it)) {
+          terms.push(it);
+        }
+      }
+    }
+    if (filters.exact) {
+      for (const ex of filters.exact) {
+        if (!terms.includes(ex)) {
+          terms.push(ex);
+        }
+      }
+    }
+
     const uniqueTerms = Array.from(new Set(terms));
-    const isEmpty = terms.length === 0 && phrases.length === 0;
+    const isEmpty =
+      terms.length === 0 &&
+      phrases.length === 0 &&
+      !filters.site &&
+      !filters.filetype &&
+      (!filters.intitle || filters.intitle.length === 0);
 
     return {
       rawQuery: inputStr,
@@ -174,6 +239,7 @@ export class DefaultQueryParser implements QueryParser {
       uniqueTerms,
       phrases,
       negatedTerms,
+      filters,
       isEmpty,
       isClamped,
       termCount: terms.length,
@@ -224,6 +290,7 @@ export class DefaultQueryParser implements QueryParser {
       uniqueTerms: [],
       phrases: [],
       negatedTerms: [],
+      filters: {},
       isEmpty: true,
       isClamped,
       termCount: 0,

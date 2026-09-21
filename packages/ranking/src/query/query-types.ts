@@ -13,6 +13,17 @@ export interface ParsedPhrase {
   terms: string[];
 }
 
+export interface QueryFilter {
+  /** Filter target domain (e.g., 'github.com' or 'docs.rs') */
+  site?: string;
+  /** Filter terms required to be present in HTML document title */
+  intitle?: string[];
+  /** Exact phrase requirements */
+  exact?: string[];
+  /** File extension filter (e.g., 'pdf', 'json', 'md') */
+  filetype?: string;
+}
+
 export interface ParsedQuery {
   /** The original raw query string submitted by the user */
   rawQuery: string;
@@ -26,6 +37,8 @@ export interface ParsedQuery {
   phrases: ParsedPhrase[];
   /** Negated terms (prefixed with '-' or 'NOT') to exclude */
   negatedTerms: string[];
+  /** Structured query operator filters (site:, intitle:, filetype:, exact:) */
+  filters: QueryFilter;
   /** Whether the query was completely empty or blank */
   isEmpty: boolean;
   /** Whether the query was clamped due to exceeding maximum allowed length */

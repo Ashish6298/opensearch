@@ -72,3 +72,7 @@ export {
   evaluateDocumentQuality,
   analyzeCorpusQuality,
 } from './builder/quality-checker.js';
+
+// ── Phase 35: Prefix Trie & Autocomplete (V1.2.0) ────────────
+export type { SuggestionEntry, SuggestionMatch, PrefixTrieOptions } from './suggest/prefix-trie.js';
+export { PrefixTrie, TrieNode, createPrefixTrie } from './suggest/prefix-trie.js';

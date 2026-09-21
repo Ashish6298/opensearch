@@ -203,4 +203,51 @@ describe('Query Processing Pipeline (Phase 12)', () => {
       expect(parsed.terms).toEqual(['search', 'engine', 'web', 'fast']);
     });
   });
+
+  describe('7. Advanced Query Operators & Filters (Phase 37)', () => {
+    it('should parse site:<domain> filter and isolate search terms', () => {
+      const parsed = parser.parse('site:github.com opensearch crawler');
+
+      expect(parsed.filters.site).toBe('github.com');
+      expect(parsed.terms).toContain('opensearch');
+      expect(parsed.terms).toContain('crawler');
+      expect(parsed.terms).not.toContain('site:github.com');
+      expect(parsed.terms).not.toContain('site');
+    });
+
+    it('should parse intitle:<word> filter and filetype:<ext> filter', () => {
+      const parsed = parser.parse('intitle:api filetype:pdf documentation');
+
+      expect(parsed.filters.intitle).toEqual(['api']);
+      expect(parsed.filters.filetype).toBe('pdf');
+      expect(parsed.terms).toContain('documentation');
+      expect(parsed.terms).toContain('api');
+    });
+
+    it('should parse complex mixed queries with site, intitle, phrases, and negations', () => {
+      const parsed = parser.parse('site:nodejs.org intitle:api streams -legacy "buffer pool"');
+
+      expect(parsed.filters.site).toBe('nodejs.org');
+      expect(parsed.filters.intitle).toEqual(['api']);
+      expect(parsed.terms).toContain('streams');
+      expect(parsed.negatedTerms).toContain('legacy');
+      expect(parsed.phrases).toHaveLength(1);
+      expect(parsed.phrases[0]?.rawPhrase).toBe('buffer pool');
+    });
+
+    it('should handle operator-only queries gracefully without crashing', () => {
+      const parsed = parser.parse('site:docs.rs');
+
+      expect(parsed.filters.site).toBe('docs.rs');
+      expect(parsed.isEmpty).toBe(false);
+      expect(parsed.terms).toEqual([]);
+    });
+
+    it('should gracefully ignore malformed operators without throwing', () => {
+      const parsed = parser.parse('site: intitle: filetype:');
+
+      expect(parsed).toBeDefined();
+      expect(parsed.isEmpty).toBe(false);
+    });
+  });
 });
