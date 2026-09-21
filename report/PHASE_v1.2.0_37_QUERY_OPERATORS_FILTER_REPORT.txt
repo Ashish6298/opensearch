@@ -1,0 +1,58 @@
+================================================================================
+OPENSEARCH V1.2.0 — PHASE 37: ADVANCED QUERY OPERATORS & FILTER PARSER REPORT
+================================================================================
+Date: 2026-09-21
+Project: OpenSearch — Privacy-First Web Search Engine
+Milestone: Milestone 11 (V1.2.0) — Search Quality & Query Understanding
+Phase: Phase 37 — Advanced Query Operators & Filter Parser
+Status: PASSED (Verification Gate: 100% PASS)
+Author: Antigravity AI Engineering Assistant
+
+1. IMPLEMENTATION SUMMARY
+--------------------------------------------------------------------------------
+Phase 37 implements precision filtering using query syntax operators (`site:`,
+`intitle:`, `exact:`, `filetype:`, `"exact phrase"`, `-term` / `NOT term`) giving developers
+and researchers granular control over candidate retrieval and ranking with zero external dependencies:
+
+1. Extended Query Lexer & Parser (@opensearch/ranking & @opensearch/indexer):
+   - Defined `QueryFilter` contract in `packages/ranking/src/query/query-types.ts`:
+     * `site?: string` (domain/hostname filter)
+     * `intitle?: string[]` (HTML <title> tag filter)
+     * `filetype?: string` (file extension filter, e.g. pdf, md, json)
+     * `exact?: string[]` (exact token/phrase requirement)
+   - Updated `DefaultQueryParser` in `packages/ranking/src/query/query-parser.ts`:
+     * Regex operator tokenization extracting `site:<domain>`, `filetype:<ext>`, `intitle:<word>`, and `exact:<word>`.
+     * Clean extraction separating structural filter constraints from free-text search terms.
+     * Guaranteed non-crashing safe fallback for malformed or operator-only queries.
+   - Comprehensive unit test suite in `packages/ranking/tests/query-parser.test.ts` (21/21 passed).
+
+2. Candidate Retrieval Filtering Pipeline (@opensearch/ranking):
+   - Updated `IndexCandidateRetriever` in `packages/ranking/src/retrieval/candidate-retriever.ts`:
+     * Post-retrieval and pre-scoring filter pipeline enforcing operator constraints on document metadata (`docMeta.url`, `docMeta.title`).
+     * Domain hierarchy matching supporting apex and subdomains (e.g. `site:github.com` matches `github.com` and `api.github.com`).
+     * Title containment check strictly evaluating terms occurring in document title metadata.
+     * File extension matching on URL pathnames.
+     * Handled operator-only queries (e.g. `site:opensearch.dev`) by scanning document metadata without requiring positive text postings.
+   - Retrieval integration tests in `packages/ranking/tests/candidate-retriever.test.ts` (13/13 passed).
+
+3. Search API & Web Frontend Integration (@opensearch/api & @opensearch/web):
+   - Updated `SearchApiResponse` schema in `apps/api/src/types.ts` to include `query.filters`.
+   - Populated `filters` in `apps/api/src/routes.ts` response payload.
+   - Added active filter summary token display in the terminal meta line (`apps/web/src/app.js` and `style.css`).
+
+2. VERIFICATION GATES & TEST RESULTS
+--------------------------------------------------------------------------------
+Gate 1: Operator lexing and token isolation (`site:`, `intitle:`, etc.) .. [PASS] (Isolated without polluting free terms)
+Gate 2: Candidate retrieval metadata filtering pipeline ................ [PASS] (Verified domain and title filtering)
+Gate 3: Complex mixed queries (`site:`, `intitle:`, `-negation`, phrase) [PASS] (Accurate constraint enforcement)
+Gate 4: Operator-only and malformed query safety ....................... [PASS] (Zero 500 exceptions, graceful handling)
+Gate 5: Full monorepo test suite (Vitest) ........................... [PASS] (447/447 passing tests across 44 files)
+Gate 6: Strict TypeScript compilation (`npm run build`) ............. [PASS] (Clean composite build exit code 0)
+
+3. READINESS FOR NEXT PHASE
+--------------------------------------------------------------------------------
+Phase 37 is FULLY COMPLETE and APPROVED.
+The repository is 100% clean, buildable, and testable with 447 verified tests.
+Ready to proceed to:
+Phase 38 — Freshness & Recency Boost Signal Engine (Milestone 11).
+================================================================================

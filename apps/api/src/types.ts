@@ -17,6 +17,7 @@ import {
   LruQueryCache,
   TypoToleranceEngine,
   DidYouMeanResult,
+  QueryFilter,
 } from '@opensearch/ranking';
 import { AppConfig, Logger, SystemStatus } from '@opensearch/shared';
 import { MemoryRateLimiter } from './rate-limiter.js';
@@ -134,6 +135,7 @@ export interface SearchApiResponse {
     terms: string[];
     phrases: string[];
     negatedTerms: string[];
+    filters?: QueryFilter;
   };
   didYouMean?: DidYouMeanResult | null;
   results: SearchResultItem[];

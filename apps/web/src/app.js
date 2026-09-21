@@ -441,7 +441,29 @@
     }
 
     const plural = totalHits === 1 ? 'hit' : 'hits';
-    const summaryText = `[status: 200 OK] ${totalHits.toLocaleString()} ${plural} (${durationMs}ms)`;
+    let summaryText = `[status: 200 OK] ${totalHits.toLocaleString()} ${plural} (${durationMs}ms)`;
+
+    // Display active filters in the search summary meta line (Phase 37)
+    const filters = data.query?.filters;
+    const filterTokens = [];
+    if (filters) {
+      if (filters.site) filterTokens.push(`site:${filters.site}`);
+      if (filters.intitle && filters.intitle.length > 0) {
+        filters.intitle.forEach(function (t) {
+          filterTokens.push(`intitle:${t}`);
+        });
+      }
+      if (filters.filetype) filterTokens.push(`filetype:${filters.filetype}`);
+      if (filters.exact && filters.exact.length > 0) {
+        filters.exact.forEach(function (e) {
+          filterTokens.push(`exact:${e}`);
+        });
+      }
+    }
+    if (filterTokens.length > 0) {
+      summaryText += ` [filters: ${filterTokens.join(', ')}]`;
+    }
+
     if (resultsMeta) {
       resultsMeta.textContent = summaryText;
     }

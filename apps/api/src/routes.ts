@@ -368,6 +368,7 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
       terms: parsedQuery.terms,
       phrases: parsedQuery.phrases.map(p => p.rawPhrase),
       negatedTerms: parsedQuery.negatedTerms,
+      filters: parsedQuery.filters,
     },
     didYouMean,
     results: finalResults,

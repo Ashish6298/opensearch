@@ -6,6 +6,7 @@
 export type {
   ParsedPhrase,
   ParsedQuery,
+  QueryFilter,
   QueryParserOptions,
   QueryParser,
 } from './query/query-types.js';
