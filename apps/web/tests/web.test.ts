@@ -275,5 +275,30 @@ describe('Phase 19, 20 & 21 — Search UI & Accessibility Hardening Suite', () =
       expect(js).toContain('didYouMeanBanner');
       expect(js).toContain('did-you-mean-link');
     });
+
+    it('serves keyboard shortcuts help modal and navigation styles (Phase 39)', async () => {
+      const res = await fetch(`${baseUrl}/`);
+      expect(res.status).toBe(200);
+      const html = await res.text();
+      expect(html).toContain('id="shortcuts-modal"');
+      expect(html).toContain('id="shortcuts-toggle-btn"');
+      expect(html).toContain('id="shortcuts-close-btn"');
+      expect(html).toContain('KEYBOARD NAVIGATION SHORTCUTS');
+
+      const cssRes = await fetch(`${baseUrl}/style.css`);
+      const css = await cssRes.text();
+      expect(css).toContain('.shortcuts-modal-overlay');
+      expect(css).toContain('.shortcuts-modal-dialog');
+      expect(css).toContain('.terminal-result-item.active-item');
+      expect(css).toContain('.result-expanded-details');
+
+      const jsRes = await fetch(`${baseUrl}/app.js`);
+      const js = await jsRes.text();
+      expect(js).toContain('navigateResultCards');
+      expect(js).toContain('openShortcutsModal');
+      expect(js).toContain('closeShortcutsModal');
+      expect(js).toContain('toggleExpandedDetails');
+    });
   });
 });
+

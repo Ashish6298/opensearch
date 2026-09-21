@@ -18,7 +18,7 @@
 [![TypeScript](https://img.shields.io/badge/Language-TypeScript_5.7+-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Runtime-Node.js_20+-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Build CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub_Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)](.github/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/Tests-467_Passing-00ff66.svg?style=for-the-badge&logo=vitest&logoColor=black)](https://github.com/Ashish6298/opensearch)
+[![Tests](https://img.shields.io/badge/Tests-468_Passing-00ff66.svg?style=for-the-badge&logo=vitest&logoColor=black)](https://github.com/Ashish6298/opensearch)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-00ff66?style=for-the-badge&logo=opensourceinitiative&logoColor=white)](LICENSE.md)
 [![Code of Conduct](https://img.shields.io/badge/Conduct-Contributor_Covenant_2.1-blue?style=for-the-badge&logo=handshake&logoColor=white)](CODE_OF_CONDUCT.md)

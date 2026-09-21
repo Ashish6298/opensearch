@@ -2,7 +2,8 @@
  * OpenSearch Public Web Client (Terminal UI)
  *
  * Provides event handling, search query execution, terminal result rendering,
- * dot-leader pagination, states (loading, empty, error), and URL synchronization.
+ * dot-leader pagination, states (loading, empty, error), keyboard navigation (Vim mode),
+ * and URL synchronization.
  */
 
 (function () {
@@ -24,6 +25,9 @@
   const didYouMeanBanner = document.getElementById('did-you-mean-banner');
   const paginationArea = document.getElementById('pagination-area');
   const a11yAnnouncer = document.getElementById('a11y-announcer');
+  const shortcutsModal = document.getElementById('shortcuts-modal');
+  const shortcutsToggleBtn = document.getElementById('shortcuts-toggle-btn');
+  const shortcutsCloseBtn = document.getElementById('shortcuts-close-btn');
 
   // Configuration
   const rawApiUrl = window.__OPENSEARCH_API_URL__ || '';
@@ -43,6 +47,8 @@
   let suggestDebounceTimer = null;
   let activeSuggestionIndex = -1;
   let currentSuggestions = [];
+  let currentActiveResultIndex = -1;
+  let currentResultItems = [];
 
   function init() {
     // Check URL parameters for pre-filled query and page
@@ -92,6 +98,13 @@
       if (!searchForm.contains(e.target)) {
         closeAutocomplete();
       }
+      if (
+        shortcutsModal &&
+        shortcutsModal.style.display === 'flex' &&
+        e.target === shortcutsModal
+      ) {
+        closeShortcutsModal();
+      }
     });
 
     // Error retry button
@@ -103,7 +116,19 @@
       });
     }
 
-    // Keyboard navigation (Autocomplete & global shortcuts)
+    // Shortcuts modal open/close triggers
+    if (shortcutsToggleBtn) {
+      shortcutsToggleBtn.addEventListener('click', function () {
+        openShortcutsModal();
+      });
+    }
+    if (shortcutsCloseBtn) {
+      shortcutsCloseBtn.addEventListener('click', function () {
+        closeShortcutsModal();
+      });
+    }
+
+    // Keyboard navigation (Autocomplete & search input keys)
     searchInput.addEventListener('keydown', function (e) {
       if (!autocompleteDropdown || autocompleteDropdown.style.display === 'none') {
         return;
@@ -126,35 +151,111 @@
       }
     });
 
-    // Global keyboard navigation
+    // Global keyboard navigation (Phase 39: Vim/Terminal Mode)
     window.addEventListener('keydown', function (e) {
-      // '/' key: focus search input if not inside an input
-      if (
-        e.key === '/' &&
-        document.activeElement !== searchInput &&
-        !['input', 'textarea', 'select'].includes(
+      const isInputFocused =
+        document.activeElement === searchInput ||
+        ['input', 'textarea', 'select'].includes(
           document.activeElement?.tagName?.toLowerCase() || '',
-        )
-      ) {
+        );
+
+      // Escape key handles multiple contexts
+      if (e.key === 'Escape') {
+        if (shortcutsModal && shortcutsModal.style.display === 'flex') {
+          e.preventDefault();
+          closeShortcutsModal();
+          return;
+        }
+
+        if (autocompleteDropdown && autocompleteDropdown.style.display === 'flex') {
+          closeAutocomplete();
+          return;
+        }
+
+        if (document.activeElement === searchInput) {
+          if (searchInput.value.length > 0) {
+            searchInput.value = '';
+            hideAllStates();
+            if (resultsArea) resultsArea.innerHTML = '';
+            if (resultsMeta) resultsMeta.textContent = '';
+            if (paginationArea) paginationArea.innerHTML = '';
+            updateUrl('', 1);
+            announceA11y('Search cleared.');
+          } else {
+            searchInput.blur();
+          }
+          return;
+        }
+
+        if (currentActiveResultIndex >= 0) {
+          clearActiveResultHighlight();
+          return;
+        }
+      }
+
+      // If user is actively typing in an input field, do NOT intercept single-letter hotkeys
+      if (isInputFocused) {
+        return;
+      }
+
+      // '/' key: focus search input and select text
+      if (e.key === '/') {
         e.preventDefault();
         searchInput.focus();
         searchInput.select();
+        return;
       }
 
-      // 'Escape' key: clear query and suggestions
-      if (e.key === 'Escape' && document.activeElement === searchInput) {
-        closeAutocomplete();
-        if (searchInput.value.length > 0) {
-          searchInput.value = '';
-          hideAllStates();
-          if (resultsArea) resultsArea.innerHTML = '';
-          if (resultsMeta) resultsMeta.textContent = '';
-          if (paginationArea) paginationArea.innerHTML = '';
-          updateUrl('', 1);
-          announceA11y('Search cleared.');
+      // '?' key: toggle keyboard shortcuts modal
+      if (e.key === '?') {
+        e.preventDefault();
+        if (shortcutsModal && shortcutsModal.style.display === 'flex') {
+          closeShortcutsModal();
         } else {
-          searchInput.blur();
+          openShortcutsModal();
         }
+        return;
+      }
+
+      // If modal is open, ignore other navigation keys
+      if (shortcutsModal && shortcutsModal.style.display === 'flex') {
+        return;
+      }
+
+      // 'j' or 'ArrowDown': Move to next result card
+      if (e.key === 'j' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        navigateResultCards(1);
+        return;
+      }
+
+      // 'k' or 'ArrowUp': Move to previous result card
+      if (e.key === 'k' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        navigateResultCards(-1);
+        return;
+      }
+
+      // 'Enter': Open currently active result card URL
+      if (e.key === 'Enter') {
+        if (currentActiveResultIndex >= 0 && currentResultItems[currentActiveResultIndex]) {
+          const itemEl = currentResultItems[currentActiveResultIndex];
+          const link = itemEl.querySelector('.result-title-link');
+          if (link && link.href) {
+            e.preventDefault();
+            window.open(link.href, '_blank', 'noopener,noreferrer');
+          }
+        }
+        return;
+      }
+
+      // 'v': Toggle expanded snippet view
+      if (e.key === 'v') {
+        if (currentActiveResultIndex >= 0 && currentResultItems[currentActiveResultIndex]) {
+          e.preventDefault();
+          toggleExpandedDetails(currentResultItems[currentActiveResultIndex]);
+        }
+        return;
       }
     });
 
@@ -197,6 +298,88 @@
   function announceA11y(message) {
     if (a11yAnnouncer) {
       a11yAnnouncer.textContent = message;
+    }
+  }
+
+  function openShortcutsModal() {
+    if (!shortcutsModal) return;
+    shortcutsModal.style.display = 'flex';
+    announceA11y('Keyboard shortcuts dialog opened. Press Escape to close.');
+  }
+
+  function closeShortcutsModal() {
+    if (!shortcutsModal) return;
+    shortcutsModal.style.display = 'none';
+    announceA11y('Keyboard shortcuts dialog closed.');
+  }
+
+  function navigateResultCards(delta) {
+    if (!resultsArea) return;
+    currentResultItems = Array.from(resultsArea.querySelectorAll('.terminal-result-item'));
+    if (!currentResultItems.length) return;
+
+    if (currentActiveResultIndex >= 0 && currentResultItems[currentActiveResultIndex]) {
+      currentResultItems[currentActiveResultIndex].classList.remove('active-item');
+      currentResultItems[currentActiveResultIndex].setAttribute('aria-selected', 'false');
+    }
+
+    currentActiveResultIndex += delta;
+    if (currentActiveResultIndex >= currentResultItems.length) {
+      currentActiveResultIndex = 0;
+    } else if (currentActiveResultIndex < 0) {
+      currentActiveResultIndex = currentResultItems.length - 1;
+    }
+
+    const activeEl = currentResultItems[currentActiveResultIndex];
+    if (activeEl) {
+      activeEl.classList.add('active-item');
+      activeEl.setAttribute('aria-selected', 'true');
+      activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      const titleLink = activeEl.querySelector('.result-title-link');
+      const titleText = titleLink ? titleLink.textContent : `Result ${currentActiveResultIndex + 1}`;
+      announceA11y(`Selected result ${currentActiveResultIndex + 1}: ${titleText}`);
+    }
+  }
+
+  function clearActiveResultHighlight() {
+    if (!resultsArea) return;
+    const items = resultsArea.querySelectorAll('.terminal-result-item');
+    items.forEach(function (el) {
+      el.classList.remove('active-item');
+      el.setAttribute('aria-selected', 'false');
+    });
+    currentActiveResultIndex = -1;
+  }
+
+  function toggleExpandedDetails(itemEl) {
+    if (!itemEl) return;
+    let detailsEl = itemEl.querySelector('.result-expanded-details');
+    if (detailsEl) {
+      detailsEl.remove();
+      announceA11y('Details view collapsed.');
+    } else {
+      const docId = itemEl.getAttribute('data-document-id') || 'N/A';
+      const linkEl = itemEl.querySelector('.result-title-link');
+      const urlText = linkEl ? linkEl.href : 'N/A';
+
+      detailsEl = document.createElement('div');
+      detailsEl.className = 'result-expanded-details';
+      detailsEl.innerHTML = `
+        <div class="result-expanded-row">
+          <span class="result-expanded-key">[doc-id]</span>
+          <span class="result-expanded-val">${escapeHtml(docId)}</span>
+        </div>
+        <div class="result-expanded-row">
+          <span class="result-expanded-key">[target-url]</span>
+          <span class="result-expanded-val">${escapeHtml(urlText)}</span>
+        </div>
+        <div class="result-expanded-row">
+          <span class="result-expanded-key">[preview-hint]</span>
+          <span class="result-expanded-val">Press Enter to open in new tab | Press v to collapse</span>
+        </div>
+      `;
+      itemEl.appendChild(detailsEl);
+      announceA11y(`Expanded details for document ${docId}.`);
     }
   }
 
@@ -357,6 +540,7 @@
       didYouMeanBanner.style.display = 'none';
       didYouMeanBanner.innerHTML = '';
     }
+    clearActiveResultHighlight();
   }
 
   async function performSearch(query, page = 1) {
