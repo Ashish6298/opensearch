@@ -31,6 +31,14 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
   <style>
     ${options.cssContent || '/* Inlined CSS */'}
   </style>
+  <script>
+    (function () {
+      try {
+        var theme = localStorage.getItem('opensearch_theme') || 'matrix';
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body>
   <a href="#search-input" id="skip-to-search" class="skip-link">Skip to search</a>
@@ -38,8 +46,11 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
   <div id="a11y-announcer" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
 
   <div class="terminal-app" id="terminal-window" role="main">
-    <!-- Version indicator in top corner (No navbar) -->
-    <div class="corner-version">v1.2.0</div>
+    <!-- Header Controls in Top Corner (Theme Switcher & Version) -->
+    <div class="corner-header-controls">
+      <button type="button" class="theme-switcher-btn" id="theme-switcher-btn" aria-label="Toggle color theme (Current: matrix)" title="Click to cycle theme (Matrix, Amber, Dracula, Nord, Monokai)">[theme: matrix]</button>
+      <div class="corner-version">v1.2.0</div>
+    </div>
 
     <!-- Main Content Area -->
     <main class="terminal-main">
@@ -138,9 +149,56 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
     <!-- Terminal Footer -->
     <footer class="terminal-footer">
       <div class="footer-container">
-        <span class="footer-text"><a href="/about">about</a> · <a href="/privacy">privacy</a> · <a href="/health" target="_blank" rel="noopener noreferrer">status</a> · <a href="https://github.com/Ashish6298/opensearch" target="_blank" rel="noopener noreferrer">source</a> — v1.2.0</span>
+        <span class="footer-text"><a href="/about">about</a> · <a href="/privacy">privacy</a> · <a href="/health" target="_blank" rel="noopener noreferrer">status</a> · <button type="button" class="footer-shortcuts-btn" id="shortcuts-toggle-btn" aria-label="Keyboard Shortcuts (Press ?)">shortcuts [?]</button> · <a href="https://github.com/Ashish6298/opensearch" target="_blank" rel="noopener noreferrer">source</a> — v1.2.0</span>
       </div>
     </footer>
+
+    <!-- Phase 39: Keyboard Shortcuts Help Modal Overlay -->
+    <div id="shortcuts-modal" class="shortcuts-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="shortcuts-title" style="display:none;">
+      <div class="shortcuts-modal-dialog">
+        <div class="shortcuts-modal-header">
+          <span class="shortcuts-modal-title" id="shortcuts-title">&gt; KEYBOARD NAVIGATION SHORTCUTS</span>
+          <button type="button" class="shortcuts-modal-close-btn" id="shortcuts-close-btn" aria-label="Close shortcuts modal">[ESC / X]</button>
+        </div>
+        <div class="shortcuts-modal-body">
+          <div class="shortcuts-grid">
+            <div class="shortcut-row">
+              <span class="shortcut-key"><kbd>j</kbd> / <kbd>↓</kbd></span>
+              <span class="shortcut-desc">Move selection to next result card</span>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-key"><kbd>k</kbd> / <kbd>↑</kbd></span>
+              <span class="shortcut-desc">Move selection to previous result card</span>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-key"><kbd>Enter</kbd></span>
+              <span class="shortcut-desc">Open selected result in new browser tab</span>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-key"><kbd>v</kbd></span>
+              <span class="shortcut-desc">Toggle expanded snippet / details on selected card</span>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-key"><kbd>/</kbd></span>
+              <span class="shortcut-desc">Focus terminal search prompt and select query</span>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-key"><kbd>ESC</kbd></span>
+              <span class="shortcut-desc">Clear selection / close modal / blur input</span>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-key"><kbd>t</kbd></span>
+              <span class="shortcut-desc">Cycle terminal color theme (Matrix, Amber, Dracula, Nord, Monokai)</span>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-key"><kbd>?</kbd></span>
+              <span class="shortcut-desc">Toggle this keyboard shortcuts cheatsheet</span>
+            </div>
+          </div>
+          <div class="shortcuts-footer-hint">&gt; Tip: Press any key or click outside to dismiss.</div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
