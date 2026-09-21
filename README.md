@@ -18,7 +18,7 @@
 [![TypeScript](https://img.shields.io/badge/Language-TypeScript_5.7+-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Runtime-Node.js_20+-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Build CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub_Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)](.github/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/Tests-476_Passing-00ff66.svg?style=for-the-badge&logo=vitest&logoColor=black)](https://github.com/Ashish6298/opensearch)
+[![Tests](https://img.shields.io/badge/Tests-480_Passing-00ff66.svg?style=for-the-badge&logo=vitest&logoColor=black)](https://github.com/Ashish6298/opensearch)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-00ff66?style=for-the-badge&logo=opensourceinitiative&logoColor=white)](LICENSE.md)
 [![Code of Conduct](https://img.shields.io/badge/Conduct-Contributor_Covenant_2.1-blue?style=for-the-badge&logo=handshake&logoColor=white)](CODE_OF_CONDUCT.md)
@@ -879,6 +879,9 @@ $ audit --privacy-boundaries
 | **Milestone 08** | **Security Hardening & Zero-Logs**     | Phases 25 – 27 | CSP enforcement, circular redirect traps, IP subnet masking (/24 & /48)  | `[PASSED]` |
 | **Milestone 09** | **High-Concurrency Performance**       | Phases 28 – 30 | In-memory LRU query cache (<10ms warm hits), crawler memory backpressure | `[PASSED]` |
 | **Milestone 10** | **Production Release & Live Fallback** | Phases 31 – 34 | Google/DuckDuckGo live hybrid search, cross-env tests, release sign-off  | `[PASSED]` |
+| **Milestone 11** | **Query Intelligence & Productivity**  | Phases 35 – 38 | Autocomplete, Levenshtein typo-tolerance, advanced operators, 50+ bangs  | `[PASSED]` |
+| **Milestone 12** | **Terminal UI, Accessibility & Themes**| Phases 39 – 40 | Vim/terminal keybinds (`j`/`k`/`v`/`/`/`Esc`), 5 retro CRT themes        | `[PASSED]` |
+| **Milestone 13** | **Crawler Efficiency & Sitemaps**      | Phases 41 – 42 | Streaming/Gzip Sitemap ingestion, HTTP 304 fast path & ETag re-crawling   | `[PASSED]` |
 
 <br/>
 

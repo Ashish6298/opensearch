@@ -71,6 +71,11 @@ export interface CrawlQueue {
   clear(): Promise<void>;
 
   /**
+   * Removes a urlHash from the seen-set to allow re-queuing / re-crawling.
+   */
+  unsee?(urlHash: string): Promise<boolean>;
+
+  /**
    * Returns queue statistics (pending count, seen count, max size).
    */
   stats(): QueueStats;

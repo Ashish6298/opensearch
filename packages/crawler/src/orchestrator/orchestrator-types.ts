@@ -31,6 +31,8 @@ export interface CrawlRunOptions {
   userAgent?: string;
   /** Whether to automatically discover and ingest sitemaps from robots.txt / domain roots (default: true) */
   discoverSitemaps?: boolean;
+  /** Whether to allow re-crawling of explicitly provided seed URLs even if previously seen (default: false) */
+  allowRecrawl?: boolean;
   /** Optional abort signal for external cancellation */
   signal?: AbortSignal;
 }
@@ -61,6 +63,12 @@ export interface CrawlRunStats {
   pagesFetched: number;
   /** Total pages stored to document repository */
   pagesStored: number;
+  /** Total HTTP 304 Not Modified responses handled (Phase 42) */
+  notModified304: number;
+  /** Total re-crawled pages where content was unchanged (Phase 42) */
+  contentUnchanged: number;
+  /** Total pages where content was changed/freshly updated (Phase 42) */
+  contentChanged: number;
   /** Total fetch / network errors encountered */
   fetchErrors: number;
   /** Total retries consumed from retry budget */

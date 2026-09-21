@@ -132,6 +132,12 @@ export interface DocumentRecord {
   contentLength: number;
   /** HTTP status code of the successful fetch */
   httpStatus: number;
+  /** Optional HTTP ETag header from server */
+  etag?: string | null;
+  /** Optional HTTP Last-Modified header from server */
+  lastModified?: string | null;
+  /** SHA-256 hash of extracted content for change detection */
+  contentHash?: string | null;
   /** Outbound links discovered in this document */
   outboundLinks: string[];
   /** ISO timestamp when this document was crawled */

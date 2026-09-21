@@ -197,7 +197,7 @@ export class NodeFetcher implements HttpFetcher {
     const maxRetries = this.cfg.maxRetries;
 
     while (true) {
-      const result = await this.doFetch(startingUrl, retryCount);
+      const result = await this.doFetch(startingUrl, target, retryCount);
 
       if (result.ok) {
         return result;
@@ -229,7 +229,11 @@ export class NodeFetcher implements HttpFetcher {
     }
   }
 
-  private async doFetch(initialUrl: string, retryCount: number): Promise<FetchResult> {
+  private async doFetch(
+    initialUrl: string,
+    target: FetchTarget,
+    retryCount: number,
+  ): Promise<FetchResult> {
     const startMs = nowMs();
     let currentUrl = initialUrl;
     let redirectCount = 0;
@@ -240,14 +244,23 @@ export class NodeFetcher implements HttpFetcher {
       const abortController = new AbortController();
       const timeoutId = setTimeout(() => abortController.abort(), this.cfg.timeoutMs);
 
+      const requestHeaders: Record<string, string> = {
+        'User-Agent': this.cfg.userAgent,
+        Accept: 'text/html,application/xhtml+xml,text/plain;q=0.9,*/*;q=0.1',
+        'Accept-Encoding': 'gzip, deflate, br',
+      };
+
+      if (target.etag && redirectCount === 0) {
+        requestHeaders['If-None-Match'] = target.etag;
+      }
+      if (target.lastModified && redirectCount === 0) {
+        requestHeaders['If-Modified-Since'] = target.lastModified;
+      }
+
       try {
         response = await fetch(currentUrl, {
           method: 'GET',
-          headers: {
-            'User-Agent': this.cfg.userAgent,
-            Accept: 'text/html,application/xhtml+xml,text/plain;q=0.9,*/*;q=0.1',
-            'Accept-Encoding': 'gzip, deflate, br',
-          },
+          headers: requestHeaders,
           redirect: 'manual',
           signal: abortController.signal,
         });
@@ -408,6 +421,31 @@ export class NodeFetcher implements HttpFetcher {
         };
       }
 
+      const rawEtag = response.headers.get('etag');
+      const etag = rawEtag ? rawEtag.trim() : null;
+      const rawLastMod = response.headers.get('last-modified');
+      const lastModified = rawLastMod ? rawLastMod.trim() : null;
+
+      // Handle HTTP 304 Not Modified (Fast Path)
+      if (response.status === 304) {
+        const normFinal = normalizeUrl(currentUrl);
+        const finalUrl = normFinal.ok ? normFinal.normalized : currentUrl;
+        return {
+          ok: true,
+          finalUrl,
+          statusCode: 304,
+          contentType: 'text/html',
+          body: '',
+          contentLength: 0,
+          durationMs: nowMs() - startMs,
+          redirectCount,
+          redirectChain,
+          retryCount,
+          etag,
+          lastModified,
+        };
+      }
+
       // Check Content-Type
       const rawContentType = response.headers.get('content-type') ?? '';
       const contentType = rawContentType.split(';')[0]?.trim().toLowerCase() ?? '';
@@ -443,6 +481,8 @@ export class NodeFetcher implements HttpFetcher {
           redirectCount,
           redirectChain,
           retryCount,
+          etag,
+          lastModified,
         };
       }
 
@@ -522,6 +562,8 @@ export class NodeFetcher implements HttpFetcher {
         redirectCount,
         redirectChain,
         retryCount,
+        etag,
+        lastModified,
       } satisfies FetchSuccess;
     }
   }

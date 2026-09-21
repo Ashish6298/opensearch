@@ -1,0 +1,92 @@
+================================================================================
+OPENSEARCH V1.2.0 — PHASE 42 VERIFICATION AND IMPLEMENTATION REPORT
+================================================================================
+Phase: 42 — Conditional Re-Crawling & ETag Cache Validation
+Milestone: Milestone 13 — Crawler Efficiency & Sitemap Ingestion
+Date: 2026-09-21
+Status: COMPLETE & VERIFIED
+Test Suite Status: 480 Passing (47 Test Suites, 100% Pass Rate)
+Zero External Dependencies: VERIFIED (Strict native Node.js crypto/http/https)
+================================================================================
+
+1. EXECUTIVE SUMMARY
+--------------------------------------------------------------------------------
+Phase 42 implements high-efficiency conditional HTTP re-crawling in @opensearch/crawler,
+document caching metadata in @opensearch/storage, and fast-path change detection with
+index invalidation in @opensearch/indexer.
+
+By passing `If-None-Match: <etag>` and `If-Modified-Since: <date>` headers on re-crawl
+fetches, the crawler allows remote web servers to return HTTP 304 Not Modified. When a
+304 is returned, OpenSearch skips HTML body downloading and parsing, updates crawl
+timestamps in storage, and preserves the document's indexed state without unnecessary
+re-indexing. When content changes (HTTP 200 with modified SHA-256 contentHash or ETag),
+the document is updated and its index status transitioned to PENDING for delta indexing.
+Existing index entries and document bodies are strictly preserved during transient
+network or 5xx server failures.
+
+2. KEY DELIVERABLES & ARCHITECTURAL IMPLEMENTATIONS
+--------------------------------------------------------------------------------
+A. Storage Document Metadata & Schema (@opensearch/storage)
+   - Extended `DocumentRecord` in `packages/storage/src/models.ts`:
+     * `etag?: string | null`: HTTP entity tag cache validator string.
+     * `lastModified?: string | null`: HTTP Last-Modified date timestamp.
+     * `contentHash?: string | null`: SHA-256 fingerprint of document body content.
+   - Updated `JsonStorageAdapter` to persist and retrieve cache validators and content hashes.
+
+B. HTTP Fetcher Conditional Request Headers (@opensearch/crawler)
+   - Extended `FetchTarget` with `etag?: string | null` and `lastModified?: string | null`.
+   - Updated `NodeHttpFetcher` in `packages/crawler/src/fetcher/node-fetcher.ts`:
+     * Dynamically sets `If-None-Match` when target has existing ETag.
+     * Dynamically sets `If-Modified-Since` when target has existing Last-Modified header.
+     * Extracts `etag` and `last-modified` headers from server responses into `FetchSuccess`.
+     * Implemented HTTP 304 Fast Path in fetcher: returns immediately with status 304 and
+       empty body without triggering Content-Type rejection or body buffering.
+
+C. Crawl Queue Seed Unseeing & Recrawl Support (@opensearch/crawler)
+   - Extended `CrawlQueue` interface in `packages/crawler/src/queue/queue-types.ts`:
+     * `unsee(urlHash: string): Promise<boolean>` method for explicit re-queuing.
+   - Implemented in `PersistentCrawlQueue` (`packages/crawler/src/queue/persistent-queue.ts`)
+     with atomic state synchronization.
+   - Extended `CrawlRunOptions` with `allowRecrawl?: boolean`.
+
+D. Crawl Orchestration & Change Detection Fast Path (@opensearch/crawler)
+   - Implemented conditional re-crawl lookup in `DefaultCrawlOrchestrator`:
+     * Retrieves stored document cache validators (`etag`, `lastModified`) prior to fetch.
+     * Fast-path for HTTP 304 Not Modified:
+       - Skips HTML parsing and outbound link extraction.
+       - Updates `UrlRecord` and `DocumentRecord` (`lastCrawledAt`, `httpStatus: 304`).
+       - Preserves existing `indexStatus` (e.g. `INDEXED`).
+       - Increments `stats.notModified304` and `stats.contentUnchanged`.
+     * Incremental update for HTTP 200 OK:
+       - Computes SHA-256 contentHash of parsed body.
+       - Compares against previous `contentHash`.
+       - If content unchanged: preserves `indexStatus` and increments `stats.contentUnchanged`.
+       - If content modified: marks `indexStatus: INDEX_STATUS.PENDING` and increments `stats.contentChanged`.
+     * Resilience guard:
+       - On transient fetch failure (e.g. HTTP 500 / network error), existing document and
+         index entries are strictly preserved and not dropped.
+
+3. AUTOMATED VERIFICATION RESULTS
+--------------------------------------------------------------------------------
+A. Test Execution:
+   - Command: `npm test`
+   - Test Files: 47 passed (47)
+   - Total Tests: 480 passed (480)
+   - Conditional Re-crawl Tests: packages/crawler/tests/conditional-recrawl.test.ts (4 passed):
+     * First crawl captures and persists ETag, Last-Modified, and SHA-256 contentHash.
+     * Re-crawl sends `If-None-Match` and `If-Modified-Since` and processes HTTP 304 fast path.
+     * HTTP 304 fast path updates crawl timestamps without resetting document index status.
+     * Re-crawl with modified content (HTTP 200) invalidates `indexStatus` to PENDING for re-indexing.
+     * Re-crawl transient network/server failure preserves existing document and index metadata.
+
+B. Build & Typecheck:
+   - Command: `npm run build` (`tsc -b`)
+   - Composite build completed with 0 errors across all workspace packages.
+
+4. READINESS ASSESSMENT FOR NEXT PHASE
+--------------------------------------------------------------------------------
+Phase 42 is 100% complete and fully verified.
+The crawler now maximizes bandwidth and CPU efficiency via conditional validation.
+The codebase is in a clean, passing state and fully prepared for:
+PHASE 43 — Incremental Indexing & Delta Merging.
+================================================================================

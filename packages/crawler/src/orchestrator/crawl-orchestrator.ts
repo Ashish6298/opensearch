@@ -14,7 +14,7 @@
  * 10. Live statistics tracking & graceful shutdown/resume
  */
 
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { AppConfig, Logger, createLogger } from '@opensearch/shared';
@@ -22,6 +22,7 @@ import { CRAWL_STATUS, INDEX_STATUS, StorageAdapter } from '@opensearch/storage'
 
 import { CrawlQueue } from '../queue/queue-types.js';
 import { ENQUEUE_RESULT } from '../url/url-model.js';
+import { validateUrl } from '../url/url-validator.js';
 import { computeUrlHash } from '../url/url-fingerprint.js';
 import { HttpFetcher } from '../fetcher/fetcher-types.js';
 import { RobotsPolicyEvaluator } from '../robots/robots-types.js';
@@ -102,11 +103,21 @@ export class DefaultCrawlOrchestrator implements CrawlOrchestrator {
     this.logger.info('Crawl orchestrator initialized successfully');
   }
 
-  async addSeeds(seeds: string[]): Promise<number> {
+  async addSeeds(seeds: string[], options?: { allowRecrawl?: boolean }): Promise<number> {
     this.requireInitialized();
     let queuedCount = 0;
 
     for (const seed of seeds) {
+      if (options?.allowRecrawl && this.queue.unsee) {
+        try {
+          const validation = validateUrl(seed);
+          if (validation.ok) {
+            const hash = computeUrlHash(validation.parsed.href);
+            await this.queue.unsee(hash);
+          }
+        } catch {}
+      }
+
       const outcome = await this.queue.enqueue(seed, 0, null);
       if (outcome.code === ENQUEUE_RESULT.QUEUED && outcome.entry) {
         queuedCount++;
@@ -183,7 +194,7 @@ export class DefaultCrawlOrchestrator implements CrawlOrchestrator {
 
     // Enqueue initial seeds if provided in options
     if (options?.seeds && options.seeds.length > 0) {
-      await this.addSeeds(options.seeds);
+      await this.addSeeds(options.seeds, { allowRecrawl: options?.allowRecrawl });
 
       // Phase 41: Auto-discover and ingest sitemaps from seed origins
       const discoverSitemaps = options?.discoverSitemaps ?? true;
@@ -464,8 +475,18 @@ export class DefaultCrawlOrchestrator implements CrawlOrchestrator {
 
     const crawlRecordStartedAt = new Date().toISOString();
 
-    // 4. Execute HTTP Fetch
-    const fetchResult = await this.fetcher.fetch({ url, depth });
+    // 4. Check for existing document metadata for conditional re-crawl
+    const existingDocBeforeFetch = await this.storage.documents.findByUrlHash(urlHash);
+    const conditionalEtag = existingDocBeforeFetch?.etag ?? undefined;
+    const conditionalLastModified = existingDocBeforeFetch?.lastModified ?? undefined;
+
+    // Execute HTTP Fetch with conditional caching headers
+    const fetchResult = await this.fetcher.fetch({
+      url,
+      depth,
+      etag: conditionalEtag,
+      lastModified: conditionalLastModified,
+    });
 
     if (!fetchResult.ok) {
       this.stats.fetchErrors++;
@@ -503,7 +524,7 @@ export class DefaultCrawlOrchestrator implements CrawlOrchestrator {
         errorMessage: fetchResult.message,
         redirectChain: [],
         finalUrl: fetchResult.finalUrl ?? url,
-        documentId: null,
+        documentId: existingDocBeforeFetch ? existingDocBeforeFetch.id : null,
       });
 
       return {
@@ -518,16 +539,91 @@ export class DefaultCrawlOrchestrator implements CrawlOrchestrator {
       };
     }
 
-    // 5. Success Fetch — Parse HTML and extract document content
+    // 5. Handle HTTP 304 Not Modified Fast Path
+    if (fetchResult.statusCode === 304) {
+      this.stats.pagesFetched++;
+      this.stats.notModified304++;
+      this.stats.contentUnchanged++;
+      const durationMs = Date.now() - startMs;
+
+      let storedDocId = existingDocBeforeFetch ? existingDocBeforeFetch.id : null;
+      if (existingDocBeforeFetch) {
+        try {
+          const updated = await this.storage.documents.update(existingDocBeforeFetch.id, {
+            httpStatus: 304,
+            etag: fetchResult.etag ?? existingDocBeforeFetch.etag,
+            lastModified: fetchResult.lastModified ?? existingDocBeforeFetch.lastModified,
+            // indexStatus is preserved untouched!
+          });
+          storedDocId = updated.id;
+        } catch (err) {
+          this.logger.debug('Failed to update 304 document timestamp', { url, err });
+        }
+      }
+
+      await this.storage.crawls.create({
+        url,
+        urlHash,
+        status: CRAWL_STATUS.SUCCESS,
+        httpStatus: 304,
+        contentType: fetchResult.contentType,
+        responseBytes: 0,
+        durationMs,
+        startedAt: crawlRecordStartedAt,
+        completedAt: new Date().toISOString(),
+        errorMessage: null,
+        redirectChain: fetchResult.redirectChain,
+        finalUrl: fetchResult.finalUrl,
+        documentId: storedDocId,
+      });
+
+      await this.upsertUrlStatus(
+        url,
+        urlHash,
+        domain,
+        scheme,
+        depth,
+        CRAWL_STATUS.SUCCESS,
+        304,
+      );
+
+      this.logger.debug('Handled HTTP 304 Not Modified fast path', { url, durationMs });
+
+      return {
+        url,
+        urlHash,
+        depth,
+        status: CRAWL_STATUS.SUCCESS,
+        httpStatus: 304,
+        documentId: storedDocId,
+        discoveredLinksCount: 0,
+        durationMs,
+      };
+    }
+
+    // 6. Success Fetch (HTTP 200) — Parse HTML, extract metadata, and detect content change
     this.stats.pagesFetched++;
     const parsedDoc = this.parser.parse(fetchResult.body, fetchResult.finalUrl);
+    const newContentHash = createHash('sha256')
+      .update(`${parsedDoc.title}\n${parsedDoc.description}\n${parsedDoc.headings}\n${parsedDoc.bodyText}`, 'utf-8')
+      .digest('hex');
 
-    // 6. Store DocumentRecord in DocumentRepository
+    const isContentChanged =
+      !existingDocBeforeFetch ||
+      !existingDocBeforeFetch.contentHash ||
+      existingDocBeforeFetch.contentHash !== newContentHash;
+
+    if (isContentChanged) {
+      this.stats.contentChanged++;
+    } else {
+      this.stats.contentUnchanged++;
+    }
+
+    // 7. Store DocumentRecord in DocumentRepository
     let storedDocId: string | null = null;
     try {
-      const existingDoc = await this.storage.documents.findByUrlHash(urlHash);
-      if (existingDoc) {
-        const updated = await this.storage.documents.update(existingDoc.id, {
+      if (existingDocBeforeFetch) {
+        const updated = await this.storage.documents.update(existingDocBeforeFetch.id, {
           title: parsedDoc.title,
           description: parsedDoc.description,
           headings: parsedDoc.headings,
@@ -536,8 +632,12 @@ export class DefaultCrawlOrchestrator implements CrawlOrchestrator {
           contentType: fetchResult.contentType,
           contentLength: fetchResult.contentLength,
           httpStatus: fetchResult.statusCode,
+          etag: fetchResult.etag ?? existingDocBeforeFetch.etag,
+          lastModified: fetchResult.lastModified ?? existingDocBeforeFetch.lastModified,
+          contentHash: newContentHash,
           outboundLinks: parsedDoc.discoveredUrls,
-          indexStatus: INDEX_STATUS.PENDING,
+          // Only invalidate index status to PENDING if content actually changed
+          indexStatus: isContentChanged ? INDEX_STATUS.PENDING : existingDocBeforeFetch.indexStatus,
         });
         storedDocId = updated.id;
       } else {
@@ -552,6 +652,9 @@ export class DefaultCrawlOrchestrator implements CrawlOrchestrator {
           contentType: fetchResult.contentType,
           contentLength: fetchResult.contentLength,
           httpStatus: fetchResult.statusCode,
+          etag: fetchResult.etag ?? null,
+          lastModified: fetchResult.lastModified ?? null,
+          contentHash: newContentHash,
           outboundLinks: parsedDoc.discoveredUrls,
           indexStatus: INDEX_STATUS.PENDING,
         });
@@ -717,6 +820,9 @@ export class DefaultCrawlOrchestrator implements CrawlOrchestrator {
       state: 'idle',
       pagesFetched: 0,
       pagesStored: 0,
+      notModified304: 0,
+      contentUnchanged: 0,
+      contentChanged: 0,
       fetchErrors: 0,
       robotsDisallowed: 0,
       sitemapsIngested: 0,
