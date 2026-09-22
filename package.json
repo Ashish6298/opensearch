@@ -14,6 +14,7 @@
   },
   "scripts": {
     "build": "tsc -b && npm --workspace=@opensearch/web run build:assets",
+    "opensearch": "node ./packages/cli/dist/bin.js",
     "start": "npm run start:api",
     "start:api": "npm --workspace=@opensearch/api run start",
     "start:web": "npm --workspace=@opensearch/web run start",

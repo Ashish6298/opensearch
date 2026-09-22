@@ -18,7 +18,7 @@
 [![TypeScript](https://img.shields.io/badge/Language-TypeScript_5.7+-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Runtime-Node.js_20+-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Build CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub_Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)](.github/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/Tests-489_Passing-00ff66.svg?style=for-the-badge&logo=vitest&logoColor=black)](https://github.com/Ashish6298/opensearch)
+[![Tests](https://img.shields.io/badge/Tests-510_Passing-00ff66.svg?style=for-the-badge&logo=vitest&logoColor=black)](https://github.com/Ashish6298/opensearch)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-00ff66?style=for-the-badge&logo=opensourceinitiative&logoColor=white)](LICENSE.md)
 [![Code of Conduct](https://img.shields.io/badge/Conduct-Contributor_Covenant_2.1-blue?style=for-the-badge&logo=handshake&logoColor=white)](CODE_OF_CONDUCT.md)
@@ -647,6 +647,27 @@ npm run start:web
 
 Open **[`http://localhost:3000`](http://localhost:3000)** to access the search terminal.
 
+### 📟 Standalone Terminal CLI (`@opensearch/cli`)
+
+Search directly from your command line without opening a browser:
+
+```bash
+# Search directly via npx or local binary
+npm run opensearch "typescript async await"
+
+# Limit output results
+npm run opensearch "bm25 ranking" -- --limit 5
+
+# Pipe raw JSON into jq
+npm run opensearch "database" -- --json | jq .results[0]
+
+# Pipe queries through stdin
+echo "privacy policy" | npm run opensearch
+
+# Check cluster health diagnostics
+npm run opensearch -- --health
+```
+
 ### Direct API Probing & Healthchecks
 
 ```bash
@@ -882,7 +903,7 @@ $ audit --privacy-boundaries
 | **Milestone 11** | **Query Intelligence & Productivity**  | Phases 35 – 38 | Autocomplete, Levenshtein typo-tolerance, advanced operators, 50+ bangs  | `[PASSED]` |
 | **Milestone 12** | **Terminal UI, Accessibility & Themes**| Phases 39 – 40 | Vim/terminal keybinds (`j`/`k`/`v`/`/`/`Esc`), 5 retro CRT themes        | `[PASSED]` |
 | **Milestone 13** | **Crawler Efficiency & Sitemaps**      | Phases 41 – 42 | Streaming/Gzip Sitemap ingestion, HTTP 304 fast path & ETag re-crawling   | `[PASSED]` |
-| **Milestone 14** | **Developer Platform & Documentation** | Phase 43       | OpenAPI 3.1.0 spec (`/api/v1/openapi.json`), interactive `/docs` sandbox  | `[PASSED]` |
+| **Milestone 14** | **Developer Platform & CLI Tooling**   | Phases 43 – 44 | OpenAPI 3.1.0 spec (`/docs`), standalone `@opensearch/cli` terminal tool | `[PASSED]` |
 
 <br/>
 
