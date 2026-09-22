@@ -69,7 +69,9 @@ export class CliFormatter {
 
   formatHeader(query: string, totalHits: number, durationMs: number, page = 1): string {
     const title = this.brightGreen(this.bold(`⚡ OpenSearch`));
-    const stats = this.dim(`[query: "${query}" | hits: ${totalHits} | page: ${page} | ${durationMs.toFixed(1)}ms]`);
+    const stats = this.dim(
+      `[query: "${query}" | hits: ${totalHits} | page: ${page} | ${durationMs.toFixed(1)}ms]`,
+    );
     const sep = this.dim('─'.repeat(Math.min(78, (process.stdout?.columns || 80) - 2)));
     return `${title} ${stats}\n${sep}`;
   }
@@ -83,7 +85,9 @@ export class CliFormatter {
     secondaryDetails?: Record<string, unknown>;
     redirectUrl?: string | null;
   }): string {
-    const badge = this.yellow(this.bold(`[⚡ INSTANT ANSWER // ${(answer.type || 'INFO').toUpperCase()}]`));
+    const badge = this.yellow(
+      this.bold(`[⚡ INSTANT ANSWER // ${(answer.type || 'INFO').toUpperCase()}]`),
+    );
     const expr = this.dim(answer.expression || answer.title || '');
     const ansText = answer.primaryResult || answer.primaryAnswer || '';
     const result = this.brightGreen(this.bold(`= ${ansText}`));
@@ -101,7 +105,9 @@ export class CliFormatter {
     searchQuery: string;
     redirectUrl: string;
   }): string {
-    const badge = this.magenta(this.bold(`[⚡ BANG REDIRECT // ${bang.serviceName.toUpperCase()}]`));
+    const badge = this.magenta(
+      this.bold(`[⚡ BANG REDIRECT // ${bang.serviceName.toUpperCase()}]`),
+    );
     const target = this.cyan(this.underline(bang.redirectUrl));
     return `\n${badge}\n  ${this.dim('Target:')} ${target}\n`;
   }
@@ -148,7 +154,9 @@ export class CliFormatter {
 
     if (health.components && typeof health.components === 'object') {
       out += `\n  ${this.cyan(this.bold('Components:'))}\n`;
-      for (const [comp, val] of Object.entries(health.components as Record<string, { status?: string }>)) {
+      for (const [comp, val] of Object.entries(
+        health.components as Record<string, { status?: string }>,
+      )) {
         const cStatus =
           val?.status === 'ok'
             ? this.brightGreen('ok')

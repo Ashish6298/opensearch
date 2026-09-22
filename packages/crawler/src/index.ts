@@ -160,10 +160,6 @@ export type {
 
 export { SitemapParser, createSitemapParser } from './sitemap/sitemap-parser.js';
 
-export type {
-  SitemapServiceOptions,
-  IngestSitemapsSummary,
-} from './sitemap/sitemap-service.js';
+export type { SitemapServiceOptions, IngestSitemapsSummary } from './sitemap/sitemap-service.js';
 
 export { SitemapService, createSitemapService } from './sitemap/sitemap-service.js';
-

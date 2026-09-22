@@ -143,10 +143,7 @@ export class SitemapService {
       depth: 0,
     }));
 
-    while (
-      pendingSitemaps.length > 0 &&
-      visitedSitemaps.size < this.maxSitemapsPerDomain
-    ) {
+    while (pendingSitemaps.length > 0 && visitedSitemaps.size < this.maxSitemapsPerDomain) {
       const current = pendingSitemaps.shift();
       if (!current || visitedSitemaps.has(current.url)) continue;
       if (current.depth > this.maxIndexDepth) continue;

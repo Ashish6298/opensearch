@@ -52,9 +52,9 @@ export class IndexCandidateRetriever implements CandidateRetriever {
 
     const hasActiveFilters = Boolean(
       query.filters?.site ||
-        query.filters?.filetype ||
-        (query.filters?.intitle && query.filters.intitle.length > 0) ||
-        (query.filters?.exact && query.filters.exact.length > 0),
+      query.filters?.filetype ||
+      (query.filters?.intitle && query.filters.intitle.length > 0) ||
+      (query.filters?.exact && query.filters.exact.length > 0),
     );
 
     // Fast-path: empty query without any filters
@@ -103,17 +103,16 @@ export class IndexCandidateRetriever implements CandidateRetriever {
       // If we have active filters (e.g. site:, intitle:, filetype:), scan all documents
       const hasActiveFilters = Boolean(
         query.filters.site ||
-          query.filters.filetype ||
-          (query.filters.intitle && query.filters.intitle.length > 0) ||
-          (query.filters.exact && query.filters.exact.length > 0),
+        query.filters.filetype ||
+        (query.filters.intitle && query.filters.intitle.length > 0) ||
+        (query.filters.exact && query.filters.exact.length > 0),
       );
 
       if (hasActiveFilters) {
         const allDocMetas = this.index.getAllDocumentMeta();
         const matchingDocMetas = allDocMetas.filter(
           docMeta =>
-            !excludedDocIds.has(docMeta.documentId) &&
-            this.matchesFilters(docMeta, query.filters),
+            !excludedDocIds.has(docMeta.documentId) && this.matchesFilters(docMeta, query.filters),
         );
 
         const filterCandidates: CandidateDocument[] = matchingDocMetas

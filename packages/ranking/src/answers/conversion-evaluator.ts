@@ -36,10 +36,7 @@ export interface UnitConversionResult {
   formattedSummary: string;
 }
 
-export type ConversionResult =
-  | EpochConversionResult
-  | ColorConversionResult
-  | UnitConversionResult;
+export type ConversionResult = EpochConversionResult | ColorConversionResult | UnitConversionResult;
 
 export class ConversionEvaluator {
   evaluate(rawQuery: string): ConversionResult | null {
@@ -67,7 +64,10 @@ export class ConversionEvaluator {
   // ── Epoch / Timestamp Converter ──────────────────────────────────────────
 
   private evaluateEpoch(query: string): EpochConversionResult | null {
-    const epochMatch = /^(?:epoch|timestamp|unix(?:\s+time)?)\s*(?:to\s+(?:date|utc|time))?\s*([0-9]+|now)?$/i.exec(query);
+    const epochMatch =
+      /^(?:epoch|timestamp|unix(?:\s+time)?)\s*(?:to\s+(?:date|utc|time))?\s*([0-9]+|now)?$/i.exec(
+        query,
+      );
     if (!epochMatch) {
       // Also check standalone 10-digit (seconds) or 13-digit (millis) timestamp queries
       const standaloneNum = /^(1[0-9]{9}|1[0-9]{12})$/.exec(query);
@@ -106,10 +106,14 @@ export class ConversionEvaluator {
       relative = 'Just now';
     } else if (diffSec > 0) {
       const days = Math.floor(diffSec / 86400);
-      relative = days > 0 ? `${days} day${days > 1 ? 's' : ''} ago` : `${Math.floor(diffSec / 3600)}h ago`;
+      relative =
+        days > 0 ? `${days} day${days > 1 ? 's' : ''} ago` : `${Math.floor(diffSec / 3600)}h ago`;
     } else {
       const days = Math.floor(Math.abs(diffSec) / 86400);
-      relative = days > 0 ? `in ${days} day${days > 1 ? 's' : ''}` : `in ${Math.floor(Math.abs(diffSec) / 3600)}h`;
+      relative =
+        days > 0
+          ? `in ${days} day${days > 1 ? 's' : ''}`
+          : `in ${Math.floor(Math.abs(diffSec) / 3600)}h`;
     }
 
     return {
@@ -133,7 +137,10 @@ export class ConversionEvaluator {
     if (hexMatch && hexMatch[1]) {
       let hex = hexMatch[1];
       if (hex.length === 3) {
-        hex = hex.split('').map(c => c + c).join('');
+        hex = hex
+          .split('')
+          .map(c => c + c)
+          .join('');
       }
       hex = '#' + hex.toLowerCase();
 
@@ -154,7 +161,9 @@ export class ConversionEvaluator {
     }
 
     // RGB pattern: rgb(56, 189, 248) or rgb 56 189 248
-    const rgbMatch = /^rgb\(?\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*\)?$/i.exec(clean);
+    const rgbMatch = /^rgb\(?\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*,\s*([0-9]{1,3})\s*\)?$/i.exec(
+      clean,
+    );
     if (rgbMatch && rgbMatch[1] && rgbMatch[2] && rgbMatch[3]) {
       const r = Math.min(255, parseInt(rgbMatch[1], 10));
       const g = Math.min(255, parseInt(rgbMatch[2], 10));
@@ -190,9 +199,15 @@ export class ConversionEvaluator {
       const d = max - min;
       s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
       switch (max) {
-        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-        case g: h = (b - r) / d + 2; break;
-        case b: h = (r - g) / d + 4; break;
+        case r:
+          h = (g - b) / d + (g < b ? 6 : 0);
+          break;
+        case g:
+          h = (b - r) / d + 2;
+          break;
+        case b:
+          h = (r - g) / d + 4;
+          break;
       }
       h /= 6;
     }
@@ -243,14 +258,23 @@ export class ConversionEvaluator {
 
     // Length
     const lengthRatios: Record<string, number> = {
-      m: 1, meter: 1,
-      km: 1000, kilometer: 1000,
-      cm: 0.01, centimeter: 0.01,
-      mm: 0.001, millimeter: 0.001,
-      mi: 1609.34, mile: 1609.34,
-      ft: 0.3048, foot: 0.3048, feet: 0.3048,
-      in: 0.0254, inch: 0.0254,
-      yd: 0.9144, yard: 0.9144,
+      m: 1,
+      meter: 1,
+      km: 1000,
+      kilometer: 1000,
+      cm: 0.01,
+      centimeter: 0.01,
+      mm: 0.001,
+      millimeter: 0.001,
+      mi: 1609.34,
+      mile: 1609.34,
+      ft: 0.3048,
+      foot: 0.3048,
+      feet: 0.3048,
+      in: 0.0254,
+      inch: 0.0254,
+      yd: 0.9144,
+      yard: 0.9144,
     };
     if (fromUnit in lengthRatios && toUnit in lengthRatios) {
       const inMeters = val * lengthRatios[fromUnit]!;
@@ -269,11 +293,16 @@ export class ConversionEvaluator {
 
     // Weight
     const weightRatios: Record<string, number> = {
-      kg: 1000, kilogram: 1000,
-      g: 1, gram: 1,
-      mg: 0.001, milligram: 0.001,
-      lb: 453.592, pound: 453.592,
-      oz: 28.3495, ounce: 28.3495,
+      kg: 1000,
+      kilogram: 1000,
+      g: 1,
+      gram: 1,
+      mg: 0.001,
+      milligram: 0.001,
+      lb: 453.592,
+      pound: 453.592,
+      oz: 28.3495,
+      ounce: 28.3495,
     };
     if (fromUnit in weightRatios && toUnit in weightRatios) {
       const inGrams = val * weightRatios[fromUnit]!;
@@ -292,11 +321,16 @@ export class ConversionEvaluator {
 
     // Digital Storage
     const dataRatios: Record<string, number> = {
-      b: 1, byte: 1,
-      kb: 1024, kilobyte: 1024,
-      mb: 1024 * 1024, megabyte: 1024 * 1024,
-      gb: 1024 * 1024 * 1024, gigabyte: 1024 * 1024 * 1024,
-      tb: 1024 * 1024 * 1024 * 1024, terabyte: 1024 * 1024 * 1024 * 1024,
+      b: 1,
+      byte: 1,
+      kb: 1024,
+      kilobyte: 1024,
+      mb: 1024 * 1024,
+      megabyte: 1024 * 1024,
+      gb: 1024 * 1024 * 1024,
+      gigabyte: 1024 * 1024 * 1024,
+      tb: 1024 * 1024 * 1024 * 1024,
+      terabyte: 1024 * 1024 * 1024 * 1024,
     };
     if (fromUnit in dataRatios && toUnit in dataRatios) {
       const inBytes = val * dataRatios[fromUnit]!;

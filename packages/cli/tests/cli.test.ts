@@ -72,7 +72,9 @@ describe('Phase 44 — OpenSearch Standalone CLI Tool Suite', () => {
     });
 
     it('parses --api custom target flag', () => {
-      expect(parseCliArgs(['query', '--api', 'http://127.0.0.1:3000']).apiUrl).toBe('http://127.0.0.1:3000');
+      expect(parseCliArgs(['query', '--api', 'http://127.0.0.1:3000']).apiUrl).toBe(
+        'http://127.0.0.1:3000',
+      );
     });
 
     it('parses --health flag', () => {

@@ -121,10 +121,7 @@ export async function readStdin(): Promise<string> {
   });
 }
 
-export async function runCli(
-  args: string[],
-  injectedStdin?: string,
-): Promise<CliExecutionResult> {
+export async function runCli(args: string[], injectedStdin?: string): Promise<CliExecutionResult> {
   const options = parseCliArgs(args);
   const formatter = new CliFormatter({
     colorEnabled: options.noColor ? false : undefined,
@@ -149,10 +146,7 @@ export async function runCli(
     };
   }
 
-  const baseApiUrl =
-    options.apiUrl ||
-    process.env.OPENSEARCH_API_URL ||
-    'http://localhost:3001';
+  const baseApiUrl = options.apiUrl || process.env.OPENSEARCH_API_URL || 'http://localhost:3001';
 
   // 3. Health check command
   if (options.health) {
@@ -273,7 +267,8 @@ export async function runCli(
       };
     }
 
-    const totalHits = data.pagination?.totalHits ?? data.meta?.totalHits ?? data.results?.length ?? 0;
+    const totalHits =
+      data.pagination?.totalHits ?? data.meta?.totalHits ?? data.results?.length ?? 0;
     const durationMs = data.meta?.durationMs ?? 0;
 
     let output = formatter.formatHeader(query, totalHits, durationMs, page);

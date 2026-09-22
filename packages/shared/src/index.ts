@@ -14,6 +14,6 @@ export * from './privacy/index.js';
 export function getProjectIdentity(): { name: string; version: string } {
   return {
     name: 'OpenSearch',
-    version: '1.0.0',
+    version: '1.2.0',
   };
 }

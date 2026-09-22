@@ -76,7 +76,10 @@ export class MathEvaluator {
     }
 
     // Must contain at least one math operator or function
-    if (!/[+\-*/^%()]/.test(clean) && !/\b(sqrt|abs|round|floor|ceil|log|ln|sin|cos|tan)\b/i.test(clean)) {
+    if (
+      !/[+\-*/^%()]/.test(clean) &&
+      !/\b(sqrt|abs|round|floor|ceil|log|ln|sin|cos|tan)\b/i.test(clean)
+    ) {
       return null;
     }
 
@@ -221,7 +224,11 @@ class ExpressionParser {
 
     while (this.pos < this.tokens.length) {
       const tok = this.tokens[this.pos];
-      if (tok && tok.type === 'OP' && (tok.value === '*' || tok.value === '/' || tok.value === '%')) {
+      if (
+        tok &&
+        tok.type === 'OP' &&
+        (tok.value === '*' || tok.value === '/' || tok.value === '%')
+      ) {
         this.pos++;
         const right = this.parseFactor();
         if (tok.value === '*') {

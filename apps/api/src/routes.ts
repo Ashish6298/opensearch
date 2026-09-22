@@ -55,7 +55,8 @@ export const handleHealthCheck: RouteHandler = (_req, res, context) => {
   const response: HealthCheckResponse = {
     name: PROJECT_NAME,
     version: PROJECT_VERSION,
-    phase: 'Milestone 14 — Developer Platform & Zero-Dependency Documentation (Phase 43: OpenAPI 3.1 & /docs)',
+    phase:
+      'Milestone 14 — Developer Platform & Zero-Dependency Documentation (Phase 43: OpenAPI 3.1 & /docs)',
     status: overallStatus,
     timestamp: new Date().toISOString(),
     uptimeSeconds,
@@ -375,17 +376,20 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
   // 7. Instant Answers & Bang Shortcuts Evaluation (Phase 38)
   const instantAnswerEngine = context.services.instantAnswerEngine;
   const instantAnswer = instantAnswerEngine ? instantAnswerEngine.evaluate(rawQuery) : null;
-  const bang = instantAnswer && instantAnswer.type === 'bang'
-    ? {
-        isBang: true as const,
-        bangKey: instantAnswer.secondaryDetails?.['Bang Trigger']?.toString().replace('!', '') || '',
-        matchedTrigger: instantAnswer.secondaryDetails?.['Bang Trigger']?.toString().replace('!', '') || '',
-        serviceName: instantAnswer.secondaryDetails?.['Target Service']?.toString() || '',
-        category: 'developer',
-        searchQuery: instantAnswer.secondaryDetails?.['Search Target']?.toString() || '',
-        redirectUrl: instantAnswer.redirectUrl || '',
-      }
-    : null;
+  const bang =
+    instantAnswer && instantAnswer.type === 'bang'
+      ? {
+          isBang: true as const,
+          bangKey:
+            instantAnswer.secondaryDetails?.['Bang Trigger']?.toString().replace('!', '') || '',
+          matchedTrigger:
+            instantAnswer.secondaryDetails?.['Bang Trigger']?.toString().replace('!', '') || '',
+          serviceName: instantAnswer.secondaryDetails?.['Target Service']?.toString() || '',
+          category: 'developer',
+          searchQuery: instantAnswer.secondaryDetails?.['Search Target']?.toString() || '',
+          redirectUrl: instantAnswer.redirectUrl || '',
+        }
+      : null;
 
   // 8. Typo Tolerance & Did You Mean Evaluation (Phase 36)
   let didYouMean = null;

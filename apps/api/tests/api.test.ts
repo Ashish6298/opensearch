@@ -75,7 +75,7 @@ describe('Phase 16, 17 & 18 — Search API Server, Endpoints & Security Suite', 
     it('returns system status matching Phase 18', () => {
       const status = getApiStatus();
       expect(status.name).toBe('OpenSearch');
-      expect(status.version).toBe('1.0.0');
+      expect(status.version).toBe('1.2.0');
       expect(status.phase).toContain('Phase 18');
       expect(status.status).toBe('ok');
     });

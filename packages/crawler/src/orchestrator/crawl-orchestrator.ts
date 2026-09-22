@@ -115,7 +115,9 @@ export class DefaultCrawlOrchestrator implements CrawlOrchestrator {
             const hash = computeUrlHash(validation.parsed.href);
             await this.queue.unsee(hash);
           }
-        } catch {}
+        } catch (_err) {
+          // Ignore invalid seed URLs during unsee
+        }
       }
 
       const outcome = await this.queue.enqueue(seed, 0, null);
@@ -204,7 +206,9 @@ export class DefaultCrawlOrchestrator implements CrawlOrchestrator {
           try {
             const p = new URL(s);
             seedDomains.add(p.hostname);
-          } catch {}
+          } catch (_err) {
+            // Ignore malformed seed URL
+          }
         }
 
         for (const dom of seedDomains) {
@@ -577,15 +581,7 @@ export class DefaultCrawlOrchestrator implements CrawlOrchestrator {
         documentId: storedDocId,
       });
 
-      await this.upsertUrlStatus(
-        url,
-        urlHash,
-        domain,
-        scheme,
-        depth,
-        CRAWL_STATUS.SUCCESS,
-        304,
-      );
+      await this.upsertUrlStatus(url, urlHash, domain, scheme, depth, CRAWL_STATUS.SUCCESS, 304);
 
       this.logger.debug('Handled HTTP 304 Not Modified fast path', { url, durationMs });
 
@@ -605,7 +601,10 @@ export class DefaultCrawlOrchestrator implements CrawlOrchestrator {
     this.stats.pagesFetched++;
     const parsedDoc = this.parser.parse(fetchResult.body, fetchResult.finalUrl);
     const newContentHash = createHash('sha256')
-      .update(`${parsedDoc.title}\n${parsedDoc.description}\n${parsedDoc.headings}\n${parsedDoc.bodyText}`, 'utf-8')
+      .update(
+        `${parsedDoc.title}\n${parsedDoc.description}\n${parsedDoc.headings}\n${parsedDoc.bodyText}`,
+        'utf-8',
+      )
       .digest('hex');
 
     const isContentChanged =

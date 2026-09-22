@@ -78,7 +78,11 @@ export class SitemapParser {
       return this.parseSitemapIndexXml(text, sourceUrl);
     } else if (text.startsWith('<?xml') && /<url[\s>]/i.test(text)) {
       return this.parseUrlsetXml(text, sourceUrl);
-    } else if (!text.includes('<url') && !text.includes('<sitemap') && /(?:^|\n)\s*https?:\/\//i.test(text)) {
+    } else if (
+      !text.includes('<url') &&
+      !text.includes('<sitemap') &&
+      /(?:^|\n)\s*https?:\/\//i.test(text)
+    ) {
       return this.parseTextSitemap(text, sourceUrl);
     }
 

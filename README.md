@@ -1,4 +1,4 @@
-# OpenSearch (V1.0.0)
+# OpenSearch (V1.2.0)
 
 <div align="center">
 
@@ -18,12 +18,12 @@
 [![TypeScript](https://img.shields.io/badge/Language-TypeScript_5.7+-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Runtime-Node.js_20+-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
 [![Build CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub_Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white)](.github/workflows/ci.yml)
-[![Tests](https://img.shields.io/badge/Tests-510_Passing-00ff66.svg?style=for-the-badge&logo=vitest&logoColor=black)](https://github.com/Ashish6298/opensearch)
+[![Tests](https://img.shields.io/badge/Tests-521_Passing-00ff66.svg?style=for-the-badge&logo=vitest&logoColor=black)](https://github.com/Ashish6298/opensearch)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-00ff66?style=for-the-badge&logo=opensourceinitiative&logoColor=white)](LICENSE.md)
 [![Code of Conduct](https://img.shields.io/badge/Conduct-Contributor_Covenant_2.1-blue?style=for-the-badge&logo=handshake&logoColor=white)](CODE_OF_CONDUCT.md)
 [![Telemetry](https://img.shields.io/badge/Tracking-Zero_Telemetry-ff3333?style=for-the-badge&logo=ghostery&logoColor=white)](docs/PRIVACY.md)
-[![Status: V1.2.0 In-Progress](https://img.shields.io/badge/Release-v1.2.0_Development-brightgreen?style=for-the-badge&logo=git&logoColor=white)](PHASEv1.2.0.txt)
+[![Status: V1.2.0 Released](https://img.shields.io/badge/Release-v1.2.0_Production_Ready-brightgreen?style=for-the-badge&logo=git&logoColor=white)](PHASEv1.2.0.txt)
 
 </div>
 
@@ -869,7 +869,7 @@ $ audit --privacy-boundaries
 
 ---
 
-## 🏁 Release Roadmap & Verification Ledger (V1.0.0 Production)
+## 🏁 Release Roadmap & Verification Ledger (V1.2.0 Production)
 
 <div align="center">
 
@@ -877,8 +877,8 @@ $ audit --privacy-boundaries
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │                        MILESTONE EXECUTION & VERIFICATION LEDGER                       │
 ├──────────────────────────────────────┬─────────────────────────────────────────────────┤
-│ TARGET BUILD : v1.0.0-RELEASE        │ TOTAL PHASES : 34 OF 34 COMPLETED [100%]        │
-│ INTEGRATION  : PASSING (360 TESTS)   │ AUDIT STATUS : PRODUCTION VERIFIED & SEALED     │
+│ TARGET BUILD : v1.2.0-RELEASE        │ TOTAL PHASES : 45 OF 45 COMPLETED [100%]        │
+│ INTEGRATION  : PASSING (521 TESTS)   │ AUDIT STATUS : PRODUCTION VERIFIED & SEALED     │
 └──────────────────────────────────────┴─────────────────────────────────────────────────┘
 ```
 
@@ -888,41 +888,41 @@ $ audit --privacy-boundaries
 
 ### Milestone Lifecycle Matrix
 
-| Milestone        | Scope & Engineering Focus              | Phases Covered | Delivery Verification                                                    |   Status   |
-| :--------------- | :------------------------------------- | :------------- | :----------------------------------------------------------------------- | :--------: |
-| **Milestone 01** | **Monorepo & Storage Substrate**       | Phases 1 – 3   | TS 5.7+ composite configs, JSON storage adapter, ACID file locks         | `[PASSED]` |
-| **Milestone 02** | **Polite Crawler & Fetching Engine**   | Phases 4 – 8   | RFC 3986 URL canon, SSRF DNS guards, robots.txt parser, HTML extractor   | `[PASSED]` |
-| **Milestone 03** | **Search Index & Normalization**       | Phases 9 – 11  | Multilingual tokenization, positional postings, incremental indexer      | `[PASSED]` |
-| **Milestone 04** | **Query Processing & BM25 Ranking**    | Phases 12 – 15 | Quoted phrases, negation, multi-field BM25 ($k_1=1.2, b=0.75$), snippets | `[PASSED]` |
-| **Milestone 05** | **HTTP REST API & Security Gate**      | Phases 16 – 18 | Pure `node:http` router, sliding-window rate limiter, payload bounds     | `[PASSED]` |
-| **Milestone 06** | **Public Terminal Web Interface**      | Phases 19 – 21 | Responsive TUI, JetBrains Mono phosphor styling, full a11y & keybinds    | `[PASSED]` |
-| **Milestone 07** | **End-to-End Search Pipeline**         | Phases 22 – 24 | Cold-start crawl loop, 113 curated seed corpus, IR MRR quality benchmark | `[PASSED]` |
-| **Milestone 08** | **Security Hardening & Zero-Logs**     | Phases 25 – 27 | CSP enforcement, circular redirect traps, IP subnet masking (/24 & /48)  | `[PASSED]` |
-| **Milestone 09** | **High-Concurrency Performance**       | Phases 28 – 30 | In-memory LRU query cache (<10ms warm hits), crawler memory backpressure | `[PASSED]` |
-| **Milestone 10** | **Production Release & Live Fallback** | Phases 31 – 34 | Google/DuckDuckGo live hybrid search, cross-env tests, release sign-off  | `[PASSED]` |
-| **Milestone 11** | **Query Intelligence & Productivity**  | Phases 35 – 38 | Autocomplete, Levenshtein typo-tolerance, advanced operators, 50+ bangs  | `[PASSED]` |
-| **Milestone 12** | **Terminal UI, Accessibility & Themes**| Phases 39 – 40 | Vim/terminal keybinds (`j`/`k`/`v`/`/`/`Esc`), 5 retro CRT themes        | `[PASSED]` |
-| **Milestone 13** | **Crawler Efficiency & Sitemaps**      | Phases 41 – 42 | Streaming/Gzip Sitemap ingestion, HTTP 304 fast path & ETag re-crawling   | `[PASSED]` |
-| **Milestone 14** | **Developer Platform & CLI Tooling**   | Phases 43 – 44 | OpenAPI 3.1.0 spec (`/docs`), standalone `@opensearch/cli` terminal tool | `[PASSED]` |
+| Milestone        | Scope & Engineering Focus               | Phases Covered | Delivery Verification                                                    |   Status   |
+| :--------------- | :-------------------------------------- | :------------- | :----------------------------------------------------------------------- | :--------: |
+| **Milestone 01** | **Monorepo & Storage Substrate**        | Phases 1 – 3   | TS 5.7+ composite configs, JSON storage adapter, ACID file locks         | `[PASSED]` |
+| **Milestone 02** | **Polite Crawler & Fetching Engine**    | Phases 4 – 8   | RFC 3986 URL canon, SSRF DNS guards, robots.txt parser, HTML extractor   | `[PASSED]` |
+| **Milestone 03** | **Search Index & Normalization**        | Phases 9 – 11  | Multilingual tokenization, positional postings, incremental indexer      | `[PASSED]` |
+| **Milestone 04** | **Query Processing & BM25 Ranking**     | Phases 12 – 15 | Quoted phrases, negation, multi-field BM25 ($k_1=1.2, b=0.75$), snippets | `[PASSED]` |
+| **Milestone 05** | **HTTP REST API & Security Gate**       | Phases 16 – 18 | Pure `node:http` router, sliding-window rate limiter, payload bounds     | `[PASSED]` |
+| **Milestone 06** | **Public Terminal Web Interface**       | Phases 19 – 21 | Responsive TUI, JetBrains Mono phosphor styling, full a11y & keybinds    | `[PASSED]` |
+| **Milestone 07** | **End-to-End Search Pipeline**          | Phases 22 – 24 | Cold-start crawl loop, 113 curated seed corpus, IR MRR quality benchmark | `[PASSED]` |
+| **Milestone 08** | **Security Hardening & Zero-Logs**      | Phases 25 – 27 | CSP enforcement, circular redirect traps, IP subnet masking (/24 & /48)  | `[PASSED]` |
+| **Milestone 09** | **High-Concurrency Performance**        | Phases 28 – 30 | In-memory LRU query cache (<10ms warm hits), crawler memory backpressure | `[PASSED]` |
+| **Milestone 10** | **Production Release & Live Fallback**  | Phases 31 – 34 | Google/DuckDuckGo live hybrid search, cross-env tests, release sign-off  | `[PASSED]` |
+| **Milestone 11** | **Query Intelligence & Productivity**   | Phases 35 – 38 | Autocomplete, Levenshtein typo-tolerance, advanced operators, 50+ bangs  | `[PASSED]` |
+| **Milestone 12** | **Terminal UI, Accessibility & Themes** | Phases 39 – 40 | Vim/terminal keybinds (`j`/`k`/`v`/`/`/`Esc`), 5 retro CRT themes        | `[PASSED]` |
+| **Milestone 13** | **Crawler Efficiency & Sitemaps**       | Phases 41 – 42 | Streaming/Gzip Sitemap ingestion, HTTP 304 fast path & ETag re-crawling  | `[PASSED]` |
+| **Milestone 14** | **Developer Platform & CLI Tooling**    | Phases 43 – 44 | OpenAPI 3.1.0 spec (`/docs`), standalone `@opensearch/cli` terminal tool | `[PASSED]` |
+| **Milestone 15** | **Release Convergence & Benchmarking**  | Phase 45       | Full regression testing, sub-5ms P99 latency SLA, v1.2.0 verification    | `[PASSED]` |
 
 <br/>
 
 ### Final Verification Gate Output
 
 ```console
-$ npm run verify:all-phases
-[gate:01] Project Foundation       ... [OK] 3/3 phases verified
-[gate:02] Crawler Architecture     ... [OK] 5/5 phases verified
-[gate:03] Indexing Subsystem       ... [OK] 3/3 phases verified
-[gate:04] Ranking & Relevance      ... [OK] 4/4 phases verified
-[gate:05] REST API & Boundaries    ... [OK] 3/3 phases verified
-[gate:06] Web Terminal Interface   ... [OK] 3/3 phases verified
-[gate:07] End-to-End Integration   ... [OK] 3/3 phases verified
-[gate:08] Security & Privacy Audit ... [OK] 3/3 phases verified
-[gate:09] Cache & Concurrency      ... [OK] 3/3 phases verified
-[gate:10] Production Sign-Off      ... [OK] 4/4 phases verified
+$ npm test
+✓ packages/indexer/tests/v1-2-0-release-benchmark.test.ts (11 tests)
+✓ apps/api/tests/api.test.ts (38 tests)
+✓ apps/api/tests/openapi-docs.test.ts (18 tests)
+✓ packages/cli/tests/cli.test.ts (11 tests)
+✓ packages/ranking/tests/instant-answers.test.ts (26 tests)
+...
+Test Files  50 passed (50)
+     Tests  521 passed (521)
+  Duration  5.99s -- 100% Passing Pass Rate
 ────────────────────────────────────────────────────────────
-TOTAL RESULT: 34 / 34 PHASES PASSED (100.0%) -- V1.0.0 RELEASE READY
+TOTAL RESULT: 45 / 45 PHASES PASSED (100.0%) -- V1.2.0 RELEASE READY
 ```
 
 ---

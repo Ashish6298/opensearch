@@ -335,7 +335,9 @@
 
     try {
       localStorage.setItem('opensearch_theme', themeName);
-    } catch (e) {}
+    } catch (_e) {
+      // Ignore localStorage write failures in sandboxed contexts
+    }
 
     if (themeSwitcherBtn) {
       themeSwitcherBtn.textContent = `[theme: ${themeName}]`;
@@ -394,7 +396,9 @@
       activeEl.setAttribute('aria-selected', 'true');
       activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       const titleLink = activeEl.querySelector('.result-title-link');
-      const titleText = titleLink ? titleLink.textContent : `Result ${currentActiveResultIndex + 1}`;
+      const titleText = titleLink
+        ? titleLink.textContent
+        : `Result ${currentActiveResultIndex + 1}`;
       announceA11y(`Selected result ${currentActiveResultIndex + 1}: ${titleText}`);
     }
   }
