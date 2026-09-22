@@ -49,7 +49,17 @@ export {
 } from './middlewares.js';
 export { MemoryRateLimiter, createRateLimiter } from './rate-limiter.js';
 export type { RateLimiterOptions, RateLimitResult } from './rate-limiter.js';
-export { handleApiRoot, handleHealthCheck, handleSystemStatus, handleSearch } from './routes.js';
+export {
+  handleApiDocs,
+  handleApiRoot,
+  handleHealthCheck,
+  handleOpenApiSpec,
+  handleSearch,
+  handleSuggest,
+  handleSystemStatus,
+} from './routes.js';
+export { generateOpenApiSpec } from './openapi-spec.js';
+export { generateDocsHtml } from './docs-html.js';
 export { ApiServer, createApiServer } from './server.js';
 
 export function createApiContext(overrides?: Record<string, string | undefined>): ApiAppContext {

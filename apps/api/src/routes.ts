@@ -17,6 +17,8 @@ import {
   SuggestApiResponse,
 } from './types.js';
 import { fetchExternalWebResults } from './external-search.js';
+import { generateOpenApiSpec } from './openapi-spec.js';
+import { generateDocsHtml } from './docs-html.js';
 
 export const handleHealthCheck: RouteHandler = (_req, res, context) => {
   const uptimeSeconds = Math.floor((Date.now() - context.startTime) / 1000);
@@ -53,7 +55,7 @@ export const handleHealthCheck: RouteHandler = (_req, res, context) => {
   const response: HealthCheckResponse = {
     name: PROJECT_NAME,
     version: PROJECT_VERSION,
-    phase: 'Milestone 11 — Search Quality & Query Understanding (Phase 35: Autocomplete)',
+    phase: 'Milestone 14 — Developer Platform & Zero-Dependency Documentation (Phase 43: OpenAPI 3.1 & /docs)',
     status: overallStatus,
     timestamp: new Date().toISOString(),
     uptimeSeconds,
@@ -62,11 +64,14 @@ export const handleHealthCheck: RouteHandler = (_req, res, context) => {
     totalDocumentsIndexed,
     routesAvailable: [
       'GET /',
+      'GET /docs',
       'GET /health',
       'GET /api/v1/status',
       'GET /api/v1/search',
       'POST /api/v1/search',
       'GET /api/v1/suggest',
+      'GET /api/v1/openapi.json',
+      'GET /openapi.json',
     ],
     components: {
       index: {
@@ -115,15 +120,28 @@ export const handleApiRoot: RouteHandler = (_req, res, context) => {
     version: PROJECT_VERSION,
     description: 'OpenSearch Public HTTP Search API',
     documentation: '/docs',
+    openapi: '/api/v1/openapi.json',
     endpoints: {
       health: '/health',
       status: '/api/v1/status',
       search: '/api/v1/search',
       suggest: '/api/v1/suggest',
+      openapi: '/api/v1/openapi.json',
+      docs: '/docs',
     },
     timestamp: new Date().toISOString(),
     environment: context.config.env,
   });
+};
+
+export const handleOpenApiSpec: RouteHandler = (_req, res, _context) => {
+  const spec = generateOpenApiSpec();
+  res.status(200).json(spec);
+};
+
+export const handleApiDocs: RouteHandler = (_req, res, _context) => {
+  const html = generateDocsHtml();
+  res.status(200).text(html, 'text/html; charset=utf-8');
 };
 
 export const handleSuggest: RouteHandler = (req, res, context) => {
