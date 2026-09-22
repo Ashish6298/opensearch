@@ -381,6 +381,10 @@ body {
   opacity: 1;
 }
 
+.terminal-search-input:focus-visible {
+  outline: none;
+}
+
 .run-btn {
   background: transparent;
   color: var(--accent-green);
