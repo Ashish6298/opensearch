@@ -5,6 +5,6 @@
     "outDir": "./dist",
     "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo"
   },
-  "references": [{ "path": "../../packages/shared" }, { "path": "../api" }],
+  "references": [{ "path": "../shared" }],
   "include": ["src/**/*"]
 }

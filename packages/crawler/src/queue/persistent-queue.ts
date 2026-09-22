@@ -235,6 +235,15 @@ export class PersistentCrawlQueue implements CrawlQueue {
     this.logger.info('Crawl queue cleared (seen-set preserved)');
   }
 
+  async unsee(urlHash: string): Promise<boolean> {
+    this.requireInitialized();
+    const removed = this.seen.delete(urlHash);
+    if (removed) {
+      this.persistSeen();
+    }
+    return removed;
+  }
+
   // ---- Stats ---------------------------------------------------
 
   stats(): QueueStats {

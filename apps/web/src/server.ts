@@ -11,6 +11,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { AppConfig, createLogger, loadConfig, Logger } from '@opensearch/shared';
+import { generateDocsHtml, generateOpenApiSpec } from '@opensearch/api';
 import { generateHtmlShell } from './html-template.js';
 
 export interface WebServerOptions {
@@ -94,6 +95,28 @@ export class WebServer {
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       res.setHeader('Content-Length', Buffer.byteLength(html));
       res.end(html);
+      return;
+    }
+
+    if (pathname === '/docs' || pathname === '/docs/') {
+      const docsHtml = generateDocsHtml({
+        apiUrl: this.apiUrl,
+        openapiUrl: '/api/v1/openapi.json',
+      });
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.setHeader('Content-Length', Buffer.byteLength(docsHtml));
+      res.end(docsHtml);
+      return;
+    }
+
+    if (pathname === '/api/v1/openapi.json' || pathname === '/openapi.json') {
+      const spec = generateOpenApiSpec();
+      const specPayload = JSON.stringify(spec, null, 2);
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      res.setHeader('Content-Length', Buffer.byteLength(specPayload));
+      res.end(specPayload);
       return;
     }
 

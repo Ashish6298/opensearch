@@ -33,7 +33,7 @@ describe('Phase 19, 20 & 21 — Search UI & Accessibility Hardening Suite', () =
     it('returns web status for Phase 21', () => {
       const status = getWebStatus();
       expect(status.name).toBe('OpenSearch');
-      expect(status.version).toBe('1.0.0');
+      expect(status.version).toBe('1.2.0');
       expect(status.phase).toBe('Phase 21: Responsive & Accessibility Hardening');
       expect(status.status).toBe('ok');
     });
@@ -327,4 +327,3 @@ describe('Phase 19, 20 & 21 — Search UI & Accessibility Hardening Suite', () =
     });
   });
 });
-

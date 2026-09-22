@@ -1,6 +1,6 @@
 {
   "name": "@opensearch/storage",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "private": true,
   "description": "Storage abstraction and persistence models for OpenSearch",
   "type": "module",

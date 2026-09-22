@@ -17,6 +17,10 @@ export interface FetchTarget {
   url: string;
   /** Optional override for the crawl depth (used for logging context only) */
   depth?: number;
+  /** Optional ETag for conditional re-crawl request (If-None-Match) */
+  etag?: string | null;
+  /** Optional Last-Modified for conditional re-crawl request (If-Modified-Since) */
+  lastModified?: string | null;
 }
 
 // ============================================================
@@ -43,6 +47,10 @@ export interface FetchSuccess {
   redirectChain: string[];
   /** Number of retry attempts made before this success (0 = first attempt succeeded) */
   retryCount: number;
+  /** Optional HTTP ETag header returned by server */
+  etag?: string | null;
+  /** Optional HTTP Last-Modified header returned by server */
+  lastModified?: string | null;
 }
 
 // ============================================================

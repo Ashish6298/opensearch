@@ -1,6 +1,6 @@
 {
   "name": "@opensearch/web",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "private": true,
   "description": "Public Search Web Application for OpenSearch",
   "type": "module",
@@ -13,6 +13,7 @@
     "clean": "node -e \"fs.rmSync('dist', { recursive: true, force: true })\""
   },
   "dependencies": {
-    "@opensearch/shared": "*"
+    "@opensearch/shared": "*",
+    "@opensearch/api": "*"
   }
 }

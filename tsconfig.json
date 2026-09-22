@@ -6,6 +6,7 @@
     { "path": "./packages/crawler" },
     { "path": "./packages/indexer" },
     { "path": "./packages/ranking" },
+    { "path": "./packages/cli" },
     { "path": "./apps/api" },
     { "path": "./apps/web" }
   ]

@@ -36,8 +36,10 @@ import {
 import { createRateLimiter, MemoryRateLimiter } from './rate-limiter.js';
 import { Router } from './router.js';
 import {
+  handleApiDocs,
   handleApiRoot,
   handleHealthCheck,
+  handleOpenApiSpec,
   handleSearch,
   handleSuggest,
   handleSystemStatus,
@@ -248,11 +250,14 @@ export class ApiServer {
 
   private setupRoutes(): void {
     this.router.get('/', handleApiRoot);
+    this.router.get('/docs', handleApiDocs);
     this.router.get('/health', handleHealthCheck);
     this.router.get('/api/v1/status', handleSystemStatus);
     this.router.get('/api/v1/search', handleSearch);
     this.router.post('/api/v1/search', handleSearch);
     this.router.get('/api/v1/suggest', handleSuggest);
+    this.router.get('/api/v1/openapi.json', handleOpenApiSpec);
+    this.router.get('/openapi.json', handleOpenApiSpec);
   }
 
   /**

@@ -59,8 +59,15 @@ export default async function handler(req, res) {
     const parsedUrl = new URL(req.url || '/', `http://${host}`);
     const pathname = parsedUrl.pathname;
 
-    // Route API requests to ApiServer Router
-    if (pathname.startsWith('/api/') || pathname === '/health' || pathname === '/status') {
+    // Route API requests, docs & openapi.json to ApiServer Router
+    if (
+      pathname.startsWith('/api/') ||
+      pathname === '/health' ||
+      pathname === '/status' ||
+      pathname === '/docs' ||
+      pathname === '/docs/' ||
+      pathname === '/openapi.json'
+    ) {
       await apiServer.getRouter().handleRequest(req, res, apiServer.getContext());
       return;
     }
