@@ -41,6 +41,7 @@ import {
   handleHealthCheck,
   handleOpenApiSpec,
   handleSearch,
+  handleSearchStream,
   handleSuggest,
   handleSystemStatus,
 } from './routes.js';
@@ -255,6 +256,7 @@ export class ApiServer {
     this.router.get('/api/v1/status', handleSystemStatus);
     this.router.get('/api/v1/search', handleSearch);
     this.router.post('/api/v1/search', handleSearch);
+    this.router.get('/api/v1/search/stream', handleSearchStream);
     this.router.get('/api/v1/suggest', handleSuggest);
     this.router.get('/api/v1/openapi.json', handleOpenApiSpec);
     this.router.get('/openapi.json', handleOpenApiSpec);

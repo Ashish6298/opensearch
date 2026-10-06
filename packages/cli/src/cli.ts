@@ -16,6 +16,7 @@ export interface CliOptions {
   apiUrl?: string;
   health?: boolean;
   suggest?: string;
+  explain?: boolean;
   noColor?: boolean;
   help?: boolean;
   version?: boolean;
@@ -43,6 +44,8 @@ export function parseCliArgs(args: string[]): CliOptions {
       options.version = true;
     } else if (arg === '--json') {
       options.json = true;
+    } else if (arg === '--explain' || arg === '-e') {
+      options.explain = true;
     } else if (arg === '--no-color') {
       options.noColor = true;
     } else if (arg === '--health') {
@@ -244,7 +247,8 @@ export async function runCli(args: string[], injectedStdin?: string): Promise<Cl
   const page = options.page ?? 1;
 
   try {
-    const searchUrl = `${baseApiUrl}/api/v1/search?q=${encodeURIComponent(query)}&limit=${limit}&page=${page}`;
+    const explainQuery = options.explain ? '&explain=true' : '';
+    const searchUrl = `${baseApiUrl}/api/v1/search?q=${encodeURIComponent(query)}&limit=${limit}&page=${page}${explainQuery}`;
     const res = await fetch(searchUrl);
 
     if (!res.ok) {

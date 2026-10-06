@@ -272,6 +272,44 @@ export function generateOpenApiSpec(options: OpenApiSpecOptions = {}): Record<st
           },
         },
       },
+      '/api/v1/search/stream': {
+        get: {
+          tags: ['Search'],
+          summary: 'Stream search results via Server-Sent Events (SSE)',
+          description:
+            'Opens a persistent SSE connection streaming instant answers, ranked document chunks, and completion stats in real-time.',
+          operationId: 'searchStreamGet',
+          parameters: [
+            {
+              name: 'q',
+              in: 'query',
+              required: true,
+              description: 'Search query string',
+              schema: { type: 'string', minLength: 1, maxLength: 200, example: 'python' },
+            },
+            {
+              name: 'limit',
+              in: 'query',
+              required: false,
+              description: 'Maximum ranked items to stream',
+              schema: { type: 'integer', default: 10, minimum: 1, maximum: 50 },
+            },
+          ],
+          responses: {
+            '200': {
+              description: 'Server-Sent Events text stream emitting answer, results, and done events.',
+              content: {
+                'text/event-stream': {
+                  schema: {
+                    type: 'string',
+                    example: 'event: answer\\ndata: {...}\\n\\nevent: results\\ndata: {...}\\n\\nevent: done\\ndata: {...}\\n\\n',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
       '/api/v1/suggest': {
         get: {
           tags: ['Suggestions'],

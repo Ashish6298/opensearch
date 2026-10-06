@@ -254,6 +254,9 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
     }
   }
 
+  const explainParam = req.query['explain'];
+  const explain = explainParam === 'true' || explainParam === '1';
+
   // 2. Validate input constraints
   if (page < 1) {
     throw new ValidationError(
@@ -410,7 +413,15 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
     instantAnswer,
     bang,
     didYouMean,
-    results: finalResults,
+    results: explain
+      ? finalResults.map(r => {
+          const matchedScoredDoc = rankingResult.hits.find(h => h.documentId === r.documentId);
+          return {
+            ...r,
+            explanation: matchedScoredDoc?.explanation,
+          };
+        })
+      : finalResults,
     pagination: {
       ...searchResultSet.pagination,
       totalHits,
@@ -421,6 +432,7 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
       candidateCount: retrievalResult.candidates.length,
       durationMs: Date.now() - startMs,
       timestamp: new Date().toISOString(),
+      explainPlan: explain,
     },
   };
 
@@ -431,4 +443,87 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
 
   res.setHeader('X-Cache', 'MISS');
   res.status(HTTP_STATUS.OK).json(responsePayload);
+};
+
+export const handleSearchStream: RouteHandler = async (req, res, context) => {
+  const startMs = Date.now();
+
+  const qParam = req.query['q'] ?? req.query['query'];
+  const rawQuery = Array.isArray(qParam) ? (qParam[0] ?? '') : (qParam ?? '');
+  const limitParam = req.query['limit'] ?? req.query['pageSize'];
+  const limit = Math.min(50, Math.max(1, parseInt(Array.isArray(limitParam) ? limitParam[0]! : (limitParam ?? '10'), 10) || 10));
+
+  // Set SSE Streaming Headers
+  res.raw.writeHead(200, {
+    'Content-Type': 'text/event-stream; charset=utf-8',
+    'Cache-Control': 'no-cache, no-transform',
+    'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no',
+    'Access-Control-Allow-Origin': '*',
+  });
+
+  const sendEvent = (event: string, data: unknown) => {
+    if (!res.raw.writableEnded && !res.raw.destroyed) {
+      res.raw.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+    }
+  };
+
+  req.raw.on('close', () => {
+    if (!res.raw.writableEnded) {
+      res.raw.end();
+    }
+  });
+
+  if (!rawQuery.trim() || !context.services) {
+    sendEvent('error', { message: 'Query is empty or search services are initializing.' });
+    sendEvent('done', { durationMs: Date.now() - startMs });
+    res.raw.end();
+    return;
+  }
+
+  const { queryParser, candidateRetriever, rankingEngine, resultGenerator, instantAnswerEngine } = context.services;
+
+  // 1. Instant Answer evaluation & streaming (first event)
+  if (instantAnswerEngine) {
+    const instantAnswer = instantAnswerEngine.evaluate(rawQuery);
+    if (instantAnswer) {
+      sendEvent('answer', instantAnswer);
+    }
+  }
+
+  // 2. Candidate Retrieval
+  const parsedQuery = queryParser.parse(rawQuery);
+  const retrievalResult = candidateRetriever.retrieve(parsedQuery, {
+    maxCandidates: context.config.search.maxCandidates,
+  });
+
+  // 3. Multi-Signal Relevance Ranking
+  const rankingResult = rankingEngine.rank(parsedQuery, retrievalResult.candidates, {
+    topK: limit,
+    enableDuplicatePenalty: true,
+  });
+
+  // 4. Result Generation & Snippets
+  const searchResultSet = resultGenerator.generateResults(parsedQuery, rankingResult.hits, {
+    pagination: {
+      page: 1,
+      pageSize: limit,
+    },
+  });
+
+  // 5. Stream scored document chunks
+  sendEvent('results', {
+    items: searchResultSet.items,
+    totalHits: searchResultSet.pagination.totalHits,
+  });
+
+  // 6. Complete SSE Stream
+  sendEvent('done', {
+    totalHits: searchResultSet.pagination.totalHits,
+    candidateCount: retrievalResult.candidates.length,
+    durationMs: Date.now() - startMs,
+    timestamp: new Date().toISOString(),
+  });
+
+  res.raw.end();
 };

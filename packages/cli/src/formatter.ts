@@ -183,8 +183,17 @@ export class CliFormatter {
     }
 
     const domainTag = item.domain ? this.magenta(`[${item.domain}]`) : '';
+    let out = `${num} ${title} ${domainTag}\n    ${url}\n    ${snippet}`;
 
-    return `${num} ${title} ${domainTag}\n    ${url}\n    ${snippet}`;
+    if (item.explanation && typeof item.explanation === 'object') {
+      const exp = item.explanation as any;
+      const explainHeader = this.yellow(`    [Explain Plan // Final Score: ${exp.finalScore ?? item.score ?? 'N/A'}]`);
+      const bm25Line = this.dim(`      • BM25: ${exp.bm25Score ?? '0'} | FullMatch: x${exp.fullMatchMultiplier ?? '1'} | PhraseMatch: x${exp.phraseMultiplier ?? '1'}`);
+      const signalsLine = this.dim(`      • Freshness Bonus: +${exp.freshnessBonus ?? '0'} | Domain Authority: +${exp.authorityBonus ?? '0'} | URL Bonus: +${exp.urlBonus ?? '0'}`);
+      out += `\n${explainHeader}\n${bm25Line}\n${signalsLine}`;
+    }
+
+    return out;
   }
 
   formatHealth(health: Record<string, unknown>): string {

@@ -144,13 +144,14 @@ export interface SearchApiResponse {
   instantAnswer?: InstantAnswerPayload | null;
   bang?: BangResult | null;
   didYouMean?: DidYouMeanResult | null;
-  results: SearchResultItem[];
+  results: Array<SearchResultItem & { explanation?: unknown }>;
   pagination: PaginationMeta;
   meta: {
     totalHits: number;
     candidateCount: number;
     durationMs: number;
     timestamp: string;
+    explainPlan?: boolean;
   };
 }
 
