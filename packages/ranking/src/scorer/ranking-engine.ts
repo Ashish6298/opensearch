@@ -16,6 +16,7 @@ import { InvertedIndex } from '@opensearch/indexer';
 import { ParsedQuery } from '../query/query-types.js';
 import { CandidateDocument } from '../retrieval/retrieval-types.js';
 import { BM25Scorer, DEFAULT_BM25_PARAMS, DEFAULT_FIELD_BOOSTS } from './bm25-scorer.js';
+import { AuthorityScorer, createAuthorityScorer } from './authority-scorer.js';
 import {
   RankingEngine,
   RankingOptions,
@@ -31,8 +32,9 @@ export const DEFAULT_SCORE_SIGNALS: ScoreSignalConfig = {
   phraseMatchBoost: 1.5,
   urlMatchBonus: 0.35,
   duplicatePenaltyMultiplier: 0.8,
-  freshnessWeight: 0.05,
+  freshnessWeight: 0.10,
   freshnessMaxDays: 30,
+  domainAuthorityWeight: 0.10,
 };
 
 export interface DefaultRankingEngineOptions {
@@ -45,10 +47,12 @@ export interface DefaultRankingEngineOptions {
 export class DefaultRankingEngine implements RankingEngine {
   private readonly index: InvertedIndex;
   private readonly globalOptions: RankingOptions;
+  private readonly authorityScorer: AuthorityScorer;
 
   constructor(options: DefaultRankingEngineOptions) {
     this.index = options.index;
     this.globalOptions = options.defaultOptions ?? {};
+    this.authorityScorer = createAuthorityScorer();
   }
 
   computeIdf(totalDocuments: number, documentFrequency: number): number {
@@ -119,23 +123,29 @@ export class DefaultRankingEngine implements RankingEngine {
       const phraseMultiplier =
         candidate.phraseMatches && query.phrases.length > 0 ? signals.phraseMatchBoost : 1.0;
 
-      // Additive / heuristic signals
+      // Additive / heuristic signals (Freshness decay & Domain authority - Phase 48)
       const urlBonus = this.calculateUrlBonus(
         candidate.documentMeta.url,
         query.uniqueTerms,
         signals.urlMatchBonus,
       );
-      const freshnessBonus = this.calculateFreshnessBonus(
-        candidate.documentMeta.indexedAt,
-        now,
-        signals.freshnessWeight,
-        signals.freshnessMaxDays,
-      );
+      
+      const docTimestamp =
+        candidate.documentMeta.lastModified ??
+        candidate.documentMeta.lastCrawledAt ??
+        candidate.documentMeta.indexedAt;
+      const freshnessScore = this.authorityScorer.computeFreshnessScore(docTimestamp, now);
+      const freshnessWeight = signals.freshnessWeight ?? 0.10;
+      const freshnessBonus = freshnessWeight * freshnessScore;
+
+      const domainAuthority = this.authorityScorer.computeDomainAuthority(candidate.documentMeta.url);
+      const authorityWeight = signals.domainAuthorityWeight ?? 0.10;
+      const authorityBonus = authorityWeight * domainAuthority;
 
       // Base combination formula:
-      // (BM25 * fullMatchMultiplier * phraseMultiplier) + urlBonus + freshnessBonus
+      // (BM25 * fullMatchMultiplier * phraseMultiplier) + urlBonus + freshnessBonus + authorityBonus
       let combinedScore =
-        bm25Score * fullMatchMultiplier * phraseMultiplier + urlBonus + freshnessBonus;
+        bm25Score * fullMatchMultiplier * phraseMultiplier + urlBonus + freshnessBonus + authorityBonus;
       combinedScore = Math.max(0, combinedScore);
 
       const parsedUrl = this.safeParseHostname(candidate.documentMeta.url);
@@ -149,6 +159,7 @@ export class DefaultRankingEngine implements RankingEngine {
         phraseMultiplier,
         urlBonus: Math.round(urlBonus * 10000) / 10000,
         freshnessBonus: Math.round(freshnessBonus * 10000) / 10000,
+        authorityBonus: Math.round(authorityBonus * 10000) / 10000,
         duplicatePenalty: 1.0, // May be updated below
         finalScore: Math.round(combinedScore * 10000) / 10000,
       };

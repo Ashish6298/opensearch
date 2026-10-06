@@ -39,10 +39,12 @@ export interface ScoreSignalConfig {
   urlMatchBonus: number;
   /** Multiplier penalty for near-duplicate documents (same host or identical title prefix) (default: 0.8) */
   duplicatePenaltyMultiplier: number;
-  /** Weight for optional freshness signal based on indexedAt timestamp (default: 0.05, 0 = disabled) */
+  /** Weight for optional freshness signal based on indexedAt timestamp (default: 0.10, 0 = disabled) */
   freshnessWeight: number;
   /** Maximum days considered for freshness decay (default: 30) */
   freshnessMaxDays: number;
+  /** Weight for domain authority signal (Phase 48, default: 0.10) */
+  domainAuthorityWeight?: number;
 }
 
 export interface RankingOptions {
@@ -84,8 +86,10 @@ export interface ScoreExplanation {
   phraseMultiplier: number;
   /** Additional score bonus from URL / hostname matching */
   urlBonus: number;
-  /** Freshness bonus score based on indexedAt timestamp */
+  /** Freshness bonus score based on timestamp */
   freshnessBonus: number;
+  /** Domain trust authority bonus score (Phase 48) */
+  authorityBonus?: number;
   /** Near-duplicate / domain clustering penalty factor (<= 1.0) */
   duplicatePenalty: number;
   /** Final calculated total relevance score */

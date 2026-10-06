@@ -83,6 +83,17 @@ export {
 } from './scorer/ranking-engine.js';
 export type { DefaultRankingEngineOptions } from './scorer/ranking-engine.js';
 
+// ── Phase 48: Temporal Freshness Decay & Domain Trust Authority (V1.3.0) ──
+export type {
+  AuthorityScorerOptions,
+  BlendedScoreComponents,
+} from './scorer/authority-scorer.js';
+export {
+  TRUSTED_DOMAIN_TIERS,
+  AuthorityScorer,
+  createAuthorityScorer,
+} from './scorer/authority-scorer.js';
+
 // ── Phase 15: Result Generation & Snippets ───────────────────────────────
 export type {
   HighlightTagOptions,
