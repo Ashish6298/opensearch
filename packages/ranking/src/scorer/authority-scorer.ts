@@ -166,8 +166,7 @@ export class AuthorityScorer {
     const W_FRESHNESS = 0.10;
     const W_AUTHORITY = 0.10;
 
-    // Normalize BM25 contribution with soft scaling while preserving relative distance
-    const bm25Factor = safeBm25 / (1 + safeBm25);
+    // Blending calculation
     const blended =
       safeBm25 * W_BM25 +
       safeBm25 * (W_PAGERANK * safePageRank + W_FRESHNESS * safeFreshness + W_AUTHORITY * safeAuthority);

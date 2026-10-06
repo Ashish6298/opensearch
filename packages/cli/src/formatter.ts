@@ -163,6 +163,7 @@ export class CliFormatter {
       domain?: string;
       category?: string;
       score?: number;
+      explanation?: Record<string, unknown> | null;
     },
     index: number,
     queryTerms?: string[],

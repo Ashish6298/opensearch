@@ -292,34 +292,6 @@ export class DefaultRankingEngine implements RankingEngine {
   }
 
   /**
-   * Computes a freshness boost decay based on days elapsed since indexedAt.
-   */
-  private calculateFreshnessBonus(
-    indexedAtStr: string | undefined,
-    now: number,
-    weight: number,
-    maxDays: number,
-  ): number {
-    if (!indexedAtStr || weight <= 0) {
-      return 0;
-    }
-
-    const indexedAt = Date.parse(indexedAtStr);
-    if (isNaN(indexedAt)) {
-      return 0;
-    }
-
-    const ageDays = Math.max(0, (now - indexedAt) / (1000 * 60 * 60 * 24));
-    if (ageDays >= maxDays) {
-      return 0;
-    }
-
-    // Linear decay from 1.0 (fresh) down to 0.0 (maxDays old)
-    const decay = 1.0 - ageDays / maxDays;
-    return weight * decay;
-  }
-
-  /**
    * Extracts hostname safely from a URL.
    */
   private safeParseHostname(url: string): string {

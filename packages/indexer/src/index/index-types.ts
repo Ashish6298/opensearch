@@ -49,6 +49,10 @@ export interface IndexedDocumentMeta {
   fieldLengths: Record<FieldName, number>;
   /** Timestamp when document was added to the index */
   indexedAt: string;
+  /** Document modification timestamp if known (ISO or HTTP date) */
+  lastModified?: string;
+  /** Timestamp when document was crawled if known */
+  lastCrawledAt?: string;
 }
 
 export interface IndexStats {
