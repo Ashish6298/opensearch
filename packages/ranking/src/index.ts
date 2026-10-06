@@ -167,3 +167,15 @@ export {
   KnowledgeEngine,
   createKnowledgeEngine,
 } from './answers/knowledge-engine.js';
+
+// ── Phase 50: World Clock & Timezone Conversions (V1.3.0) ─────────────────
+export type {
+  TimezoneConversionResult,
+  CityTimezoneInfo,
+} from './answers/timezone-evaluator.js';
+export {
+  KNOWN_TIMEZONES,
+  CITIES_DATABASE,
+  TimezoneEvaluator,
+  createTimezoneEvaluator,
+} from './answers/timezone-evaluator.js';

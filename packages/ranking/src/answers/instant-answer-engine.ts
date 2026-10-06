@@ -9,10 +9,11 @@ import { BangResult, evaluateBang } from './bang-registry.js';
 import { MathEvaluator, MathEvaluationResult } from './math-evaluator.js';
 import { ConversionEvaluator, ConversionResult } from './conversion-evaluator.js';
 import { KnowledgeEngine, KnowledgeCardResult } from './knowledge-engine.js';
+import { TimezoneEvaluator, TimezoneConversionResult } from './timezone-evaluator.js';
 
 export interface InstantAnswerPayload {
   /** Answer category identifier */
-  type: 'calculation' | 'conversion' | 'color' | 'epoch' | 'bang' | 'knowledge_card';
+  type: 'calculation' | 'conversion' | 'color' | 'epoch' | 'bang' | 'knowledge_card' | 'timezone';
   /** Display badge tag e.g. '[instant-answer]' or '[bang-redirect]' */
   badge: string;
   /** Section title */
@@ -35,15 +36,17 @@ export class InstantAnswerEngine {
   private readonly mathEvaluator: MathEvaluator;
   private readonly conversionEvaluator: ConversionEvaluator;
   private readonly knowledgeEngine: KnowledgeEngine;
+  private readonly timezoneEvaluator: TimezoneEvaluator;
 
   constructor() {
     this.mathEvaluator = new MathEvaluator();
     this.conversionEvaluator = new ConversionEvaluator();
     this.knowledgeEngine = new KnowledgeEngine();
+    this.timezoneEvaluator = new TimezoneEvaluator();
   }
 
   /**
-   * Evaluates query string for instant answers, conversions, knowledge cards, or bang shortcuts.
+   * Evaluates query string for instant answers, conversions, knowledge cards, timezones, or bang shortcuts.
    * Returns null if no instant answer is applicable. Completes in < 0.1ms.
    */
   evaluate(rawQuery: string): InstantAnswerPayload | null {
@@ -74,13 +77,29 @@ export class InstantAnswerEngine {
       return this.formatConversionAnswer(conv);
     }
 
-    // 4. In-Memory Knowledge Graph / Entity Cards (Phase 49)
+    // 4. World Clock & Timezone Conversions (Phase 50)
+    const tz = this.timezoneEvaluator.evaluate(trimmed);
+    if (tz) {
+      return this.formatTimezoneAnswer(tz);
+    }
+
+    // 5. In-Memory Knowledge Graph / Entity Cards (Phase 49)
     const card = this.knowledgeEngine.lookup(trimmed);
     if (card) {
       return this.formatKnowledgeAnswer(card);
     }
 
     return null;
+  }
+
+  private formatTimezoneAnswer(tz: TimezoneConversionResult): InstantAnswerPayload {
+    return {
+      type: 'timezone',
+      badge: '[world-clock]',
+      title: tz.title,
+      primaryResult: tz.primaryTime,
+      secondaryDetails: tz.details,
+    };
   }
 
   private formatKnowledgeAnswer(card: KnowledgeCardResult): InstantAnswerPayload {
