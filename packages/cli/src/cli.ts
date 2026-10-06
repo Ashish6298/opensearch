@@ -287,8 +287,9 @@ export async function runCli(args: string[], injectedStdin?: string): Promise<Cl
 
     if (data.results && data.results.length > 0) {
       output += '\n\n';
+      const queryTokens = query.split(/\s+/).filter(Boolean);
       const resultLines = data.results.map((item: any, i: number) =>
-        formatter.formatResultItem(item, (page - 1) * limit + i),
+        formatter.formatResultItem(item, (page - 1) * limit + i, queryTokens),
       );
       output += resultLines.join('\n\n');
       output += '\n';

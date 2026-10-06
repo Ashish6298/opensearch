@@ -126,11 +126,23 @@ export class CliFormatter {
       score?: number;
     },
     index: number,
+    queryTerms?: string[],
   ): string {
     const num = this.dim(`[${index + 1}]`);
     const title = this.brightGreen(this.bold(item.title));
     const url = this.cyan(this.underline(item.url));
-    const snippet = this.dim(item.snippet);
+    let snippet = this.dim(item.snippet);
+
+    if (this.colorEnabled && queryTerms && queryTerms.length > 0) {
+      const validTerms = Array.from(
+        new Set(queryTerms.map(t => t.trim().toLowerCase()).filter(Boolean)),
+      );
+      if (validTerms.length > 0) {
+        const regex = new RegExp(`(${validTerms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})`, 'gi');
+        snippet = item.snippet.replace(regex, `${this.bold(this.brightGreen('$1'))}`);
+      }
+    }
+
     const domainTag = item.domain ? this.magenta(`[${item.domain}]`) : '';
 
     return `${num} ${title} ${domainTag}\n    ${url}\n    ${snippet}`;

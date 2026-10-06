@@ -76,3 +76,13 @@ export {
 // ── Phase 35: Prefix Trie & Autocomplete (V1.2.0) ────────────
 export type { SuggestionEntry, SuggestionMatch, PrefixTrieOptions } from './suggest/prefix-trie.js';
 export { PrefixTrie, TrieNode, createPrefixTrie } from './suggest/prefix-trie.js';
+
+// ── Phase 47: Dynamic Snippet Highlighting & Windowing (V1.3.0) ───
+export type {
+  SnippetWindowOptions,
+  ExtractedSnippetWindow,
+} from './snippet/snippet-window.js';
+export {
+  SnippetWindowExtractor,
+  createSnippetWindowExtractor,
+} from './snippet/snippet-window.js';
