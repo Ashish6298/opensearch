@@ -698,13 +698,25 @@
         `;
       }
 
+      let codeBlockHtml = '';
+      if (instantAnswer.codeSnippet || (instantAnswer.type === 'cheatsheet' && instantAnswer.primaryResult)) {
+        const snippetText = instantAnswer.codeSnippet || instantAnswer.primaryResult;
+        codeBlockHtml = `
+          <div class="cheatsheet-code-container" style="position: relative; margin: 0.75rem 0; background: var(--color-surface, #0f141c); border: 1px solid var(--color-border, #1f2937); border-radius: 4px; padding: 0.75rem 1rem; display: flex; align-items: center; justify-content: space-between;">
+            <code style="color: var(--color-accent, #38ef7d); font-family: monospace; font-size: 1rem; user-select: all; overflow-x: auto; white-space: pre;">$ ${escapeHtml(snippetText)}</code>
+            <button type="button" class="cheatsheet-copy-btn" id="cheatsheet-copy-btn" style="background: transparent; border: 1px solid var(--color-accent, #38ef7d); color: var(--color-accent, #38ef7d); padding: 0.25rem 0.6rem; border-radius: 3px; font-size: 0.8rem; cursor: pointer; margin-left: 0.5rem; transition: all 0.15s ease;">Copy</button>
+          </div>
+        `;
+      }
+
       instantAnswerCard.innerHTML = `
         <div class="instant-answer-header">
           <span class="instant-answer-badge">${escapeHtml(instantAnswer.badge || '[instant-answer]')}</span>
           <span class="instant-answer-title">${escapeHtml(instantAnswer.title || '')}</span>
         </div>
         ${descHtml}
-        ${instantAnswer.type !== 'knowledge_card' ? `
+        ${codeBlockHtml}
+        ${instantAnswer.type !== 'knowledge_card' && instantAnswer.type !== 'cheatsheet' ? `
         <div class="instant-answer-result">
           ${swatchHtml}
           <span>${escapeHtml(instantAnswer.primaryResult || '')}</span>
@@ -713,6 +725,20 @@
         ${actionHtml}
       `;
       instantAnswerCard.style.display = 'block';
+
+      const copyBtn = document.getElementById('cheatsheet-copy-btn');
+      if (copyBtn) {
+        copyBtn.addEventListener('click', function () {
+          const rawCode = instantAnswer.codeSnippet || instantAnswer.primaryResult;
+          if (navigator.clipboard && rawCode) {
+            navigator.clipboard.writeText(rawCode).then(() => {
+              copyBtn.textContent = 'Copied!';
+              setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
+            }).catch(() => {});
+          }
+        });
+      }
+
       announceA11y(`Instant answer: ${instantAnswer.title || instantAnswer.primaryResult}`);
     }
 

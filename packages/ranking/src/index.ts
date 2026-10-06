@@ -179,3 +179,14 @@ export {
   TimezoneEvaluator,
   createTimezoneEvaluator,
 } from './answers/timezone-evaluator.js';
+
+// ── Phase 51: Developer Syntax Cheat Sheets (V1.3.0) ──────────────────────
+export type {
+  CheatSheetEntry,
+  CheatSheetResult,
+} from './answers/cheatsheet-engine.js';
+export {
+  CHEATSHEET_DATABASE,
+  CheatSheetEngine,
+  createCheatSheetEngine,
+} from './answers/cheatsheet-engine.js';

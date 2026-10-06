@@ -107,6 +107,23 @@ export class CliFormatter {
       return out;
     }
 
+    if (answer.type === 'cheatsheet') {
+      const title = this.cyan(this.bold(`[⚡ CHEATSHEET // ${(answer.title || '').toUpperCase()}]`));
+      const border = this.dim('┌' + '─'.repeat(68) + '┐');
+      const bottom = this.dim('└' + '─'.repeat(68) + '┘');
+      let out = `\n${title}\n${border}\n`;
+      if (answer.description) {
+        out += `  ${this.dim(answer.description)}\n\n`;
+      }
+      const code = answer.primaryResult || answer.primaryAnswer || '';
+      out += `  ${this.brightGreen(this.bold('$ ' + code))}\n`;
+      if (answer.secondaryDetails?.['Notes']) {
+        out += `\n  ${this.yellow('💡 Note:')} ${String(answer.secondaryDetails['Notes'])}\n`;
+      }
+      out += `${bottom}\n`;
+      return out;
+    }
+
     const badge = this.yellow(
       this.bold(`[⚡ INSTANT ANSWER // ${(answer.type || 'INFO').toUpperCase()}]`),
     );

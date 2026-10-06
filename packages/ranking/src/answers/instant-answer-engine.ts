@@ -10,10 +10,11 @@ import { MathEvaluator, MathEvaluationResult } from './math-evaluator.js';
 import { ConversionEvaluator, ConversionResult } from './conversion-evaluator.js';
 import { KnowledgeEngine, KnowledgeCardResult } from './knowledge-engine.js';
 import { TimezoneEvaluator, TimezoneConversionResult } from './timezone-evaluator.js';
+import { CheatSheetEngine, CheatSheetResult } from './cheatsheet-engine.js';
 
 export interface InstantAnswerPayload {
   /** Answer category identifier */
-  type: 'calculation' | 'conversion' | 'color' | 'epoch' | 'bang' | 'knowledge_card' | 'timezone';
+  type: 'calculation' | 'conversion' | 'color' | 'epoch' | 'bang' | 'knowledge_card' | 'timezone' | 'cheatsheet';
   /** Display badge tag e.g. '[instant-answer]' or '[bang-redirect]' */
   badge: string;
   /** Section title */
@@ -22,8 +23,10 @@ export interface InstantAnswerPayload {
   expression?: string;
   /** Primary prominent result text */
   primaryResult: string;
-  /** Description (for knowledge cards) */
+  /** Description (for knowledge cards or cheatsheets) */
   description?: string;
+  /** Code snippet or command (for cheatsheets) */
+  codeSnippet?: string;
   /** Additional structured fields for detail tables */
   secondaryDetails?: Record<string, string | number>;
   /** Optional target redirect URL (for bang shortcuts or knowledge references) */
@@ -37,16 +40,18 @@ export class InstantAnswerEngine {
   private readonly conversionEvaluator: ConversionEvaluator;
   private readonly knowledgeEngine: KnowledgeEngine;
   private readonly timezoneEvaluator: TimezoneEvaluator;
+  private readonly cheatSheetEngine: CheatSheetEngine;
 
   constructor() {
     this.mathEvaluator = new MathEvaluator();
     this.conversionEvaluator = new ConversionEvaluator();
     this.knowledgeEngine = new KnowledgeEngine();
     this.timezoneEvaluator = new TimezoneEvaluator();
+    this.cheatSheetEngine = new CheatSheetEngine();
   }
 
   /**
-   * Evaluates query string for instant answers, conversions, knowledge cards, timezones, or bang shortcuts.
+   * Evaluates query string for instant answers, conversions, knowledge cards, timezones, cheatsheets, or bang shortcuts.
    * Returns null if no instant answer is applicable. Completes in < 0.1ms.
    */
   evaluate(rawQuery: string): InstantAnswerPayload | null {
@@ -83,13 +88,31 @@ export class InstantAnswerEngine {
       return this.formatTimezoneAnswer(tz);
     }
 
-    // 5. In-Memory Knowledge Graph / Entity Cards (Phase 49)
+    // 5. Developer Syntax Cheat Sheets (Phase 51)
+    const cheat = this.cheatSheetEngine.lookup(trimmed);
+    if (cheat) {
+      return this.formatCheatSheetAnswer(cheat);
+    }
+
+    // 6. In-Memory Knowledge Graph / Entity Cards (Phase 49)
     const card = this.knowledgeEngine.lookup(trimmed);
     if (card) {
       return this.formatKnowledgeAnswer(card);
     }
 
     return null;
+  }
+
+  private formatCheatSheetAnswer(cheat: CheatSheetResult): InstantAnswerPayload {
+    return {
+      type: 'cheatsheet',
+      badge: cheat.badge,
+      title: cheat.title,
+      primaryResult: cheat.command,
+      codeSnippet: cheat.command,
+      description: cheat.description,
+      secondaryDetails: cheat.details,
+    };
   }
 
   private formatTimezoneAnswer(tz: TimezoneConversionResult): InstantAnswerPayload {
