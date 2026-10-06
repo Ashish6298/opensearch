@@ -19,3 +19,12 @@ export type { JsonStorageAdapterOptions } from './adapters/json-adapter.js';
 // Factory (preferred usage for application code)
 export { createStorageAdapter } from './factory.js';
 export type { StorageFactoryOptions } from './factory.js';
+
+// ── Phase 53: Variable-Byte & Delta Index Compression (V1.3.0) ────────────
+export type {
+  CompactPostingRecord,
+} from './compression/vbyte-compression.js';
+export {
+  VByteCompressor,
+  calculateCompressionRatio,
+} from './compression/vbyte-compression.js';
