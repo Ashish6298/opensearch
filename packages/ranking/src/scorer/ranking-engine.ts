@@ -107,9 +107,11 @@ export class DefaultRankingEngine implements RankingEngine {
     const now = Date.now();
 
     for (const candidate of candidates) {
+      const scoringTerms = query.expandedTerms?.allTerms ?? query.uniqueTerms;
       const { bm25Score, termBreakdowns, fieldScoreSums } = bm25Scorer.scoreCandidate(
         candidate,
-        query.uniqueTerms,
+        scoringTerms,
+        query.expandedTerms?.termWeights,
       );
 
       // Multiplier signals

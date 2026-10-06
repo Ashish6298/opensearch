@@ -14,6 +14,7 @@
 import { SEARCH_LIMITS } from '@opensearch/shared';
 import { ParsedPhrase, ParsedQuery, QueryParser, QueryParserOptions } from './query-types.js';
 import { normalizeQueryText, foldDiacritics } from './query-normalizer.js';
+import { SynonymEngine, createSynonymEngine } from './synonym-engine.js';
 
 export class DefaultQueryParser implements QueryParser {
   private readonly maxQueryLength: number;
@@ -25,6 +26,8 @@ export class DefaultQueryParser implements QueryParser {
   private readonly lowercase: boolean;
   private readonly enablePhraseExtraction: boolean;
   private readonly enableNegation: boolean;
+  private readonly enableSynonymExpansion: boolean;
+  private readonly synonymEngine: SynonymEngine;
 
   constructor(options: QueryParserOptions = {}) {
     this.maxQueryLength = options.maxQueryLength ?? SEARCH_LIMITS.MAX_QUERY_LENGTH;
@@ -36,6 +39,10 @@ export class DefaultQueryParser implements QueryParser {
     this.lowercase = options.lowercase ?? true;
     this.enablePhraseExtraction = options.enablePhraseExtraction ?? true;
     this.enableNegation = options.enableNegation ?? true;
+    this.enableSynonymExpansion = options.enableSynonymExpansion ?? true;
+    this.synonymEngine = createSynonymEngine({
+      synonymWeight: options.synonymWeight ?? 0.6,
+    });
   }
 
   parse(rawQuery: unknown): ParsedQuery {
@@ -232,11 +239,23 @@ export class DefaultQueryParser implements QueryParser {
       !filters.filetype &&
       (!filters.intitle || filters.intitle.length === 0);
 
+    let expandedTerms: ParsedQuery['expandedTerms'] = undefined;
+    if (this.enableSynonymExpansion && uniqueTerms.length > 0) {
+      const expansion = this.synonymEngine.expandQuery(uniqueTerms);
+      expandedTerms = {
+        originalTerms: expansion.originalTerms,
+        synonymTerms: expansion.synonymTerms,
+        termWeights: expansion.termWeights,
+        allTerms: expansion.allTerms,
+      };
+    }
+
     return {
       rawQuery: inputStr,
       normalizedQuery: normalized,
       terms,
       uniqueTerms,
+      expandedTerms,
       phrases,
       negatedTerms,
       filters,

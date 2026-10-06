@@ -19,6 +19,18 @@ export type { QueryNormalizerOptions } from './query/query-normalizer.js';
 
 export { DefaultQueryParser, createQueryParser } from './query/query-parser.js';
 
+// ── Phase 46: Synonym Graph & Query Expansion (V1.3.0) ───────────────────
+export type {
+  SynonymMatch,
+  ExpandedQueryTerms,
+  SynonymEngineOptions,
+} from './query/synonym-engine.js';
+export {
+  SEED_SYNONYM_GROUPS,
+  SynonymEngine,
+  createSynonymEngine,
+} from './query/synonym-engine.js';
+
 // ── Phase 36: Typo Tolerance & Did You Mean (V1.2.0) ────────────────────
 export type {
   TypoCorrectionCandidate,

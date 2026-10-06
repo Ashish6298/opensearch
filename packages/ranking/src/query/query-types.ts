@@ -45,6 +45,13 @@ export interface ParsedQuery {
   isClamped: boolean;
   /** Total count of searchable terms (including phrase terms) */
   termCount: number;
+  /** Synonym expanded query terms with weights (Phase 46) */
+  expandedTerms?: {
+    originalTerms: string[];
+    synonymTerms: string[];
+    termWeights: Map<string, number>;
+    allTerms: string[];
+  };
 }
 
 export interface QueryParserOptions {
@@ -66,6 +73,10 @@ export interface QueryParserOptions {
   enablePhraseExtraction?: boolean;
   /** Whether to extract negated terms e.g. -spam or NOT spam (default: true) */
   enableNegation?: boolean;
+  /** Whether to enable synonym expansion (Phase 46, default: true) */
+  enableSynonymExpansion?: boolean;
+  /** Custom synonym engine options or weight */
+  synonymWeight?: number;
 }
 
 export interface QueryParser {

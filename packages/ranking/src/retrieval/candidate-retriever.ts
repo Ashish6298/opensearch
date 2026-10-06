@@ -85,15 +85,16 @@ export class IndexCandidateRetriever implements CandidateRetriever {
       }
     }
 
-    // 2. Retrieve posting lists for each unique positive query term
+    // 2. Retrieve posting lists for each unique positive query term and synonym term
     const termPostingsMap = new Map<string, Posting[]>();
+    const termsToRetrieve = query.expandedTerms?.allTerms ?? query.uniqueTerms;
 
-    for (const term of query.uniqueTerms) {
+    for (const term of termsToRetrieve) {
       const postings = this.index.getPostings(term);
       if (postings && postings.length > 0) {
         termPostingsMap.set(term, postings);
         totalPostingsEvaluated += postings.length;
-      } else {
+      } else if (query.uniqueTerms.includes(term)) {
         missingTerms.push(term);
       }
     }

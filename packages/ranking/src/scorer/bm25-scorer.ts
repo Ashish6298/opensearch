@@ -70,6 +70,7 @@ export class BM25Scorer {
   scoreCandidate(
     candidate: CandidateDocument,
     queryTerms: string[],
+    termWeights?: Map<string, number>,
   ): {
     bm25Score: number;
     termBreakdowns: TermScoreBreakdown[];
@@ -108,6 +109,7 @@ export class BM25Scorer {
         continue;
       }
 
+      const termWeight = termWeights?.get(term) ?? 1.0;
       const df = this.index.getDocumentFrequency(term);
       const idf = this.computeIdf(totalDocs, df > 0 ? df : 1);
 
@@ -134,7 +136,7 @@ export class BM25Scorer {
         const tfDenominator = tf + k1 * (1 - b + b * (fieldLen / avgLen));
         const tfWeight = tfDenominator > 0 ? tfNumerator / tfDenominator : 0;
 
-        const fieldScore = fieldWeight * tfWeight * idf;
+        const fieldScore = fieldWeight * tfWeight * idf * termWeight;
         fieldScores[fieldName] = fieldScore;
         termBM25Subtotal += fieldScore;
 

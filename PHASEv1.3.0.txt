@@ -1,0 +1,325 @@
+================================================================================
+PROJECT — OPENSEARCH
+VERSION — V1.3.0
+FILE — PHASE ROADMAP (PHASEv1.3.0.txt)
+BASE VERSION — Continues from V1.2.0 (Phases 1–45 Completed)
+================================================================================
+
+IMPLEMENTATION RULES
+--------------------------------------------------------------------------------
+OpenSearch V1.2.0 concluded with Phase 45 (report/PHASE_v1.2.0_45_V1_2_0_FINAL_RELEASE_REPORT.txt).
+V1.3.0 extends the verified foundation starting at Phase 46 through Phase 55.
+
+Implement phases sequentially. Do not skip a phase unless its verification
+requirements are already demonstrably satisfied.
+
+Every phase must:
+1. Implement only its defined scope.
+2. Preserve existing functionality and maintain zero-external-dependency purity.
+3. Keep terminal aesthetic consistent, robust, and accessible.
+4. Run appropriate test suites (unit, integration, and performance) after implementation.
+5. Fix all failures and type-check errors caused by the phase before completion.
+6. Generate and save a .txt implementation/test report in the repository:
+   report/PHASE_v1.3.0_<phase_number>_<short_name>_REPORT.txt
+   (Example: report/PHASE_v1.3.0_46_SYNONYM_QUERY_EXPANSION_REPORT.txt)
+7. Leave the project buildable, runnable, and testable (`npm run build`, `npm test`).
+8. Clearly state PASS/FAIL for each verification gate.
+
+
+================================================================================
+MILESTONE 16 (V1.3.0) — SEARCH & RANKING INTELLIGENCE (PILLAR 1)
+================================================================================
+
+PHASE 46 — Synonym Graph & Weighted Query Expansion Engine
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Enhance search recall and vocabulary matching by introducing a zero-dependency
+bidirectional synonym graph and query expansion mechanism in @opensearch/ranking.
+
+IMPLEMENT:
+- Synonym Graph Engine in @opensearch/ranking/src/query/synonym-engine.ts:
+  * Seed dictionary mapping technical and natural synonyms (e.g., js <-> javascript, docs <-> documentation, golang <-> go, auth <-> authentication).
+  * Bidirectional lookup with depth-1 expansion.
+  * Weighted term scoring: Original terms retain 1.0 weight; expanded synonym terms assigned customizable 0.6 weight.
+- Integration with Query Parser & Candidate Retriever:
+  * Expand query tokens seamlessly without corrupting exact-match phrases or operators (`site:`, `filetype:`).
+  * Pass weighted candidate terms to BM25 scoring algorithm.
+
+DO NOT:
+- Dilute high-relevance exact matches with over-expanded synonym terms.
+- Add external NLP or network dictionary dependencies.
+
+VERIFY:
+- Queries for `js docs` match documents containing `javascript documentation`.
+- Exact match scores rank higher than pure synonym match scores.
+
+OUTPUT:
+Synonym query expansion engine with report saved to
+report/PHASE_v1.3.0_46_SYNONYM_QUERY_EXPANSION_REPORT.txt.
+
+
+PHASE 47 — Dynamic Snippet Highlighting & Query Term Density Windowing
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Generate context-rich, query-focused snippet extracts in search results rather than
+arbitrary leading text snippets, with term highlighting for web and terminal.
+
+IMPLEMENT:
+- Snippet Windowing Extractor in @opensearch/indexer/src/snippet/snippet-window.ts:
+  * Sliding window algorithm over document text to find the span of text with the highest concentration of query tokens.
+  * Window boundary detection respecting sentence / word boundaries.
+  * Ellipsis prefixing and suffixing (`...`) for non-boundary windows.
+- Highlighting Decorator:
+  * HTML `<mark>` formatting for Web UI (`@opensearch/web`).
+  * Terminal ANSI highlight styling for CLI (`@opensearch/cli`).
+
+DO NOT:
+- Exceed 180 characters per generated snippet window.
+- Degrade search retrieval throughput or leak raw HTML inside ANSI formatters.
+
+VERIFY:
+- Queries matching text deep inside documents extract the relevant sentence window.
+- Matched tokens are cleanly wrapped and highlighted across web and CLI views.
+
+OUTPUT:
+Dynamic snippet windowing system with report saved to
+report/PHASE_v1.3.0_47_DYNAMIC_SNIPPET_HIGHLIGHTING_REPORT.txt.
+
+
+PHASE 48 — Temporal Freshness Decay & Domain Trust Authority Scoring
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Incorporate publishing/modification timestamps and domain trust ratings into the
+ranking pipeline alongside BM25 and PageRank.
+
+IMPLEMENT:
+- Freshness & Authority Scorer in @opensearch/ranking/src/scoring/authority-scorer.ts:
+  * Exponential time decay function based on document `lastModified` / `lastCrawledAt` timestamps.
+  * Domain authority tiering (boosting trusted TLDs / curated developer doc domains, penalizing low-quality spam patterns).
+  * Score composition formula blending: BM25 (60%) + PageRank (20%) + Freshness (10%) + Authority (10%).
+
+DO NOT:
+- Cause stale documents to completely disappear if they are the sole exact match.
+- Introduce non-deterministic timestamp evaluation in test suites.
+
+VERIFY:
+- Recently updated documents receive ranking boost for time-sensitive queries.
+- Score composition blends smoothly without ranking inversions.
+
+OUTPUT:
+Freshness and domain authority scorer with report saved to
+report/PHASE_v1.3.0_48_FRESHNESS_DOMAIN_AUTHORITY_REPORT.txt.
+
+
+================================================================================
+MILESTONE 17 (V1.3.0) — RICH INSTANT ANSWERS & KNOWLEDGE CARDS (PILLAR 2)
+================================================================================
+
+PHASE 49 — Zero-API Knowledge Graph & Entity Info-Card Engine
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Deliver immediate structured entity knowledge cards (countries, programming languages,
+chemical elements, HTTP status codes, unit constants) directly in search results.
+
+IMPLEMENT:
+- In-Memory Knowledge Graph Engine in @opensearch/ranking/src/answers/knowledge-engine.ts:
+  * Fast entity lookup for curated entities (e.g. `python`, `japan`, `http 404`, `gold`, `speed of light`).
+  * Key-value attribute extraction (type, description, official site, key statistics).
+- Visual UI Card Rendering:
+  * Retro-styled Knowledge Card widget in Web UI above standard search results.
+  * Terminal box-drawing border card representation in CLI.
+
+DO NOT:
+- Depend on external Wikipedia or Wikidata APIs at runtime.
+- Interfere with normal search results when no entity is matched.
+
+VERIFY:
+- Queries like `python`, `http 500`, or `france` render instant entity cards.
+- Response time overhead for entity detection is under 2ms.
+
+OUTPUT:
+Knowledge graph engine and visual cards with report saved to
+report/PHASE_v1.3.0_49_KNOWLEDGE_GRAPH_CARDS_REPORT.txt.
+
+
+PHASE 50 — World Clock & Timezone Conversion Engine
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Provide instant, natural-language timezone and world clock calculations (e.g., `time in tokyo`,
+`3pm est to ist`, `utc to local`) directly in-memory.
+
+IMPLEMENT:
+- Timezone Evaluator in @opensearch/ranking/src/answers/timezone-evaluator.ts:
+  * Zero-dependency IANA timezone mapping and offset calculation engine.
+  * Support for queries: `time in <city/country>`, `<time> <tz1> to <tz2>`, `current utc`.
+  * Formatted visual answer badge showing source time, target time, offset difference, and day shift (+1 / -1 day).
+- Web and CLI rendering integration.
+
+DO NOT:
+- Hardcode fixed offsets that fail to account for standard timezone definitions.
+- Throw unhandled exceptions on invalid timezone query inputs.
+
+VERIFY:
+- Queries like `time in tokyo` or `9am pst in ist` return accurate converted times.
+- Instant answer engine renders output with sub-millisecond execution time.
+
+OUTPUT:
+Timezone & world clock answer engine with report saved to
+report/PHASE_v1.3.0_50_TIMEZONE_WORLD_CLOCK_REPORT.txt.
+
+
+PHASE 51 — Developer Syntax Cheat Sheets & Reference Cards
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Enable instant developer reference lookup for common Git, Docker, Regex, Linux,
+and SQL commands directly in search without leaving the terminal.
+
+IMPLEMENT:
+- Developer Cheat Sheet Engine in @opensearch/ranking/src/answers/cheatsheet-engine.ts:
+  * Structured command reference bank (e.g., `git undo commit`, `docker remove dangling images`, `regex match email`, `tar extract`).
+  * Code snippet formatting with copy-to-clipboard button in Web UI and ANSI code highlighting in CLI.
+- Integrated into Instant Answer pipeline.
+
+DO NOT:
+- Return cheat sheets for non-developer queries.
+- Exceed 100KB bundle size for embedded cheatsheet reference data.
+
+VERIFY:
+- Queries like `git undo commit` or `tar extract gz` return structured command snippets.
+- Copy action works in Web UI; formatting is clean in CLI.
+
+OUTPUT:
+Developer cheat sheet engine with report saved to
+report/PHASE_v1.3.0_51_DEVELOPER_CHEATSHEETS_REPORT.txt.
+
+
+================================================================================
+MILESTONE 18 (V1.3.0) — CRAWLER SCALABILITY & STORAGE COMPRESSION (PILLAR 3)
+================================================================================
+
+PHASE 52 — Multi-Threaded Worker Crawler Pool & Per-Host Rate Limiter
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Scale web crawling throughput using native Node.js `worker_threads` with per-host
+sliding window rate limiting and `robots.txt` `Crawl-delay` enforcement.
+
+IMPLEMENT:
+- Worker Threads Pool in @opensearch/crawler/src/worker/worker-pool.ts:
+  * Native Node.js `worker_threads` orchestration for concurrent page fetching and parsing.
+  * Message passing protocol for URL job distribution and result aggregation.
+- Per-Host Sliding Window Rate Limiter & Politeness Controller:
+  * Enforce maximum requests-per-second per domain.
+  * Respect `robots.txt` `Crawl-delay` directive with automatic queue backoff.
+
+DO NOT:
+- Overwhelm remote target servers or violate robots politeness guidelines.
+- Add external worker pool or queue dependencies.
+
+VERIFY:
+- Multi-threaded crawl achieves >3x throughput over single-threaded fetcher in benchmarks.
+- Domain requests strictly adhere to rate limits and crawl delay windows.
+
+OUTPUT:
+Worker thread crawler pool and rate limiter with report saved to
+report/PHASE_v1.3.0_52_WORKER_CRAWLER_RATE_LIMITER_REPORT.txt.
+
+
+PHASE 53 — Variable-Byte (VByte) & Delta Index Compression
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Reduce disk and memory storage footprint for inverted index postings by implementing
+Variable-Byte (VByte) and Delta gap encoding.
+
+IMPLEMENT:
+- Posting List Compressor in @opensearch/storage/src/compression/vbyte-compression.ts:
+  * Delta / Gap encoding for sorted document IDs (`[10, 15, 22] -> [10, 5, 7]`).
+  * Variable-Byte (VByte) 7-bit continuation byte packing into native `Uint8Array`.
+  * Fast SIMD/bitwise decode algorithm returning original document IDs and term frequencies.
+- Storage Adapter Integration:
+  * Transparent serialization/deserialization for disk storage files.
+
+DO NOT:
+- Introduce lossy compression or corrupt index posting lists during decode.
+- Impair search query retrieval latency by more than 1ms.
+
+VERIFY:
+- Index size reduced by >= 40% on test corpus.
+- Round-trip encode/decode maintains 100% data fidelity.
+
+OUTPUT:
+VByte posting list compression engine with report saved to
+report/PHASE_v1.3.0_53_VBYTE_INDEX_COMPRESSION_REPORT.txt.
+
+
+================================================================================
+MILESTONE 19 (V1.3.0) — DEVELOPER PLATFORM & STREAMING APIS (PILLAR 4)
+================================================================================
+
+PHASE 54 — Server-Sent Events (SSE) Streaming Search API & Query Explain Plan
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Provide a real-time streaming search API (`/api/v1/search/stream`) using SSE, alongside
+an in-depth Query Explain Plan debugger (`--explain` / `/docs` inspector).
+
+IMPLEMENT:
+- SSE Streaming Search Endpoint in @opensearch/api:
+  * Route: `GET /api/v1/search/stream`
+  * Progressive event stream:
+    - `event: answer` (instant math/conversions/knowledge cards emitted first).
+    - `event: results` (ranked document chunks emitted as scored).
+    - `event: done` (total duration, query metrics, memory stats).
+- Query Explain Plan Inspector:
+  * `explain=true` query parameter detailing BM25 term weights, PageRank boost, freshness decay, and synonym expansions per document.
+  * Visual score tree in `/docs` sandbox and `--explain` table in `@opensearch/cli`.
+
+DO NOT:
+- Leave dangling HTTP socket connections on client abort.
+- Add external streaming or event framework dependencies.
+
+VERIFY:
+- SSE stream emits structured JSON events progressively without buffering stalls.
+- Explain plan displays exact mathematical breakdown of ranking scores.
+
+OUTPUT:
+SSE streaming search and explain plan inspector with report saved to
+report/PHASE_v1.3.0_54_SSE_STREAMING_EXPLAIN_PLAN_REPORT.txt.
+
+
+================================================================================
+MILESTONE 20 (V1.3.0) — VERSION CONVERGENCE & V1.3.0 RELEASE VERIFICATION
+================================================================================
+
+PHASE 55 — End-to-End Integration, Benchmarking & V1.3.0 Release Verification
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Execute comprehensive regression testing across all 10 new phases, conduct
+end-to-end performance benchmarking, update documentation, and verify v1.3.0 release readiness.
+
+IMPLEMENT:
+- Complete Test Suite Execution:
+  * Unit tests across all packages and apps (`npm test`).
+  * End-to-end integration tests covering synonyms, snippets, knowledge cards, timezones, cheatsheets, worker crawler, compression, SSE stream, and explain plan.
+  * TypeScript strict project-reference build check (`npm run build`).
+  * Formatting and lint verification (`npm run format:check`, `npm run lint`).
+- Performance Benchmarking:
+  * Knowledge and timezone answer latency < 1ms.
+  * VByte decompression throughput > 500,000 postings/sec.
+  * Zero memory leaks during concurrent crawling and streaming search requests.
+- Documentation & Release Artifacts:
+  * Update `README.md` with v1.3.0 feature highlights, SSE streaming API, and knowledge cards.
+  * Update `docs/API.md` and OpenAPI 3.1.0 spec at `/docs`.
+  * Bump version to `1.3.0` across all monorepo `package.json` files.
+
+DO NOT:
+- Release with broken tests or unresolved lint/typecheck errors.
+- Degrade existing V1.2.0 search speed or zero-tracking privacy guarantees.
+
+VERIFY:
+- All 10 new phases (Phase 46 to Phase 55) pass verification gates with dedicated report files.
+- Monorepo builds cleanly from root on all platforms (Windows, Linux, macOS).
+- Production deployment on Vercel runs without serverless errors.
+
+OUTPUT:
+Fully verified, production-ready OpenSearch v1.3.0 release with report saved to
+report/PHASE_v1.3.0_55_V1_3_0_FINAL_RELEASE_REPORT.txt.
+================================================================================
