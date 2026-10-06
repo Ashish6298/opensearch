@@ -163,3 +163,16 @@ export { SitemapParser, createSitemapParser } from './sitemap/sitemap-parser.js'
 export type { SitemapServiceOptions, IngestSitemapsSummary } from './sitemap/sitemap-service.js';
 
 export { SitemapService, createSitemapService } from './sitemap/sitemap-service.js';
+
+// ── Phase 52: Multi-Threaded Worker Crawler Pool & Rate Limiter (V1.3.0) ──
+export type {
+  DomainRateLimitConfig,
+  CrawlJob,
+  CrawlJobResult,
+  WorkerCrawlerPoolOptions,
+} from './worker/worker-pool.js';
+export {
+  SlidingWindowRateLimiter,
+  WorkerCrawlerPool,
+  createWorkerCrawlerPool,
+} from './worker/worker-pool.js';
