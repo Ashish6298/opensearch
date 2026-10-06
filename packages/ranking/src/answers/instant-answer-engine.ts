@@ -8,10 +8,11 @@
 import { BangResult, evaluateBang } from './bang-registry.js';
 import { MathEvaluator, MathEvaluationResult } from './math-evaluator.js';
 import { ConversionEvaluator, ConversionResult } from './conversion-evaluator.js';
+import { KnowledgeEngine, KnowledgeCardResult } from './knowledge-engine.js';
 
 export interface InstantAnswerPayload {
   /** Answer category identifier */
-  type: 'calculation' | 'conversion' | 'color' | 'epoch' | 'bang';
+  type: 'calculation' | 'conversion' | 'color' | 'epoch' | 'bang' | 'knowledge_card';
   /** Display badge tag e.g. '[instant-answer]' or '[bang-redirect]' */
   badge: string;
   /** Section title */
@@ -20,9 +21,11 @@ export interface InstantAnswerPayload {
   expression?: string;
   /** Primary prominent result text */
   primaryResult: string;
+  /** Description (for knowledge cards) */
+  description?: string;
   /** Additional structured fields for detail tables */
   secondaryDetails?: Record<string, string | number>;
-  /** Optional target redirect URL (for bang shortcuts) */
+  /** Optional target redirect URL (for bang shortcuts or knowledge references) */
   redirectUrl?: string;
   /** Optional CSS color value for visual swatch preview */
   previewCss?: string;
@@ -31,14 +34,16 @@ export interface InstantAnswerPayload {
 export class InstantAnswerEngine {
   private readonly mathEvaluator: MathEvaluator;
   private readonly conversionEvaluator: ConversionEvaluator;
+  private readonly knowledgeEngine: KnowledgeEngine;
 
   constructor() {
     this.mathEvaluator = new MathEvaluator();
     this.conversionEvaluator = new ConversionEvaluator();
+    this.knowledgeEngine = new KnowledgeEngine();
   }
 
   /**
-   * Evaluates query string for instant answers, conversions, or bang shortcuts.
+   * Evaluates query string for instant answers, conversions, knowledge cards, or bang shortcuts.
    * Returns null if no instant answer is applicable. Completes in < 0.1ms.
    */
   evaluate(rawQuery: string): InstantAnswerPayload | null {
@@ -69,7 +74,25 @@ export class InstantAnswerEngine {
       return this.formatConversionAnswer(conv);
     }
 
+    // 4. In-Memory Knowledge Graph / Entity Cards (Phase 49)
+    const card = this.knowledgeEngine.lookup(trimmed);
+    if (card) {
+      return this.formatKnowledgeAnswer(card);
+    }
+
     return null;
+  }
+
+  private formatKnowledgeAnswer(card: KnowledgeCardResult): InstantAnswerPayload {
+    return {
+      type: 'knowledge_card',
+      badge: card.badge,
+      title: card.title,
+      primaryResult: card.title,
+      description: card.description,
+      redirectUrl: card.url,
+      secondaryDetails: card.attributes,
+    };
   }
 
   private formatBangAnswer(bang: BangResult): InstantAnswerPayload {

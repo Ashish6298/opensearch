@@ -680,13 +680,19 @@
         detailsHtml += '</div>';
       }
 
+      let descHtml = '';
+      if (instantAnswer.description) {
+        descHtml = `<div class="instant-answer-desc" style="margin: 0.5rem 0; color: var(--color-text-dim, #8fa1b3); font-size: 0.95rem; line-height: 1.4;">${escapeHtml(instantAnswer.description)}</div>`;
+      }
+
       let actionHtml = '';
       if (instantAnswer.redirectUrl) {
         const safeRedirect = escapeHtml(instantAnswer.redirectUrl);
+        const btnLabel = instantAnswer.type === 'knowledge_card' ? '&gt; Authoritative Reference Source' : `&gt; Open in ${escapeHtml(instantAnswer.secondaryDetails?.['Target Service'] || 'External Service')}`;
         actionHtml = `
-          <div>
+          <div style="margin-top: 0.5rem;">
             <a href="${safeRedirect}" target="_blank" rel="noopener noreferrer" class="instant-answer-redirect-btn" id="bang-redirect-btn">
-              &gt; Open in ${escapeHtml(instantAnswer.secondaryDetails?.['Target Service'] || 'External Service')}
+              ${btnLabel}
             </a>
           </div>
         `;
@@ -697,15 +703,17 @@
           <span class="instant-answer-badge">${escapeHtml(instantAnswer.badge || '[instant-answer]')}</span>
           <span class="instant-answer-title">${escapeHtml(instantAnswer.title || '')}</span>
         </div>
+        ${descHtml}
+        ${instantAnswer.type !== 'knowledge_card' ? `
         <div class="instant-answer-result">
           ${swatchHtml}
           <span>${escapeHtml(instantAnswer.primaryResult || '')}</span>
-        </div>
+        </div>` : ''}
         ${detailsHtml}
         ${actionHtml}
       `;
       instantAnswerCard.style.display = 'block';
-      announceA11y(`Instant answer: ${instantAnswer.primaryResult}`);
+      announceA11y(`Instant answer: ${instantAnswer.title || instantAnswer.primaryResult}`);
     }
 
     // Render Did You Mean banner if present

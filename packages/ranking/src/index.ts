@@ -156,3 +156,14 @@ export { ConversionEvaluator } from './answers/conversion-evaluator.js';
 
 export type { InstantAnswerPayload } from './answers/instant-answer-engine.js';
 export { InstantAnswerEngine, createInstantAnswerEngine } from './answers/instant-answer-engine.js';
+
+// ── Phase 49: Knowledge Graph & Entity Info-Cards (V1.3.0) ───────────────
+export type {
+  KnowledgeEntity,
+  KnowledgeCardResult,
+} from './answers/knowledge-engine.js';
+export {
+  KNOWLEDGE_DATABASE,
+  KnowledgeEngine,
+  createKnowledgeEngine,
+} from './answers/knowledge-engine.js';

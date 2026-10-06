@@ -82,9 +82,31 @@ export class CliFormatter {
     expression?: string;
     primaryResult?: string;
     primaryAnswer?: string;
+    description?: string;
     secondaryDetails?: Record<string, unknown>;
     redirectUrl?: string | null;
   }): string {
+    if (answer.type === 'knowledge_card') {
+      const title = this.brightGreen(this.bold(`[⚡ KNOWLEDGE GRAPH // ${(answer.title || '').toUpperCase()}]`));
+      const border = this.dim('┌' + '─'.repeat(65) + '┐');
+      const bottom = this.dim('└' + '─'.repeat(65) + '┘');
+      let out = `\n${title}\n${border}\n`;
+      if (answer.description) {
+        out += `  ${this.cyan(this.bold(answer.description))}\n`;
+      }
+      if (answer.secondaryDetails && typeof answer.secondaryDetails === 'object') {
+        out += `  ${this.dim('─'.repeat(63))}\n`;
+        for (const [k, v] of Object.entries(answer.secondaryDetails)) {
+          out += `  ${this.yellow(this.bold(k + ':'))} ${String(v)}\n`;
+        }
+      }
+      if (answer.redirectUrl) {
+        out += `  ${this.dim('Source:')} ${this.cyan(this.underline(answer.redirectUrl))}\n`;
+      }
+      out += `${bottom}\n`;
+      return out;
+    }
+
     const badge = this.yellow(
       this.bold(`[⚡ INSTANT ANSWER // ${(answer.type || 'INFO').toUpperCase()}]`),
     );
