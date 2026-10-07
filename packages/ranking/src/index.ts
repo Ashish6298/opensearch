@@ -190,3 +190,24 @@ export {
   CheatSheetEngine,
   createCheatSheetEngine,
 } from './answers/cheatsheet-engine.js';
+
+// ── Phase 56: Crypto & Encoding Toolkit (V1.4.0) ─────────────────────────
+export type { CryptoEngineResult } from './answers/crypto-engine.js';
+export { CryptoEngine } from './answers/crypto-engine.js';
+
+// ── Phase 57: Developer Network, Subnet & Cron Explainer (V1.4.0) ────────
+export type { NetworkEngineResult } from './answers/network-engine.js';
+export { NetworkEngine } from './answers/network-engine.js';
+
+// ── Phase 58: Website Security & Privacy Inspector (V1.4.0) ──────────────
+export type { PrivacyAuditResult } from './answers/privacy-audit-engine.js';
+export { PrivacyAuditEngine } from './answers/privacy-audit-engine.js';
+
+// ── Phase 60: Real-Time Currency, Crypto & Unit Converter (V1.4.0) ───────
+export type { CurrencyConversionResult } from './answers/currency-converter.js';
+export { CurrencyConverterEngine } from './answers/currency-converter.js';
+
+// ── Phase 61: Symbolic Math & LaTeX Solver (V1.4.0) ──────────────────────
+export type { MathSolverResult } from './answers/math-engine.js';
+export { SymbolicMathEngine } from './answers/math-engine.js';
+

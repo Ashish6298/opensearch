@@ -86,3 +86,8 @@ export {
   SnippetWindowExtractor,
   createSnippetWindowExtractor,
 } from './snippet/snippet-window.js';
+
+// ── Phase 59: Zero-Trace Reader Mode Extractor (V1.4.0) ──────────
+export type { ReaderDocument } from './reader/reader-extractor.js';
+export { ReaderExtractor } from './reader/reader-extractor.js';
+

@@ -48,8 +48,8 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
   <div class="terminal-app" id="terminal-window" role="main">
     <!-- Header Controls in Top Corner (Theme Switcher & Version) -->
     <div class="corner-header-controls">
-      <button type="button" class="theme-switcher-btn" id="theme-switcher-btn" aria-label="Toggle color theme (Current: matrix)" title="Click to cycle theme (Matrix, Amber, Dracula, Nord, Monokai)">[theme: matrix]</button>
-      <div class="corner-version">v1.2.0</div>
+      <button type="button" class="theme-switcher-btn" id="theme-switcher-btn" aria-label="Toggle color theme" title="Click to cycle theme (Matrix, Amber, Synthwave, Solarized, Nord)">[theme: matrix]</button>
+      <div class="corner-version">v1.4.0</div>
     </div>
 
     <!-- Main Content Area -->
