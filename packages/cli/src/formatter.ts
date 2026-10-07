@@ -124,6 +124,27 @@ export class CliFormatter {
       return out;
     }
 
+    if (answer.type === 'crypto' || answer.type === 'network' || answer.type === 'privacy' || answer.type === 'currency' || answer.type === 'math_solver') {
+      const typeLabel = (answer.type || 'TOOL').toUpperCase().replace('_', ' ');
+      const title = this.brightGreen(this.bold(`[⚡ ${typeLabel} // ${(answer.title || '').toUpperCase()}]`));
+      const border = this.dim('┌' + '─'.repeat(68) + '┐');
+      const bottom = this.dim('└' + '─'.repeat(68) + '┘');
+      let out = `\n${title}\n${border}\n`;
+      if (answer.description) {
+        out += `  ${this.dim(answer.description)}\n\n`;
+      }
+      const primary = answer.primaryResult || answer.primaryAnswer || '';
+      out += `  ${this.bold(this.brightGreen(primary))}\n`;
+      if (answer.secondaryDetails) {
+        out += `\n`;
+        for (const [k, v] of Object.entries(answer.secondaryDetails)) {
+          out += `  ${this.yellow(this.bold(k + ':'))} ${String(v)}\n`;
+        }
+      }
+      out += `${bottom}\n`;
+      return out;
+    }
+
     const badge = this.yellow(
       this.bold(`[⚡ INSTANT ANSWER // ${(answer.type || 'INFO').toUpperCase()}]`),
     );

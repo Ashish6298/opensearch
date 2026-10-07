@@ -1,4 +1,4 @@
-# OpenSearch (V1.3.0)
+# OpenSearch (V1.4.0)
 
 <div align="center">
 
@@ -20,7 +20,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-00ff66?style=for-the-badge&logo=opensourceinitiative&logoColor=white)](LICENSE.md)
 [![Code of Conduct](https://img.shields.io/badge/Conduct-Contributor_Covenant_2.1-blue?style=for-the-badge&logo=handshake&logoColor=white)](CODE_OF_CONDUCT.md)
 [![Telemetry](https://img.shields.io/badge/Tracking-Zero_Telemetry-ff3333?style=for-the-badge&logo=ghostery&logoColor=white)](docs/PRIVACY.md)
-[![Status: V1.3.0 Released](https://img.shields.io/badge/Release-v1.3.0_Production_Ready-brightgreen?style=for-the-badge&logo=git&logoColor=white)](PHASEv1.3.0.txt)
+[![Status: V1.4.0 Released](https://img.shields.io/badge/Release-v1.4.0_Production_Ready-brightgreen?style=for-the-badge&logo=git&logoColor=white)](PHASEv1.4.0.txt)
 
 </div>
 

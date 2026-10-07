@@ -1,0 +1,289 @@
+================================================================================
+PROJECT — OPENSEARCH
+VERSION — V1.4.0
+FILE — PHASE ROADMAP (PHASEv1.4.0.txt)
+BASE VERSION — Continues from V1.3.0 (Phases 1–55 Completed & Verified)
+================================================================================
+
+IMPLEMENTATION RULES
+--------------------------------------------------------------------------------
+OpenSearch V1.3.0 concluded with Phase 55 (report/PHASE_v1.3.0_55_V1_3_0_FINAL_RELEASE_REPORT.txt).
+V1.4.0 extends the verified foundation starting at Phase 56 through Phase 65.
+
+Implement phases sequentially. Do not skip a phase unless its verification
+requirements are already demonstrably satisfied.
+
+Every phase must:
+1. Implement only its defined scope.
+2. Preserve existing functionality and maintain zero-external-dependency purity.
+3. Keep terminal aesthetic consistent, robust, and lightning fast.
+4. Generate an immutable verification report in report/PHASE_v1.4.0_<phase_num>_<name>_REPORT.txt.
+5. Provide manual and automated verification checkpoints.
+
+================================================================================
+MILESTONE 21 (V1.4.0) — DEVELOPER UTILITIES & RUNTIME TOOLKIT (PILLAR 1)
+================================================================================
+
+PHASE 56 — Client-Side Cryptographic Generators, Encoders & Hash Toolkit
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Provide zero-network, 100% client-side cryptographic generators, hash algorithms,
+and encoding/decoding utilities triggered directly from natural search queries.
+
+IMPLEMENT:
+- Crypto & Encoding Engine in @opensearch/ranking/src/answers/crypto-engine.ts:
+  * UUID v4 generator (`uuid`, `uuid v4`, `generate uuid`).
+  * Cryptographically secure password generator (`password 16`, `generate password 32 special`).
+  * Base64 / Hex / URL / HTML entity encoder & decoder (`base64 encode <text>`, `base64 decode <text>`).
+  * JWT Payload Inspector & claims decoder (`jwt decode <token>`).
+  * Cryptographic hashing calculator (`sha256 <text>`, `md5 <text>`, `sha512 <text>`).
+- UI & Terminal Rendering:
+  * 1-click clipboard copy button with visual badge feedback.
+  * Drag-and-drop local file hashing without uploading bytes.
+
+DO NOT:
+- Transmit sensitive tokens, passwords, or decoded strings over the network.
+- Introduce external crypto libraries; use Web Crypto API and native Node.js `crypto`.
+
+VERIFY:
+- Queries like `uuid`, `base64 encode hello`, `sha256 opensearch`, and `password 24` return instant formatted cards.
+- Output report: report/PHASE_v1.4.0_56_CRYPTO_ENCODER_TOOLKIT_REPORT.txt.
+
+
+PHASE 57 — Developer Network, DNS, WHOIS & Subnet Calculator
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Deliver instant network diagnostics and CIDR calculations directly in the search
+engine interface without leaving the browser or terminal.
+
+IMPLEMENT:
+- Network Diagnostics Evaluator in @opensearch/ranking/src/answers/network-engine.ts:
+  * CIDR Subnet Calculator (`192.168.1.0/24`, `10.0.0.0/16`): Netmask, Wildcard mask, Broadcast IP, Host range, Usable IP count, Binary subnet breakdown.
+  * Cron Expression Explainer (`cron */15 * * * *`): Natural language schedule interpretation and next 5 execution timestamps.
+  * Port Reference Lookup (`port 8080`, `port 5432`): Protocol name, description, default usage, security notes.
+  * HTTP Header & Status Code Inspector (`headers google.com`, `http 503`).
+- Web & CLI Rendering Integration:
+  * Monospaced ASCII network layout tables with color-coded CIDR bitmasks.
+
+DO NOT:
+- Make unauthenticated external network socket calls that block serverless workers.
+- Fail on non-standard CIDR notation or invalid cron expressions.
+
+VERIFY:
+- Queries like `192.168.1.0/24` and `cron 0 12 * * 1-5` compute instantaneous breakdowns.
+- Output report: report/PHASE_v1.4.0_57_NETWORK_SUBNET_CRON_REPORT.txt.
+
+================================================================================
+MILESTONE 22 (V1.4.0) — PRIVACY AUDITING & ZERO-TRACE READER (PILLAR 2)
+================================================================================
+
+PHASE 58 — Website Security, Privacy Score & Tracker Grade Inspector
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Provide real-time zero-tracking domain security and privacy audits for queried websites.
+
+IMPLEMENT:
+- Privacy Audit Scorer in @opensearch/ranking/src/answers/privacy-audit-engine.ts:
+  * Domain Security Rating (A+ to F) evaluating:
+    - HTTPS / TLS status and certificate validity.
+    - Security headers: Content-Security-Policy (CSP), Strict-Transport-Security (HSTS), X-Frame-Options, Referrer-Policy.
+    - Known tracker and telemetry domain heuristic detection.
+- UI Privacy Badge Component:
+  * Rendered as an optional inspection card for queries like `privacy github.com` or `audit cloudflare.com`.
+  * Inline privacy risk indicator icon on organic search result cards.
+
+DO NOT:
+- Cache third-party tracking cookies or store user audit histories.
+- Slow down core search execution for organic queries.
+
+VERIFY:
+- Queries like `privacy duckduckgo.com` or `security mozilla.org` display structured security grade cards.
+- Output report: report/PHASE_v1.4.0_58_PRIVACY_SECURITY_INSPECTOR_REPORT.txt.
+
+
+PHASE 59 — Zero-Trace Reader Mode & Markdown Snapshot Cache
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Allow users to read indexed articles and developer documentation in an ultra-clean,
+ad-free, tracker-stripped terminal Markdown reader directly on OpenSearch.
+
+IMPLEMENT:
+- Reader Mode Extractor in @opensearch/indexer/src/reader/reader-extractor.ts:
+  * Pure text/content extraction stripping ads, scripts, tracking pixels, and paywall banners.
+  * Structured Markdown generation preserving headers, code blocks, lists, and tables.
+- Web & CLI Reader View:
+  * Dedicated `[READ]` / `[SNAPSHOT]` toggle button on search result items.
+  * Distraction-free full-width reading layout with customizable font sizes and retro CRT styling.
+  * CLI flag `--read <result_number>` to stream full Markdown content into pager (`less`/`cat`).
+
+DO NOT:
+- Execute external third-party JavaScript inside the reader sandbox.
+- Break formatting of technical code snippets or tables in documentation.
+
+VERIFY:
+- Clicking `[READ]` on any search result instantly renders clean formatted Markdown text.
+- Output report: report/PHASE_v1.4.0_59_ZERO_TRACE_READER_MODE_REPORT.txt.
+
+================================================================================
+MILESTONE 23 (V1.4.0) — SCIENTIFIC MATH, CRYPTO & CURRENCY ENGINE (PILLAR 3)
+================================================================================
+
+PHASE 60 — Real-Time Currency, Crypto & Advanced Unit Conversion
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Expand OpenSearch's instant conversion pipeline to support real-time world fiat
+currencies, major cryptocurrencies, and complex multi-unit scientific scales.
+
+IMPLEMENT:
+- Financial & Crypto Converter in @opensearch/ranking/src/answers/currency-converter.ts:
+  * Fiat currency exchange engine (USD, EUR, GBP, JPY, INR, CAD, AUD, CHF, etc.) with deterministic zero-dependency fallback rates.
+  * Major cryptocurrency rates (BTC, ETH, SOL) with satoshi / gwei conversions.
+  * Scientific multi-unit scales (digital storage: PB, TB, GB, MB, KB, Bytes; energy: Joules, Calories, kWh; velocity: m/s, km/h, mph, knots).
+- Natural Language Syntax Support:
+  * `100 usd to eur`, `0.05 btc to inr`, `500 gb to tb`, `100 km/h to mph`, `100 celsius to fahrenheit`.
+
+DO NOT:
+- Depend on paid external rate-limiting APIs; maintain clean internal caching and zero-dependency fallbacks.
+- Lose floating-point precision on small cryptocurrency fractions.
+
+VERIFY:
+- Natural queries like `100 eur to usd` and `16 gb in bytes` return instant conversion badges.
+- Output report: report/PHASE_v1.4.0_60_CURRENCY_CRYPTO_UNITS_REPORT.txt.
+
+
+PHASE 61 — Symbolic Math, LaTeX Formula Renderer & Step-by-Step Solver
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Execute algebraic, calculus, matrix, and trigonometric math evaluations with step-by-step
+derivations and pure SVG/HTML LaTeX mathematical equation rendering.
+
+IMPLEMENT:
+- Symbolic Math Engine in @opensearch/ranking/src/answers/math-engine.ts:
+  * Arithmetic, algebraic equation solving (`solve 3x + 12 = 45`), polynomial roots.
+  * Calculus derivations (`derivative of x^3 + 2x`), definite/indefinite integrals.
+  * Matrix arithmetic (determinant, transpose, matrix multiplication).
+- Mathematical Typography:
+  * Pure CSS & SVG mathematical typography rendering beautiful LaTeX formulas without heavy external MathJax libraries.
+
+DO NOT:
+- Use insecure `eval()` or unsafe runtime string evaluation.
+- Exceed 15KB bundle footprint for math typography rendering.
+
+VERIFY:
+- Queries like `solve 2x - 8 = 16` and `derivative x^2` render step-by-step solutions with formula previews.
+- Output report: report/PHASE_v1.4.0_61_SYMBOLIC_MATH_LATEX_REPORT.txt.
+
+================================================================================
+MILESTONE 24 (V1.4.0) — HACKER UX, COMMAND PALETTE & THEMES (PILLAR 4)
+================================================================================
+
+PHASE 62 — Vim Keyboard Navigation & Command Palette (Cmd+K / Ctrl+K)
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Enable complete mouse-free power-user keyboard navigation across Web and Terminal interfaces.
+
+IMPLEMENT:
+- Vim Keybinding Navigator in @opensearch/web/src/keyboard.js:
+  * `j` / `k` — Navigate down / up through search results.
+  * `Enter` / `o` — Open highlighted search result in current / new tab.
+  * `r` — Open Reader Mode for highlighted search result.
+  * `c` — Copy highlighted result URL to clipboard.
+  * `/` — Focus search input bar with selection.
+  * `?` — Toggle keyboard shortcut modal overlay.
+- Omnibar Command Palette (`Cmd+K` / `Ctrl+K`):
+  * Quick jump to search history, theme switching, search workspace filters, and system diagnostic metrics.
+
+DO NOT:
+- Interfere with native text typing when input fields or search bars are focused.
+- Introduce memory leaks from uncleaned window event listeners.
+
+VERIFY:
+- Keyboard navigation allows full search, navigation, copying, and reading without touching the mouse.
+- Output report: report/PHASE_v1.4.0_62_VIM_NAVIGATION_COMMAND_PALETTE_REPORT.txt.
+
+
+PHASE 63 — Multi-Workspace Filtering & Retro CRT Theme Engine
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Allow users to switch between curated search workspaces and toggle between bespoke
+retro-futuristic terminal themes with zero tracking.
+
+IMPLEMENT:
+- Workspace Filter Engine:
+  * Search modes:
+    - `/dev` — Strict developer filter (GitHub, RFCs, StackOverflow, official documentation).
+    - `/news` — Tech news, RSS feeds, and independent engineering blogs.
+    - `/papers` — Academic preprints, ArXiv, and technical whitepapers.
+- Retro CRT Theme Engine in @opensearch/web/src/themes.css:
+  * `Cyber Matrix (Default Phosphor Green)`
+  * `Amber CRT (VT100 1978 Monochrome)`
+  * `Solarized Cyber Dark`
+  * `Nordic Ice Frost`
+  * `Synthwave 84 (Neon Violet)`
+  * Optional subtle retro terminal keyclick audio effects (Web Audio API synthesizers, zero sound files).
+
+DO NOT:
+- Persist themes or workspaces on server databases; use pure local storage (`localStorage`).
+- Cause UI layout shifts during theme switching.
+
+VERIFY:
+- Changing themes or typing `/dev python` immediately filters results and applies color palette seamlessly.
+- Output report: report/PHASE_v1.4.0_63_WORKSPACES_RETRO_THEMES_REPORT.txt.
+
+================================================================================
+MILESTONE 25 (V1.4.0) — OFFLINE PWA & V1.4.0 RELEASE CONVERGENCE (PILLAR 5)
+================================================================================
+
+PHASE 64 — Offline Progressive Web App (PWA) & Local Index Export
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Transform OpenSearch into an offline-capable Progressive Web App with ServiceWorker
+caching for instant answers, cheatsheets, and exportable `.opensearch` binary indexes.
+
+IMPLEMENT:
+- Service Worker & PWA Manifest in @opensearch/web:
+  * `manifest.json` for full PWA standalone installation on desktop and mobile.
+  * Service worker offline strategy caching instant answer engines, cheatsheets, timezone engines, and knowledge graph.
+- Local Index Export & Import:
+  * One-click download of the compressed inverted index (`index.opensearch`).
+  * Offline search execution in airplane mode.
+
+DO NOT:
+- Cache sensitive user input or persist query analytics in service workers.
+- Break standard web workers or SSE streaming during online sessions.
+
+VERIFY:
+- Search engine works completely in offline mode for instant answers, knowledge cards, and cheatsheets.
+- Output report: report/PHASE_v1.4.0_64_OFFLINE_PWA_LOCAL_INDEX_REPORT.txt.
+
+
+PHASE 65 — End-to-End Integration, Benchmarking & V1.4.0 Release Verification
+--------------------------------------------------------------------------------
+OBJECTIVE:
+Execute comprehensive regression testing across all 10 new phases (Phase 56 to Phase 65),
+conduct end-to-end performance benchmarking, update documentation, and verify v1.4.0 release readiness.
+
+IMPLEMENT:
+- Complete Test Suite & Build Verification:
+  * Full TypeScript strict build (`npm run build`).
+  * End-to-end validation covering crypto utilities, network calculators, privacy grades, reader mode, currency/crypto math, symbolic solvers, Vim navigation, themes, and PWA offline modes.
+- Performance Benchmarking:
+  * Instant answer latency < 1ms across all 20+ answer types.
+  * Zero external runtime dependencies preserved across all packages.
+- Documentation & Release Artifacts:
+  * Update `README.md`, `docs/API.md`, and OpenAPI 3.1.0 specifications.
+  * Bump version to `1.4.0` across all monorepo `package.json` files.
+
+DO NOT:
+- Release with broken tests, lingering lint warnings, or typecheck errors.
+- Degrade existing V1.3.0 search speed or zero-tracking privacy guarantees.
+
+VERIFY:
+- All 10 new phases (Phase 56 to Phase 65) pass verification gates with dedicated report files.
+- Monorepo builds cleanly from root across all platforms.
+- Production deployment runs without serverless errors.
+
+OUTPUT:
+Fully verified, production-ready OpenSearch v1.4.0 release with report saved to
+report/PHASE_v1.4.0_65_V1_4_0_FINAL_RELEASE_REPORT.txt.
+================================================================================

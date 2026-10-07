@@ -11,10 +11,15 @@ import { ConversionEvaluator, ConversionResult } from './conversion-evaluator.js
 import { KnowledgeEngine, KnowledgeCardResult } from './knowledge-engine.js';
 import { TimezoneEvaluator, TimezoneConversionResult } from './timezone-evaluator.js';
 import { CheatSheetEngine, CheatSheetResult } from './cheatsheet-engine.js';
+import { CryptoEngine, CryptoEngineResult } from './crypto-engine.js';
+import { NetworkEngine, NetworkEngineResult } from './network-engine.js';
+import { PrivacyAuditEngine, PrivacyAuditResult } from './privacy-audit-engine.js';
+import { CurrencyConverterEngine, CurrencyConversionResult } from './currency-converter.js';
+import { SymbolicMathEngine, MathSolverResult } from './math-engine.js';
 
 export interface InstantAnswerPayload {
   /** Answer category identifier */
-  type: 'calculation' | 'conversion' | 'color' | 'epoch' | 'bang' | 'knowledge_card' | 'timezone' | 'cheatsheet';
+  type: 'calculation' | 'conversion' | 'color' | 'epoch' | 'bang' | 'knowledge_card' | 'timezone' | 'cheatsheet' | 'crypto' | 'network' | 'privacy' | 'currency' | 'math_solver';
   /** Display badge tag e.g. '[instant-answer]' or '[bang-redirect]' */
   badge: string;
   /** Section title */
@@ -25,7 +30,7 @@ export interface InstantAnswerPayload {
   primaryResult: string;
   /** Description (for knowledge cards or cheatsheets) */
   description?: string;
-  /** Code snippet or command (for cheatsheets) */
+  /** Code snippet or command (for cheatsheets or crypto copy) */
   codeSnippet?: string;
   /** Additional structured fields for detail tables */
   secondaryDetails?: Record<string, string | number>;
@@ -41,6 +46,11 @@ export class InstantAnswerEngine {
   private readonly knowledgeEngine: KnowledgeEngine;
   private readonly timezoneEvaluator: TimezoneEvaluator;
   private readonly cheatSheetEngine: CheatSheetEngine;
+  private readonly cryptoEngine: CryptoEngine;
+  private readonly networkEngine: NetworkEngine;
+  private readonly privacyAuditEngine: PrivacyAuditEngine;
+  private readonly currencyConverterEngine: CurrencyConverterEngine;
+  private readonly symbolicMathEngine: SymbolicMathEngine;
 
   constructor() {
     this.mathEvaluator = new MathEvaluator();
@@ -48,10 +58,15 @@ export class InstantAnswerEngine {
     this.knowledgeEngine = new KnowledgeEngine();
     this.timezoneEvaluator = new TimezoneEvaluator();
     this.cheatSheetEngine = new CheatSheetEngine();
+    this.cryptoEngine = new CryptoEngine();
+    this.networkEngine = new NetworkEngine();
+    this.privacyAuditEngine = new PrivacyAuditEngine();
+    this.currencyConverterEngine = new CurrencyConverterEngine();
+    this.symbolicMathEngine = new SymbolicMathEngine();
   }
 
   /**
-   * Evaluates query string for instant answers, conversions, knowledge cards, timezones, cheatsheets, or bang shortcuts.
+   * Evaluates query string for instant answers, conversions, knowledge cards, timezones, cheatsheets, crypto tools, network calculators, or bang shortcuts.
    * Returns null if no instant answer is applicable. Completes in < 0.1ms.
    */
   evaluate(rawQuery: string): InstantAnswerPayload | null {
@@ -70,37 +85,123 @@ export class InstantAnswerEngine {
       return this.formatBangAnswer(bang);
     }
 
-    // 2. Direct Math Expression Evaluation
+    // 2. Cryptographic Generators & Encoders (Phase 56)
+    const cryptoTool = this.cryptoEngine.evaluate(trimmed);
+    if (cryptoTool) {
+      return this.formatCryptoAnswer(cryptoTool);
+    }
+
+    // 3. Network Subnet & Cron Explainer (Phase 57)
+    const networkTool = this.networkEngine.evaluate(trimmed);
+    if (networkTool) {
+      return this.formatNetworkAnswer(networkTool);
+    }
+
+    // 4. Website Privacy & Security Audit (Phase 58)
+    const privacyTool = this.privacyAuditEngine.evaluate(trimmed);
+    if (privacyTool) {
+      return this.formatPrivacyAnswer(privacyTool);
+    }
+
+    // 5. Real-Time Currency, Crypto & Unit Scaling (Phase 60)
+    const currTool = this.currencyConverterEngine.evaluate(trimmed);
+    if (currTool) {
+      return this.formatCurrencyAnswer(currTool);
+    }
+
+    // 6. Symbolic Math & Equation Solver (Phase 61)
+    const mathSolve = this.symbolicMathEngine.evaluate(trimmed);
+    if (mathSolve) {
+      return this.formatMathSolverAnswer(mathSolve);
+    }
+
+    // 7. Direct Math Expression Evaluation
     const math = this.mathEvaluator.evaluate(trimmed);
     if (math) {
       return this.formatMathAnswer(math);
     }
 
-    // 3. Direct Conversions (Epoch, Color, Units)
+    // 8. Direct Conversions (Epoch, Color, Units)
     const conv = this.conversionEvaluator.evaluate(trimmed);
     if (conv) {
       return this.formatConversionAnswer(conv);
     }
 
-    // 4. World Clock & Timezone Conversions (Phase 50)
+    // 9. World Clock & Timezone Conversions (Phase 50)
     const tz = this.timezoneEvaluator.evaluate(trimmed);
     if (tz) {
       return this.formatTimezoneAnswer(tz);
     }
 
-    // 5. Developer Syntax Cheat Sheets (Phase 51)
+    // 10. Developer Syntax Cheat Sheets (Phase 51)
     const cheat = this.cheatSheetEngine.lookup(trimmed);
     if (cheat) {
       return this.formatCheatSheetAnswer(cheat);
     }
 
-    // 6. In-Memory Knowledge Graph / Entity Cards (Phase 49)
+    // 11. In-Memory Knowledge Graph / Entity Cards (Phase 49)
     const card = this.knowledgeEngine.lookup(trimmed);
     if (card) {
       return this.formatKnowledgeAnswer(card);
     }
 
     return null;
+  }
+
+  private formatCryptoAnswer(tool: CryptoEngineResult): InstantAnswerPayload {
+    return {
+      type: 'crypto',
+      badge: '[crypto-toolkit]',
+      title: tool.title,
+      primaryResult: tool.output,
+      description: tool.description,
+      codeSnippet: tool.copyValue,
+      secondaryDetails: tool.details,
+    };
+  }
+
+  private formatNetworkAnswer(tool: NetworkEngineResult): InstantAnswerPayload {
+    return {
+      type: 'network',
+      badge: '[network-diagnostics]',
+      title: tool.title,
+      primaryResult: tool.output,
+      description: tool.description,
+      secondaryDetails: tool.details,
+    };
+  }
+
+  private formatPrivacyAnswer(tool: PrivacyAuditResult): InstantAnswerPayload {
+    return {
+      type: 'privacy',
+      badge: `[privacy-audit:${tool.grade}]`,
+      title: `Privacy & Security Grade: ${tool.grade} (${tool.score}/100)`,
+      primaryResult: `${tool.domain} — Rating ${tool.grade}`,
+      description: tool.description,
+      secondaryDetails: tool.details,
+    };
+  }
+
+  private formatCurrencyAnswer(tool: CurrencyConversionResult): InstantAnswerPayload {
+    return {
+      type: 'currency',
+      badge: `[${tool.category}-converter]`,
+      title: `${tool.fromUnit} to ${tool.toUnit} Conversion`,
+      primaryResult: tool.formattedResult,
+      secondaryDetails: tool.details,
+    };
+  }
+
+  private formatMathSolverAnswer(tool: MathSolverResult): InstantAnswerPayload {
+    return {
+      type: 'math_solver',
+      badge: '[symbolic-solver]',
+      title: tool.expression,
+      primaryResult: tool.solution,
+      codeSnippet: tool.latexFormula,
+      description: tool.steps.join(' ➔ '),
+      secondaryDetails: tool.details,
+    };
   }
 
   private formatCheatSheetAnswer(cheat: CheatSheetResult): InstantAnswerPayload {

@@ -1,4 +1,4 @@
-# OpenSearch REST & Streaming API Documentation (v1.3.0)
+# OpenSearch REST & Streaming API Documentation (v1.4.0)
 
 OpenSearch exposes a high-performance, zero-tracking, standalone HTTP & Streaming Search API implemented with zero external runtime dependencies using native Node.js HTTP servers.
 
