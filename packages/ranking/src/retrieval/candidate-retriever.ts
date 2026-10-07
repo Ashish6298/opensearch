@@ -412,6 +412,21 @@ export class IndexCandidateRetriever implements CandidateRetriever {
       }
     }
 
+    // 4. workspace filter (/dev, /news, /papers) (Phase 63)
+    if (filters.workspace) {
+      const urlLower = docMeta.url.toLowerCase();
+      if (filters.workspace === 'dev') {
+        const isDev = /(github\.com|gitlab\.com|stackoverflow\.com|docs\.|developer\.|w3\.org|ietf\.org|rfc-editor\.org|npm|pypi|crates\.io|rust-lang|python\.org|nodejs\.org)/i.test(urlLower);
+        if (!isDev) return false;
+      } else if (filters.workspace === 'news') {
+        const isNews = /(news|blog|techcrunch|theverge|ycombinator|lobste\.rs|medium\.com|dev\.to|arstechnica)/i.test(urlLower);
+        if (!isNews) return false;
+      } else if (filters.workspace === 'papers') {
+        const isPaper = /(arxiv\.org|biorxiv\.org|nature\.com|ieee\.org|acm\.org|researchgate|semanticscholar|\.edu)/i.test(urlLower);
+        if (!isPaper) return false;
+      }
+    }
+
     return true;
   }
 }

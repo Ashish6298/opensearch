@@ -88,11 +88,18 @@ export class DefaultQueryParser implements QueryParser {
       return this.createEmptyParsedQuery(inputStr, isClamped);
     }
 
-    // 4. Operator extraction (site:, intitle:, filetype:, exact:) (Phase 37)
-    const filters: { site?: string; intitle?: string[]; exact?: string[]; filetype?: string } = {};
+    // 4. Operator extraction (site:, intitle:, filetype:, exact:, /dev, /news, /papers) (Phase 37 & Phase 63)
+    const filters: { site?: string; intitle?: string[]; exact?: string[]; filetype?: string; workspace?: 'dev' | 'news' | 'papers' } = {};
     let textAfterOperators = normalized;
 
-    // 4a. site:<domain>
+    // 4a. Workspace modes: /dev, /news, /papers
+    const wsMatch = /(?:^|\s)\/(dev|news|papers)(?:\s|$)/i.exec(textAfterOperators);
+    if (wsMatch && wsMatch[1]) {
+      filters.workspace = wsMatch[1].toLowerCase() as 'dev' | 'news' | 'papers';
+      textAfterOperators = textAfterOperators.replace(/(?:^|\s)\/(dev|news|papers)(?:\s|$)/gi, ' ');
+    }
+
+    // 4b. site:<domain>
     const siteMatch = /(?:^|\s)site:([a-z0-9.-]+)/i.exec(textAfterOperators);
     if (siteMatch && siteMatch[1]) {
       filters.site = siteMatch[1].toLowerCase().trim();
