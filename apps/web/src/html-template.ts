@@ -171,12 +171,16 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
               <span class="shortcut-desc">Move selection to previous result card</span>
             </div>
             <div class="shortcut-row">
-              <span class="shortcut-key"><kbd>Enter</kbd></span>
+              <span class="shortcut-key"><kbd>Enter</kbd> / <kbd>o</kbd></span>
               <span class="shortcut-desc">Open selected result in new browser tab</span>
             </div>
             <div class="shortcut-row">
-              <span class="shortcut-key"><kbd>v</kbd></span>
-              <span class="shortcut-desc">Toggle expanded snippet / details on selected card</span>
+              <span class="shortcut-key"><kbd>c</kbd></span>
+              <span class="shortcut-desc">Copy URL of selected result to clipboard</span>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-key"><kbd>r</kbd> / <kbd>v</kbd></span>
+              <span class="shortcut-desc">Toggle Reader Mode / expanded view</span>
             </div>
             <div class="shortcut-row">
               <span class="shortcut-key"><kbd>/</kbd></span>
@@ -188,7 +192,7 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
             </div>
             <div class="shortcut-row">
               <span class="shortcut-key"><kbd>t</kbd></span>
-              <span class="shortcut-desc">Cycle terminal color theme (Matrix, Amber, Dracula, Nord, Monokai)</span>
+              <span class="shortcut-desc">Cycle terminal color theme (Matrix, Amber, Synthwave, Solarized, Nord)</span>
             </div>
             <div class="shortcut-row">
               <span class="shortcut-key"><kbd>?</kbd></span>

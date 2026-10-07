@@ -255,8 +255,8 @@
         return;
       }
 
-      // 'Enter': Open currently active result card URL
-      if (e.key === 'Enter') {
+      // 'Enter' or 'o': Open currently active result card URL
+      if (e.key === 'Enter' || e.key === 'o') {
         if (currentActiveResultIndex >= 0 && currentResultItems[currentActiveResultIndex]) {
           const itemEl = currentResultItems[currentActiveResultIndex];
           const link = itemEl.querySelector('.result-title-link');
@@ -264,6 +264,30 @@
             e.preventDefault();
             window.open(link.href, '_blank', 'noopener,noreferrer');
           }
+        }
+        return;
+      }
+
+      // 'c': Copy URL of currently selected result card
+      if (e.key === 'c') {
+        if (currentActiveResultIndex >= 0 && currentResultItems[currentActiveResultIndex]) {
+          const itemEl = currentResultItems[currentActiveResultIndex];
+          const link = itemEl.querySelector('.result-title-link');
+          if (link && link.href && navigator.clipboard) {
+            e.preventDefault();
+            navigator.clipboard.writeText(link.href).then(() => {
+              announceA11y('Link copied to clipboard.');
+            }).catch(() => {});
+          }
+        }
+        return;
+      }
+
+      // 'r': Open reader view / toggle details
+      if (e.key === 'r') {
+        if (currentActiveResultIndex >= 0 && currentResultItems[currentActiveResultIndex]) {
+          e.preventDefault();
+          toggleExpandedDetails(currentResultItems[currentActiveResultIndex]);
         }
         return;
       }
