@@ -175,21 +175,21 @@ describe('Phase 45 — V1.2.0 End-to-End Integration, Benchmarking & Release Ver
   });
 
   describe('1. Global System Identity & Version Convergence', () => {
-    it('reports version 1.2.0 across project identity constants', () => {
+    it('reports version 1.4.0 across project identity constants', () => {
       expect(PROJECT_NAME).toBe('OpenSearch');
-      expect(PROJECT_VERSION).toBe('1.2.0');
+      expect(PROJECT_VERSION).toBe('1.4.0');
     });
 
-    it('OpenAPI spec reflects version 1.2.0 and correct metadata', () => {
+    it('OpenAPI spec reflects version 1.4.0 and correct metadata', () => {
       const spec = generateOpenApiSpec();
       expect(spec.openapi).toBe('3.1.0');
-      expect(spec.info.version).toBe('1.2.0');
+      expect(spec.info.version).toBe('1.4.0');
       expect(spec.info.title).toContain('OpenSearch');
     });
 
     it('Zero-dependency documentation renderer produces compliant HTML with version badge', () => {
       const html = generateDocsHtml();
-      expect(html).toContain('v1.2.0');
+      expect(html).toContain('v1.4.0');
       expect(html).toContain('Developer API Reference');
       expect(html).toContain('/api/v1/openapi.json');
     });

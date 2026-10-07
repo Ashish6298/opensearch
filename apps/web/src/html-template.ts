@@ -27,6 +27,7 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="OpenSearch is a public, privacy-first search engine built from scratch.">
   <meta name="theme-color" content="#0d0d0d">
+  <link rel="manifest" href="/manifest.json">
   <title>${title}</title>
   <style>
     ${options.cssContent || '/* Inlined CSS */'}
@@ -37,6 +38,11 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
         var theme = localStorage.getItem('opensearch_theme') || 'matrix';
         document.documentElement.setAttribute('data-theme', theme);
       } catch (e) {}
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('/sw.js').catch(function () {});
+        });
+      }
     })();
   </script>
 </head>
@@ -171,12 +177,16 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
               <span class="shortcut-desc">Move selection to previous result card</span>
             </div>
             <div class="shortcut-row">
-              <span class="shortcut-key"><kbd>Enter</kbd></span>
+              <span class="shortcut-key"><kbd>Enter</kbd> / <kbd>o</kbd></span>
               <span class="shortcut-desc">Open selected result in new browser tab</span>
             </div>
             <div class="shortcut-row">
-              <span class="shortcut-key"><kbd>v</kbd></span>
-              <span class="shortcut-desc">Toggle expanded snippet / details on selected card</span>
+              <span class="shortcut-key"><kbd>c</kbd></span>
+              <span class="shortcut-desc">Copy URL of selected result to clipboard</span>
+            </div>
+            <div class="shortcut-row">
+              <span class="shortcut-key"><kbd>r</kbd> / <kbd>v</kbd></span>
+              <span class="shortcut-desc">Toggle Reader Mode / expanded view</span>
             </div>
             <div class="shortcut-row">
               <span class="shortcut-key"><kbd>/</kbd></span>
@@ -188,7 +198,7 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
             </div>
             <div class="shortcut-row">
               <span class="shortcut-key"><kbd>t</kbd></span>
-              <span class="shortcut-desc">Cycle terminal color theme (Matrix, Amber, Dracula, Nord, Monokai)</span>
+              <span class="shortcut-desc">Cycle terminal color theme (Matrix, Amber, Synthwave, Solarized, Nord)</span>
             </div>
             <div class="shortcut-row">
               <span class="shortcut-key"><kbd>?</kbd></span>
