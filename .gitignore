@@ -49,3 +49,11 @@ data/
 *.db
 tmp/
 temp/
+
+# Project & Phase Roadmaps
+PHASE.txt
+PHASEv1.2.0.txt
+PHASEv1.3.0.txt
+PHASEv1.4.0.txt
+PHASEv1.5.0.txt
+PROJECT.txt

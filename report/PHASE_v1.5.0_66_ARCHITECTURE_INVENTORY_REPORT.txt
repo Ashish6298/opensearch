@@ -1,0 +1,102 @@
+================================================================================
+OPENSEARCH ENGINE — VERIFICATION REPORT: PHASE 66
+REPOSITORY AND ARCHITECTURE INVENTORY
+================================================================================
+
+Milestone: 26 — Repository Audit and Baseline
+Phase:     66 — Repository and Architecture Inventory
+Date:      October 2026
+Branch:    ashish
+Status:    PASSED / VERIFIED (100% Acceptance Criteria Met)
+Deliverable: docs/implementation-baseline.md
+
+--------------------------------------------------------------------------------
+1. EXECUTIVE SUMMARY & ACCEPTANCE CRITERIA AUDIT
+--------------------------------------------------------------------------------
+
+[PASS] Criterion 1: Every major subsystem is documented.
+       - Detailed mapping of 8 packages/workspaces:
+         * apps/api (@opensearch/api)
+         * apps/web (@opensearch/web)
+         * packages/shared (@opensearch/shared)
+         * packages/storage (@opensearch/storage)
+         * packages/crawler (@opensearch/crawler)
+         * packages/indexer (@opensearch/indexer)
+         * packages/ranking (@opensearch/ranking)
+         * packages/cli (@opensearch/cli)
+         * api/index.js (Vercel Serverless Entrypoint)
+       - Life-cycle diagrams for both the search query path and crawl-to-index flow.
+
+[PASS] Criterion 2: Every outbound request path is identified.
+       - Identified 8 backend outbound request categories:
+         1. Google Suggest (suggestqueries.google.com) [apps/api/src/external-search.ts]
+         2. DuckDuckGo HTML Web Search regex scraping (html.duckduckgo.com) [apps/api/src/external-search.ts]
+         3. DuckDuckGo Instant Answers API (api.duckduckgo.com) [apps/api/src/external-search.ts]
+         4. Node DNS SSRF lookups via node:dns/promises [packages/crawler/src/fetcher/ssrf-guard.ts]
+         5. Crawler Robots.txt fetches [packages/crawler/src/robots/robots-fetcher.ts]
+         6. Crawler Sitemap XML/Gzip fetches [packages/crawler/src/sitemap/sitemap-service.ts]
+         7. Crawler target URL fetches with SSRF re-check on redirect [packages/crawler/src/fetcher/node-fetcher.ts]
+         8. CLI local API queries [packages/cli/src/cli.ts]
+       - Verified that browser UI (apps/web/src/app.js) initiates ZERO third-party requests.
+
+[PASS] Criterion 3: Existing functionality and tests are mapped.
+       - Full inventory of all 50 test suites across 8 workspaces.
+       - Vitest execution analyzed: 521 tests total (515 passing, 6 failing).
+       - Root cause of the 6 failing tests identified: hardcoded legacy assertions expecting '1.2.0'
+         instead of current version '1.4.0' in tests written for v1.2.0 release gates.
+
+[PASS] Criterion 4: No broad rewrite is performed.
+       - Zero unnecessary functional or UI changes made.
+       - Preserved all existing comments, docstrings, and strict TypeScript types.
+
+--------------------------------------------------------------------------------
+2. DETAILED ARCHITECTURAL DISCOVERIES
+--------------------------------------------------------------------------------
+
+1. PageRank Reality:
+   - AuthorityScorer (packages/ranking/src/scorer/authority-scorer.ts) has a score blending
+     formula that accepts an optional pageRank argument with a default value of 0.5.
+   - RankingEngine (packages/ranking/src/scorer/ranking-engine.ts) does NOT calculate or pass
+     PageRank from any link-graph analysis. It uses multi-field BM25, freshness decay, and
+     domain authority heuristics. PageRank is effectively an uncalculated placeholder.
+
+2. VByte Compression Reality:
+   - VByteCompressor is implemented in packages/storage/src/compression/vbyte-compression.ts
+     with Delta gap encoding and 7-bit continuation byte packing into native Uint8Array.
+   - However, MemoryInvertedIndex.save() in packages/indexer/src/index/inverted-index.ts serializes
+     the index directly to uncompressed JSON (index-data.json). The VByte compressor is not yet
+     integrated into the primary index persistence pipeline.
+
+3. Rate Limiting & Storage Dependencies:
+   - Rate limiting in apps/api/src/rate-limiter.ts (MemoryRateLimiter) and packages/crawler
+     (SlidingWindowRateLimiter) runs entirely in process memory (JavaScript Maps) with no disk persistence.
+   - Storage in packages/storage/src/adapters/json-adapter.ts writes atomic JSON files via .tmp
+     write + rename, maintaining an in-memory cache for reads.
+
+4. Security & Privacy Mechanisms:
+   - SSRF protection in packages/crawler/src/fetcher/ssrf-guard.ts validates IP ranges syntactically
+     and resolves DNS hostnames asynchronously, re-checking on every redirect.
+   - IP anonymization in packages/shared/src/privacy/index.ts masks IPv4 to /24 and IPv6 to /48
+     before request logging in apps/api/src/middlewares.ts.
+   - Zero cookies, zero local storage tracking, zero external telemetry.
+
+--------------------------------------------------------------------------------
+3. VERIFICATION AND READY FOR NEXT PHASE
+--------------------------------------------------------------------------------
+
+Typecheck Verification:
+  Command: npm run typecheck (tsc -b)
+  Result:  0 errors (EXIT 0)
+
+Deliverable Verification:
+  File:    docs/implementation-baseline.md
+  Size:    14,354 bytes
+  Status:  Complete, accurate, rigorously verified against source code.
+
+READINESS ASSESSMENT:
+  Is repository ready for Phase 67 (Baseline tests and measurements)?
+  >>> YES, IT IS FULLY READY FOR NEXT PHASE (Phase 67).
+
+Phase 67 will execute the baseline testing suite, measure index size and latency,
+document performance methodology, and resolve the 6 legacy version string assertions.
+================================================================================

@@ -902,6 +902,7 @@ $ audit --privacy-boundaries
 | **Milestone 13** | **Crawler Efficiency & Sitemaps**       | Phases 41 – 42 | Streaming/Gzip Sitemap ingestion, HTTP 304 fast path & ETag re-crawling  | `[PASSED]` |
 | **Milestone 14** | **Developer Platform & CLI Tooling**    | Phases 43 – 44 | OpenAPI 3.1.0 spec (`/docs`), standalone `@opensearch/cli` terminal tool | `[PASSED]` |
 | **Milestone 15** | **Release Convergence & Benchmarking**  | Phase 45       | Full regression testing, sub-5ms P99 latency SLA, v1.2.0 verification    | `[PASSED]` |
+| **Milestone 26** | **Repository Audit & Baseline (v1.5.0)**| Phases 66 – 68 | Architecture inventory (`docs/implementation-baseline.md`), request audit | `[PHASE 66 PASSED]` |
 
 <br/>
 
