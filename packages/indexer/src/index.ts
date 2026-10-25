@@ -107,3 +107,32 @@ export {
 export type { ReaderDocument } from './reader/reader-extractor.js';
 export { ReaderExtractor } from './reader/reader-extractor.js';
 
+// ── Phase 75: Reproducible Corpus Expansion (V1.5.0) ──────────────
+export type {
+  CorpusTier,
+  CorpusSourceMetadata,
+  CorpusDocument,
+  CorpusSourceSummary,
+  CorpusManifest,
+  CorpusGenerationOptions,
+  CorpusIngestionResult,
+} from './corpus/corpus-types.js';
+
+export {
+  PERMITTED_CORPUS_SOURCES,
+  getDemoCorpus,
+} from './corpus/demo-corpus.js';
+
+export {
+  SeededRandom,
+  generateReproducibleCorpus,
+} from './corpus/corpus-generator.js';
+
+export {
+  validateCorpusDocument,
+  ingestCorpus,
+  loadCorpusFromFile,
+  verifyCorpusChecksum,
+} from './corpus/corpus-ingestion.js';
+export type { IngestionOptions } from './corpus/corpus-ingestion.js';
+

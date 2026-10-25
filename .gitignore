@@ -44,6 +44,10 @@ Thumbs.db
 
 # Temporary Storage and Data Directories
 data/
+data/corpus/
+*.corpus
+*.dump
+*.xml.bz2
 *.sqlite
 *.sqlite3
 *.db
