@@ -18,6 +18,7 @@ import { DocumentProcessor } from '../pipeline/pipeline-types.js';
 import { createDocumentProcessor } from '../pipeline/document-processor.js';
 import { InvertedIndex } from '../index/index-types.js';
 import { createInvertedIndex } from '../index/index-factory.js';
+import { validateIndexFile } from '../index/index-validator.js';
 import {
   IndexBuildOptions,
   IndexBuildStats,
@@ -72,10 +73,31 @@ export class DefaultIndexBuilder implements IndexBuilder {
         indexPath: activeMeta.indexPath,
       });
 
-      const idx = createInvertedIndex({ indexDir: activeMeta.indexPath });
-      await idx.load(activeMeta.indexPath);
-      this.activeIndex = idx;
-      return idx;
+      try {
+        const idx = createInvertedIndex({ indexDir: activeMeta.indexPath });
+        await idx.load(activeMeta.indexPath);
+        this.activeIndex = idx;
+        return idx;
+      } catch (err: any) {
+        this.logger.error(
+          'Active index on disk failed validation or is corrupt. Initiating automatic recovery rebuild.',
+          {
+            buildId: activeMeta.buildId,
+            error: err.message,
+          },
+        );
+
+        try {
+          await this.storage.indexMetadata.update(activeMeta.buildId, {
+            status: 'failed',
+            isActive: false,
+            errorMessage: `Index corrupt or incompatible: ${err.message}`,
+          });
+        } catch {
+          // ignore storage error
+        }
+        this.activeMetadata = null;
+      }
     }
 
     // If no active index exists on disk, perform a full build
@@ -200,6 +222,14 @@ export class DefaultIndexBuilder implements IndexBuilder {
       // 4. Save new index to disk in staging directory
       fs.mkdirSync(stagingDir, { recursive: true });
       await newIndex.save(stagingDir);
+
+      // Pre-activation audit: strictly validate staged index integrity before promotion
+      const audit = validateIndexFile(stagingDir);
+      if (!audit.valid) {
+        throw new Error(
+          `Staged index failed integrity audit: ${audit.errors.join('; ')}`,
+        );
+      }
 
       const finalStats = newIndex.getStats();
       stats.termsIndexed = finalStats.totalTerms;

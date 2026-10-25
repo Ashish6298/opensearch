@@ -37,7 +37,16 @@ export {
   createDocumentProcessor,
 } from './pipeline/document-processor.js';
 
-// ── Phase 10: Inverted Index ─────────────────────────────────
+// ── Phase 10 & 73: Inverted Index & Schema Lifecycle Audit ──
+export {
+  CURRENT_INDEX_SCHEMA_VERSION,
+  SUPPORTED_INDEX_SCHEMA_VERSIONS,
+  INDEX_FORMAT_IDENTIFIER,
+  INDEX_FILE_NAME,
+  INDEX_TMP_FILE_NAME,
+  IndexCorruptError,
+  IndexIncompatibleSchemaError,
+} from './index/index-types.js';
 export type {
   Posting,
   PostingList,
@@ -50,6 +59,13 @@ export type {
 
 export { MemoryInvertedIndex } from './index/inverted-index.js';
 export { createInvertedIndex } from './index/index-factory.js';
+
+export {
+  validateIndexFile,
+  validateIndexPayload,
+  computeIndexChecksum,
+} from './index/index-validator.js';
+export type { IndexValidationResult } from './index/index-validator.js';
 
 // ── Phase 11: Index Builder & Rebuild Pipeline ───────────────
 export type {
