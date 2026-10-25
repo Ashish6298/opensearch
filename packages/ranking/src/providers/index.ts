@@ -1,5 +1,5 @@
 /**
- * @opensearch/ranking — Providers Subsystem (Phase 69)
+ * @opensearch/ranking — Providers Subsystem (Phase 69 & Phase 70)
  */
 
 export type {
@@ -33,3 +33,17 @@ export {
   createProviderRegistry,
 } from './provider-registry.js';
 export type { ProviderExecutionSummary } from './provider-registry.js';
+
+export {
+  WikimediaProvider,
+  WIKIMEDIA_PROVIDER_METADATA,
+} from './wikimedia-provider.js';
+
+export {
+  HackerNewsProvider,
+  HACKERNEWS_PROVIDER_METADATA,
+} from './hackernews-provider.js';
+
+export {
+  createDefaultProviderRegistry,
+} from './default-providers.js';

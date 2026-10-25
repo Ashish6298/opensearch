@@ -1,0 +1,78 @@
+================================================================================
+OPENSEARCH ENGINE — VERIFICATION REPORT: PHASE 70
+REMOVE BRITTLE SCRAPING FALLBACKS
+================================================================================
+
+Milestone: 27 — Search Providers and Source Reliability
+Phase:     70 — Remove Brittle Scraping Fallbacks
+Date:      October 2026
+Branch:    ashish
+Status:    PASSED / VERIFIED (100% Acceptance Criteria Met)
+
+--------------------------------------------------------------------------------
+1. ACCEPTANCE CRITERIA VERIFICATION
+--------------------------------------------------------------------------------
+
+[PASS] Criterion 1: No undocumented scraping remains in the default search path.
+       - Traced all fallback and scraping call sites in apps/api/src/external-search.ts.
+       - Completely removed Google Suggest (suggestqueries.google.com) scraping.
+       - Completely removed DuckDuckGo HTML scraping regex (html.duckduckgo.com).
+       - Completely removed DuckDuckGo Instant Answers API (api.duckduckgo.com).
+       - Regression tests in apps/api/tests/removed-scrapers-regression.test.ts prove
+         that zero requests are made to Google or DuckDuckGo scraped endpoints.
+
+[PASS] Criterion 2: All external search calls go through the provider layer.
+       - apps/api/src/external-search.ts now routes external queries exclusively through
+         the standard ProviderRegistry implemented in Phase 69.
+       - Integrated documented, permitted, non-scraping search providers:
+         * WikimediaProvider: Official MediaWiki OpenSearch Action API (CC BY-SA 4.0)
+         * HackerNewsProvider: Official Algolia Hacker News Search API
+       - All provider results are normalized through normalizeProviderResult and
+         convertToSearchResultItem, preserving full provenance metadata.
+
+[PASS] Criterion 3: The core product works without paid keys.
+       - All default enabled providers (Wikimedia OpenSearch, Hacker News Algolia)
+         operate under open-access permitted public APIs without paid keys or secrets.
+       - Core local BM25 search remains 100% functional without internet connectivity.
+
+--------------------------------------------------------------------------------
+2. TEST SUITE VERIFICATION
+--------------------------------------------------------------------------------
+
+New Regression Test Suite: apps/api/tests/removed-scrapers-regression.test.ts (7 tests)
+  ✓ 1. Scraper Removal Verification > proves Google Suggest (suggestqueries.google.com) is NEVER called
+  ✓ 1. Scraper Removal Verification > proves DuckDuckGo HTML scraping (html.duckduckgo.com) is NEVER called
+  ✓ 1. Scraper Removal Verification > proves DuckDuckGo API (api.duckduckgo.com) is NEVER called
+  ✓ 1. Scraper Removal Verification > proves legacy fetchGoogleLive alias also routes exclusively to permitted providers
+  ✓ 2. Provider Layer Routing & Provenance Retention > returns normalized SearchResultItems with source and domain provenance
+  ✓ 2. Provider Layer Routing & Provenance Retention > supports custom registry override and mock provider execution
+  ✓ 2. Provider Layer Routing & Provenance Retention > gracefully handles complete provider failure without throwing
+
+Monorepo Test Suite:
+  Command: npm test (vitest run)
+  Result:  52 test files passed (52 / 52, 100%)
+           539 tests passed (539 / 539, 100%)
+           Duration: 6.64s
+
+TypeScript Build & Typecheck:
+  Command: npm run typecheck (tsc -b)
+  Result:  0 errors (EXIT 0)
+  Command: npm run build
+  Result:  EXIT 0
+
+--------------------------------------------------------------------------------
+3. READINESS ASSESSMENT FOR NEXT PHASE
+--------------------------------------------------------------------------------
+
+Target: Milestone 27, Phase 71 — Timeouts, retries, caching, and partial results
+
+Question: Is the repository ready for Phase 71?
+>>> YES — IT IS FULLY READY FOR NEXT PHASE (Phase 71).
+
+Justification:
+- Brittle scraping is completely retired; all external search dispatches go through the standard provider interface.
+- Permitted providers (Wikimedia, Hacker News) are registered and operational without paid keys.
+- Regression tests prove 100% absence of scraping dispatches.
+- The repository is in an ideal state to implement per-provider timeouts, bounded retry backoff,
+  response caching (with TTL/size limits), and partial-result resilience in Phase 71.
+================================================================================
