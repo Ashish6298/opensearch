@@ -1,0 +1,117 @@
+================================================================================
+OPENSEARCH ENGINE — VERIFICATION REPORT: PHASE 71
+TIMEOUTS, RETRIES, CACHING, AND PARTIAL RESULTS
+================================================================================
+
+Milestone: 27 — Search Providers and Source Reliability
+Phase:     71 — Timeouts, retries, caching, and partial results
+Date:      October 2026
+Branch:    ashish
+Status:    PASSED / VERIFIED (100% Acceptance Criteria Met)
+
+--------------------------------------------------------------------------------
+1. ACCEPTANCE CRITERIA VERIFICATION
+--------------------------------------------------------------------------------
+
+[PASS] Criterion 1: One failed provider cannot crash the entire search experience.
+       - Implemented per-provider timeouts and global search deadline (searchDeadlineMs)
+         using bounded AbortControllers and Promise.race timers.
+       - Complete failure isolation in ProviderRegistry.runWithConcurrency and executeSingleProvider:
+         any thrown error, timeout, malformed payload, or network drop in one provider is
+         caught, classified, sanitized, and isolated.
+       - Healthy providers complete normally and their results are aggregated without
+         interruption.
+
+[PASS] Criterion 2: All error states are understandable.
+       - Standardized ProviderErrorCode taxonomy:
+         * TIMEOUT: "The search provider did not respond within the allocated time limit."
+         * RATE_LIMITED: "The search provider rate limit was reached. Cooldown initiated."
+         * UPSTREAM_ERROR: "The upstream provider encountered a temporary service disruption."
+         * NETWORK_ERROR: "Unable to reach the search provider due to an offline or network error."
+         * INVALID_RESPONSE: "The provider returned an unrecognized or corrupted data format."
+         * OVERSIZED_RESPONSE: "The provider response exceeded the maximum permitted size limit."
+         * CANCELLED: "The search request was cancelled."
+         * CIRCUIT_OPEN: "Provider temporarily suspended to protect against upstream failure storms."
+         * DISABLED: "The search provider is currently disabled."
+       - Zero internal stack traces, filesystem paths, or upstream URLs are exposed in
+         user-facing messages.
+
+[PASS] Criterion 3: Cache behavior matches documented privacy rules.
+       - In-memory ProviderResponseCache strictly uses deterministic query-only keys
+         (providerId + normalized query + limit + categories).
+       - Zero personal identifiers, client IP addresses, cookies, or tracking tokens are stored.
+       - Respects provider cache policies (TTL and max size) with LRU eviction.
+       - Zero disk persistence for cached queries.
+
+--------------------------------------------------------------------------------
+2. TECHNICAL IMPLEMENTATION SUMMARY
+--------------------------------------------------------------------------------
+
+1. Resilience Architecture:
+   - packages/ranking/src/providers/provider-types.ts:
+     * Added ProviderErrorCode union.
+     * Extended ProviderQueryResult with errorCode, sanitizedMessage, retriesAttempted, retryAfterSeconds.
+     * Extended ProviderQueryOptions with searchDeadlineMs, maxConcurrency, maxRetries, enableCache, bypassCircuitBreaker.
+     * Extended ProviderExecutionSummary with isPartial, searchDeadlineExceeded, cachedProviders.
+   - packages/ranking/src/providers/resilience-manager.ts:
+     * Exponential backoff with random jitter: (base * 2^attempt) + jitter.
+     * HTTP 429 and Retry-After header tracking with automatic cooldown.
+     * 3-state Circuit Breaker (CLOSED / OPEN / HALF_OPEN) with 3-failure trip threshold.
+     * Error classification and user-safe message sanitization.
+   - packages/ranking/src/providers/provider-cache.ts:
+     * Privacy-preserving in-memory LRU cache with TTL expiration.
+   - packages/ranking/src/providers/provider-registry.ts:
+     * Bounded concurrency worker pool (default: 4 concurrent workers).
+     * Global search deadline with AbortController hierarchy.
+     * Transient error retries (5xx, timeouts, network drops).
+     * Circuit breaker fast-fail and Retry-After compliance.
+     * Partial result aggregation with isPartial flag.
+   - packages/ranking/src/providers/mock-provider.ts:
+     * Deterministic simulation hooks for all failure and edge modes.
+
+--------------------------------------------------------------------------------
+3. TEST SUITE VERIFICATION
+--------------------------------------------------------------------------------
+
+Targeted Resilience Suite: packages/ranking/tests/provider-resilience.test.ts (16 tests)
+  ✓ 1. Timeout Handling > isolates per-provider timeout and marks provider result as TIMEOUT
+  ✓ 1. Timeout Handling > enforces overall search deadline across all dispatched providers
+  ✓ 2. Offline Mode & Network Failures > handles offline network errors gracefully with sanitized user messages
+  ✓ 3. HTTP 429 & 5xx Handling > handles HTTP 429, extracts Retry-After, and initiates cooldown
+  ✓ 3. HTTP 429 & 5xx Handling > retries transient HTTP 5xx errors with backoff and succeeds on subsequent attempt
+  ✓ 3. HTTP 429 & 5xx Handling > records UPSTREAM_ERROR when HTTP 5xx persists beyond maxRetries
+  ✓ 4. Invalid JSON Parsing > captures malformed JSON and reports INVALID_RESPONSE without crashing
+  ✓ 5. Oversized Response Bodies > safely rejects payloads exceeding size threshold with OVERSIZED_RESPONSE
+  ✓ 6. Provider Unavailable & Circuit Breaker > trips circuit breaker after consecutive failures and fails fast with CIRCUIT_OPEN
+  ✓ 7. Request Cancellation > terminates pending execution immediately when AbortSignal is aborted
+  ✓ 8. Partial Results Aggregation > returns available results with isPartial=true when some providers fail
+  ✓ 8. Partial Results Aggregation > sets isPartial=false when all enabled providers succeed
+  ✓ 9. Privacy-Preserving Response Cache > caches successful provider responses and serves subsequent calls from cache
+  ✓ 9. Privacy-Preserving Response Cache > generates deterministic query-only keys without IP or user session data
+  ✓ 9. Privacy-Preserving Response Cache > evicts least recently used items when max capacity is reached
+  ✓ 10. Bounded Concurrency > executes providers within bounded concurrency pool without deadlocks
+
+Provider Core Suite: packages/ranking/tests/search-providers.test.ts (11 tests)
+  ✓ 11 passed (100%)
+
+Monorepo Comprehensive Test Run:
+  Command: npm test (vitest run)
+  Result:  53 test files passed (53 / 53, 100%)
+           555 tests passed (555 / 555, 100%)
+           Duration: 6.16s
+
+TypeScript Build & Typecheck:
+  Command: npm run typecheck (tsc -b)
+  Result:  0 errors (EXIT 0)
+  Command: npm run build
+  Result:  0 errors (EXIT 0)
+
+--------------------------------------------------------------------------------
+4. READINESS FOR NEXT PHASE
+--------------------------------------------------------------------------------
+Phase 71 is 100% complete and fully verified.
+The provider framework is robustly fortified against network anomalies, latency spikes,
+upstream outages, rate limits, and failure storms.
+
+STATUS: READY FOR NEXT PHASE (Phase 72 — Quality benchmark and ranking integration).
+================================================================================

@@ -1,10 +1,11 @@
 /**
- * @opensearch/ranking — Providers Subsystem (Phase 69 & Phase 70)
+ * @opensearch/ranking — Providers Subsystem (Phase 69, Phase 70 & Phase 71)
  */
 
 export type {
   QueryCategory,
   ContentType,
+  ProviderErrorCode,
   ProviderAttribution,
   ProviderRateLimits,
   ProviderCachePolicy,
@@ -33,6 +34,23 @@ export {
   createProviderRegistry,
 } from './provider-registry.js';
 export type { ProviderExecutionSummary } from './provider-registry.js';
+
+export {
+  ProviderResponseCache,
+} from './provider-cache.js';
+export type {
+  CacheEntry,
+  ProviderCacheStats,
+} from './provider-cache.js';
+
+export {
+  ResilienceManager,
+} from './resilience-manager.js';
+export type {
+  CircuitState,
+  ProviderCircuitStatus,
+  ResilienceManagerOptions,
+} from './resilience-manager.js';
 
 export {
   WikimediaProvider,

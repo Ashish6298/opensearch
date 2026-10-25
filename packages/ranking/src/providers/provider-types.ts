@@ -1,5 +1,5 @@
 /**
- * @opensearch/ranking — Standard Search Provider Interface & Schema (Phase 69)
+ * @opensearch/ranking — Standard Search Provider Interface & Schema (Phase 69 & Phase 71)
  *
  * Defines typed contracts for external and local search providers, ensuring:
  * 1. Complete provider metadata: identifier, display name, categories, endpoint,
@@ -8,6 +8,8 @@
  *    snippet, source, content type, timestamp, attribution, and optional thumbnail.
  * 3. Provider-specific response formats remain strictly outside the UI and ranking layers.
  * 4. Failure isolation: Provider errors do not crash or block the search pipeline.
+ * 5. Robust resilience: Timeouts, exponential backoff with jitter, Retry-After compliance,
+ *    circuit breakers, response caching, bounded concurrency, and partial result reporting.
  */
 
 export type QueryCategory =
@@ -27,6 +29,17 @@ export type ContentType =
   | 'repository'
   | 'encyclopedia'
   | 'dataset';
+
+export type ProviderErrorCode =
+  | 'TIMEOUT'
+  | 'RATE_LIMITED'
+  | 'UPSTREAM_ERROR'
+  | 'NETWORK_ERROR'
+  | 'INVALID_RESPONSE'
+  | 'OVERSIZED_RESPONSE'
+  | 'CANCELLED'
+  | 'CIRCUIT_OPEN'
+  | 'DISABLED';
 
 export interface ProviderAttribution {
   /** Name of the data source / provider */
@@ -126,8 +139,18 @@ export interface ProviderQueryOptions {
   limit?: number;
   /** 1-based page number for pagination */
   page?: number;
-  /** Timeout override in milliseconds for this execution */
+  /** Per-provider timeout override in milliseconds for this execution */
   timeoutMs?: number;
+  /** Overall search deadline in milliseconds across all dispatched providers */
+  searchDeadlineMs?: number;
+  /** Maximum concurrent provider requests executing simultaneously (default: 4) */
+  maxConcurrency?: number;
+  /** Maximum retries for transient failures (default: 2) */
+  maxRetries?: number;
+  /** Whether to consult the in-memory response cache (default: true) */
+  enableCache?: boolean;
+  /** Force bypass circuit breaker checks (default: false) */
+  bypassCircuitBreaker?: boolean;
   /** Categories associated with the query */
   categories?: QueryCategory[];
   /** Abort signal for request cancellation */
@@ -145,6 +168,14 @@ export interface ProviderQueryResult {
   totalHits?: number;
   /** Error message if provider encountered a failure (isolated) */
   error?: string;
+  /** Standardized error category code */
+  errorCode?: ProviderErrorCode;
+  /** User-friendly sanitized explanation without leaking internal errors */
+  sanitizedMessage?: string;
+  /** Number of retry attempts executed for this request */
+  retriesAttempted?: number;
+  /** Retry-After duration in seconds if provider returned HTTP 429 */
+  retryAfterSeconds?: number;
   /** Whether result was served from provider cache */
   cached?: boolean;
 }
