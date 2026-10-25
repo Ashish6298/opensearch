@@ -18,6 +18,56 @@
     'Courier New', monospace;
 }
 
+/* Modern Everyday Search Themes (Phase 77) */
+
+/* Modern Dark Theme (Default) */
+html[data-theme='dark'],
+:root {
+  --bg-page: #0b0f19;
+  --bg-terminal: #0b0f19;
+  --bg-panel: #161e2e;
+  --border-terminal: #283548;
+  --accent-green: #3b82f6;
+  --accent-green-hover: #60a5fa;
+  --accent-link: #60a5fa;
+  --accent-link-hover: #93c5fd;
+  --text-muted-70: #f1f5f9;
+  --text-muted-50: #cbd5e1;
+  --text-muted-40: #94a3b8;
+  --text-dim: #64748b;
+  --font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --search-box-bg: #111827;
+  --search-box-border: #374151;
+  --search-box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  --btn-bg: #2563eb;
+  --btn-hover: #1d4ed8;
+  --btn-text: #ffffff;
+}
+
+/* Modern Light Theme */
+html[data-theme='light'] {
+  --bg-page: #f8fafc;
+  --bg-terminal: #f8fafc;
+  --bg-panel: #ffffff;
+  --border-terminal: #e2e8f0;
+  --accent-green: #2563eb;
+  --accent-green-hover: #1d4ed8;
+  --accent-link: #2563eb;
+  --accent-link-hover: #1d4ed8;
+  --text-muted-70: #0f172a;
+  --text-muted-50: #334155;
+  --text-muted-40: #64748b;
+  --text-dim: #94a3b8;
+  --font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --search-box-bg: #ffffff;
+  --search-box-border: #cbd5e1;
+  --search-box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  --btn-bg: #2563eb;
+  --btn-hover: #1d4ed8;
+  --btn-text: #ffffff;
+}
+
+/* Retro Hacker & Terminal Themes (Optional CRT Experience) */
 /* 1. Matrix Phosphor Theme (Default Green) */
 html[data-theme='matrix'] {
   --bg-page: #050505;
@@ -32,6 +82,7 @@ html[data-theme='matrix'] {
   --text-muted-50: rgba(200, 240, 200, 0.65);
   --text-muted-40: rgba(180, 220, 180, 0.5);
   --text-dim: rgba(150, 200, 150, 0.35);
+  --font-family-base: var(--font-mono);
 }
 
 /* 2. Cyberpunk Amber Theme */
@@ -48,6 +99,7 @@ html[data-theme='amber'] {
   --text-muted-50: rgba(253, 230, 138, 0.68);
   --text-muted-40: rgba(252, 211, 77, 0.5);
   --text-dim: rgba(245, 158, 11, 0.35);
+  --font-family-base: var(--font-mono);
 }
 
 /* 3. Dracula Neon Theme */
@@ -64,6 +116,7 @@ html[data-theme='dracula'] {
   --text-muted-50: rgba(203, 213, 225, 0.68);
   --text-muted-40: rgba(148, 163, 184, 0.5);
   --text-dim: rgba(100, 116, 139, 0.35);
+  --font-family-base: var(--font-mono);
 }
 
 /* 4. Nord Frost Theme */
@@ -80,6 +133,7 @@ html[data-theme='nord'] {
   --text-muted-50: rgba(229, 233, 240, 0.7);
   --text-muted-40: rgba(216, 222, 233, 0.55);
   --text-dim: rgba(144, 155, 172, 0.4);
+  --font-family-base: var(--font-mono);
 }
 
 /* 5. Monokai High Contrast Theme */
@@ -96,6 +150,7 @@ html[data-theme='monokai'] {
   --text-muted-50: rgba(245, 245, 245, 0.72);
   --text-muted-40: rgba(200, 200, 200, 0.55);
   --text-dim: rgba(150, 150, 150, 0.38);
+  --font-family-base: var(--font-mono);
 }
 
 * {
@@ -110,8 +165,9 @@ body {
   height: 100%;
   background-color: var(--bg-terminal);
   color: var(--text-muted-70);
-  font-family: var(--font-mono);
+  font-family: var(--font-family-base, var(--font-mono));
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
@@ -938,5 +994,240 @@ body {
 @media (max-width: 380px) {
   .corner-version {
     display: none;
+  }
+}
+
+
+/* ==========================================================================
+   Phase 77: Modern Everyday Search UI & Responsive System
+   ========================================================================== */
+
+/* Theme-specific visibility toggles */
+/* By default, in modern dark and light themes: */
+html[data-theme='dark'] .ascii-wrapper,
+html[data-theme='dark'] .status-section,
+html[data-theme='dark'] .cli-cmd,
+html[data-theme='light'] .ascii-wrapper,
+html[data-theme='light'] .status-section,
+html[data-theme='light'] .cli-cmd {
+  display: none !important;
+}
+
+/* In retro themes, hide modern brand header: */
+html[data-theme='matrix'] .brand-wordmark-container,
+html[data-theme='amber'] .brand-wordmark-container,
+html[data-theme='dracula'] .brand-wordmark-container,
+html[data-theme='nord'] .brand-wordmark-container,
+html[data-theme='monokai'] .brand-wordmark-container {
+  display: none !important;
+}
+
+/* Modern Brand Header */
+.brand-wordmark-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.brand-logo-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.15), rgba(59, 130, 246, 0.25));
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  font-size: 26px;
+}
+
+.brand-title {
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: var(--text-muted-70);
+  margin: 0;
+}
+
+.brand-subtitle {
+  font-size: 15px;
+  color: var(--text-muted-40);
+  margin: 0;
+  font-weight: 400;
+}
+
+.home-privacy-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 6px 14px;
+  background-color: var(--bg-panel);
+  border: 1px solid var(--border-terminal);
+  border-radius: 20px;
+  font-size: 13px;
+  color: var(--text-muted-50);
+  margin-top: 4px;
+}
+
+.badge-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.badge-separator {
+  color: var(--text-dim);
+}
+
+/* Modern Search Box & Button styling */
+html[data-theme='dark'] .terminal-search-box,
+html[data-theme='light'] .terminal-search-box {
+  background-color: var(--search-box-bg);
+  border: 1.5px solid var(--search-box-border);
+  border-radius: 28px;
+  padding: 8px 10px 8px 18px;
+  box-shadow: var(--search-box-shadow);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+html[data-theme='dark'] .terminal-search-box:focus-within,
+html[data-theme='light'] .terminal-search-box:focus-within {
+  border-color: var(--accent-green);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+}
+
+html[data-theme='dark'] .search-prompt-symbol,
+html[data-theme='light'] .search-prompt-symbol {
+  color: var(--text-dim);
+  font-size: 16px;
+  margin-right: 10px;
+}
+
+html[data-theme='dark'] .run-btn,
+html[data-theme='light'] .run-btn {
+  background-color: var(--btn-bg);
+  color: var(--btn-text);
+  border: none;
+  border-radius: 20px;
+  padding: 10px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 44px;
+  min-width: 76px;
+  transition: background-color 0.15s ease;
+}
+
+html[data-theme='dark'] .run-btn:hover,
+html[data-theme='light'] .run-btn:hover {
+  background-color: var(--btn-hover);
+}
+
+/* Quick Suggested Topics */
+.quick-topics-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  justify-content: center;
+}
+
+.quick-topics-label {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.quick-topic-tag {
+  background-color: var(--bg-panel);
+  border: 1px solid var(--border-terminal);
+  color: var(--text-muted-50);
+  border-radius: 16px;
+  padding: 6px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.quick-topic-tag:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+  border-color: var(--accent-green);
+  color: var(--accent-green);
+}
+
+/* Universal Touch Targets & Mobile-First Media Queries (Phase 77) */
+@media (max-width: 640px) {
+  .theme-switcher-btn,
+  .quick-topic-tag,
+  .run-btn,
+  .footer-shortcuts-btn,
+  .shortcuts-modal-close-btn,
+  .cli-retry-btn,
+  .pagination-btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .terminal-search-box {
+    padding: 6px 8px 6px 14px;
+  }
+
+  .terminal-search-input {
+    font-size: 16px; /* Prevents auto-zoom in mobile Safari */
+    min-height: 44px;
+  }
+
+  .brand-title {
+    font-size: 26px;
+  }
+
+  .corner-header-controls {
+    position: static;
+    margin-bottom: 12px;
+    justify-content: flex-end;
+    padding: 12px 16px 0 16px;
+  }
+
+  .terminal-main {
+    padding: 12px 16px 32px 16px;
+  }
+
+  .home-privacy-badge {
+    font-size: 12px;
+    padding: 6px 10px;
+    gap: 6px;
+  }
+
+  .quick-topics-row {
+    justify-content: flex-start;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1023px) {
+  .terminal-container {
+    max-width: 680px;
+  }
+  .terminal-main {
+    padding: 5vh 24px 36px 24px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .terminal-container {
+    max-width: 780px;
+  }
+  .terminal-main {
+    padding: 8vh 32px 48px 32px;
+  }
+  .brand-title {
+    font-size: 36px;
   }
 }

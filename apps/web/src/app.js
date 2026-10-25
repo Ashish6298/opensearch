@@ -39,7 +39,7 @@
     : '/api/v1/search';
   const SUGGEST_ENDPOINT = API_ENDPOINT.replace('/search', '/suggest');
   const PAGE_SIZE = 10;
-  const THEMES = ['matrix', 'amber', 'dracula', 'nord', 'monokai'];
+  const THEMES = ['dark', 'light', 'matrix', 'amber', 'dracula', 'nord', 'monokai'];
 
   // State
   let currentQuery = '';
@@ -51,7 +51,7 @@
   let currentSuggestions = [];
   let currentActiveResultIndex = -1;
   let currentResultItems = [];
-  let currentTheme = 'matrix';
+  let currentTheme = 'dark';
 
   function init() {
     initTheme();
@@ -139,6 +139,19 @@
         cycleTheme();
       });
     }
+
+    // Phase 77: Quick topic pills
+    const quickTopicBtns = document.querySelectorAll('.quick-topic-tag');
+    quickTopicBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const query = btn.getAttribute('data-query');
+        if (query && searchInput) {
+          searchInput.value = query;
+          searchInput.focus();
+          performSearch(query, 1);
+        }
+      });
+    });
 
     // Keyboard navigation (Autocomplete & search input keys)
     searchInput.addEventListener('keydown', function (e) {
@@ -344,10 +357,10 @@
       if (savedTheme && THEMES.includes(savedTheme)) {
         currentTheme = savedTheme;
       } else {
-        currentTheme = 'matrix';
+        currentTheme = 'dark';
       }
     } catch (e) {
-      currentTheme = 'matrix';
+      currentTheme = 'dark';
     }
     applyTheme(currentTheme, false);
   }
@@ -366,6 +379,12 @@
     if (themeSwitcherBtn) {
       themeSwitcherBtn.textContent = `[theme: ${themeName}]`;
       themeSwitcherBtn.setAttribute('aria-label', `Toggle color theme (Current: ${themeName})`);
+    }
+
+    const submitBtn = document.getElementById('search-submit-btn');
+    if (submitBtn) {
+      const isRetro = ['matrix', 'amber', 'dracula', 'nord', 'monokai'].includes(themeName);
+      submitBtn.textContent = isRetro ? 'RUN' : 'Search';
     }
 
     if (announce) {

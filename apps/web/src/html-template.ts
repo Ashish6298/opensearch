@@ -35,7 +35,7 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
   <script>
     (function () {
       try {
-        var theme = localStorage.getItem('opensearch_theme') || 'matrix';
+        var theme = localStorage.getItem('opensearch_theme') || 'dark';
         document.documentElement.setAttribute('data-theme', theme);
       } catch (e) {}
       if ('serviceWorker' in navigator) {
@@ -54,7 +54,7 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
   <div class="terminal-app" id="terminal-window" role="main">
     <!-- Header Controls in Top Corner (Theme Switcher & Version) -->
     <div class="corner-header-controls">
-      <button type="button" class="theme-switcher-btn" id="theme-switcher-btn" aria-label="Toggle color theme" title="Click to cycle theme (Matrix, Amber, Synthwave, Solarized, Nord)">[theme: matrix]</button>
+      <button type="button" class="theme-switcher-btn" id="theme-switcher-btn" aria-label="Toggle color theme" title="Click to cycle theme (Dark, Light, Matrix, Amber, Dracula, Nord, Monokai)">[theme: dark]</button>
       <div class="corner-version">v1.4.0</div>
     </div>
 
@@ -62,6 +62,22 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
     <main class="terminal-main">
       <div class="terminal-container">
         <!-- ASCII Wordmark centered -->
+        <!-- Modern Everyday Brand Wordmark (Active in Dark & Light themes) -->
+        <header class="brand-wordmark-container" id="brand-header">
+          <div class="brand-logo-badge">
+            <span class="brand-icon" aria-hidden="true">🔍</span>
+          </div>
+          <h1 class="brand-title">OpenSearch</h1>
+          <p class="brand-subtitle">Privacy-first, independent web search</p>
+          <div class="home-privacy-badge" role="note" aria-label="Privacy Guarantees">
+            <span class="badge-item"><span class="badge-icon" aria-hidden="true">🔒</span> No tracking</span>
+            <span class="badge-separator" aria-hidden="true">·</span>
+            <span class="badge-item"><span class="badge-icon" aria-hidden="true">🚫</span> No accounts</span>
+            <span class="badge-separator" aria-hidden="true">·</span>
+            <span class="badge-item"><span class="badge-icon" aria-hidden="true">⚡</span> Pure relevance</span>
+          </div>
+        </header>
+
         <div class="ascii-wrapper">
           <pre class="ascii-art" aria-label="OpenSearch">${ASCII_LOGO}</pre>
         </div>
@@ -99,7 +115,7 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
                 type="text"
                 id="search-input"
                 class="terminal-search-input"
-                placeholder="enter query"
+                placeholder="Search the web privately..."
                 autocomplete="off"
                 autocorrect="off"
                 autocapitalize="off"
@@ -112,7 +128,14 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
                 required
               />
               <button type="button" id="search-clear-btn" class="sr-only" aria-label="Clear search input">Clear</button>
-              <button type="submit" id="search-submit-btn" class="run-btn" aria-label="Submit search">RUN</button>
+              <button type="submit" id="search-submit-btn" class="run-btn" aria-label="Submit search">Search</button>
+            </div>
+            <!-- Quick Suggestions for approachable discovery -->
+            <div class="quick-topics-row" id="quick-topics" aria-label="Suggested searches">
+              <span class="quick-topics-label">Try:</span>
+              <button type="button" class="quick-topic-tag" data-query="privacy guide">privacy guide</button>
+              <button type="button" class="quick-topic-tag" data-query="local search engine">local search</button>
+              <button type="button" class="quick-topic-tag" data-query="open source">open source</button>
             </div>
             <!-- Phase 35: Terminal Autocomplete Dropdown -->
             <div
