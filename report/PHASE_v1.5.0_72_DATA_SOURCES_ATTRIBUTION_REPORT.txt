@@ -1,0 +1,71 @@
+================================================================================
+OPENSEARCH ENGINE — VERIFICATION REPORT: PHASE 72
+ATTRIBUTION AND DATA-SOURCE COMPLIANCE
+================================================================================
+
+Milestone: 27 — Search Providers and Source Reliability
+Phase:     72 — Attribution and data-source compliance
+Date:      October 2026
+Branch:    ashish
+Status:    PASSED / VERIFIED (100% Acceptance Criteria Met)
+
+--------------------------------------------------------------------------------
+1. ACCEPTANCE CRITERIA VERIFICATION
+--------------------------------------------------------------------------------
+
+[PASS] Criterion 1: Every enabled provider has documented provenance and usage requirements.
+       - Produced comprehensive deliverable docs/data-sources.md cataloging all active
+         data sources:
+         * Sovereign Local Index (local-index): local sovereign corpus, air-gapped Boundary A.
+         * Wikimedia OpenSearch API (wikimedia): CC BY-SA 4.0 license, rate limits 200 req/min,
+           TTL 3600s, required attribution text "Source: Wikipedia (CC BY-SA 4.0)".
+         * Hacker News Algolia Search (hackernews): Public Permitted API (community fair use),
+           rate limits 10,000 req/hr, TTL 300s, required attribution text
+           "Source: Hacker News (Algolia Search API)".
+         * Mock Provider (mock-provider): MIT License test fixtures.
+       - Documented exact rate limits, caching TTL constraints, User-Agent politeness
+         requirements, and zero-PII network privacy boundaries for each source.
+       - Avoided calling sources "open" unless their terms strictly justify it: Hacker News
+         is explicitly classified as "Public Permitted API", not openly licensed.
+       - Codified a 10-point checklist for vetting future provider integrations.
+
+[PASS] Criterion 2: Users can identify where results came from.
+       - Preserved provenance metadata in SearchResultItem (source, attribution, contentType).
+       - Local index results explicitly tagged with source: 'local-index'.
+       - Web terminal and HTML result cards surface attribution and source badges:
+         * Attributed external results render [Source: ...] (e.g. Wikipedia CC BY-SA 4.0).
+         * Non-local sources render [source: <providerId>] next to the canonical URL line.
+       - API JSON response emits source and attribution fields for all search hits.
+       - Verified via unit and integration tests in apps/web/tests/web.test.ts.
+
+--------------------------------------------------------------------------------
+2. TEST SUITE VERIFICATION
+--------------------------------------------------------------------------------
+
+Targeted Attribution Suite: apps/web/tests/web.test.ts
+  ✓ renders a complete result card with article role, labelledby, and title target
+  ✓ safely handles missing metadata and escapes malicious scripts in titles or URLs
+  ✓ renders attribution badge when attribution is provided (Phase 72)
+  ✓ renders source badge when non-local source is provided without custom attribution (Phase 72)
+  ✓ preserves safe <mark> tags while escaping other nested HTML tags
+
+Monorepo Comprehensive Test Run:
+  Command: npm test (vitest run)
+  Result:  53 test files passed (53 / 53, 100%)
+           557 tests passed (557 / 557, 100%)
+           Duration: 6.24s
+
+TypeScript Build & Typecheck:
+  Command: npm run typecheck (tsc -b)
+  Result:  0 errors (EXIT 0)
+  Command: npm run build
+  Result:  0 errors (EXIT 0)
+
+--------------------------------------------------------------------------------
+3. READINESS FOR NEXT PHASE
+--------------------------------------------------------------------------------
+Phase 72 is 100% complete and fully verified.
+Milestone 27 ("Search Providers and Source Reliability", Phases 69–72) is now FULLY COMPLETED.
+
+STATUS: READY FOR NEXT MILESTONE (Milestone 28 / Phase 73 — Index lifecycle and schema audit).
+================================================================================

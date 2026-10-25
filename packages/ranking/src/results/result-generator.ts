@@ -111,6 +111,8 @@ export class DefaultResultGenerator implements ResultGenerator {
         highlightedSnippet,
         language: docMeta.language ?? null,
         indexedAt: docMeta.indexedAt || new Date().toISOString(),
+        source: 'local-index',
+        contentType: 'webpage',
       };
     });
 

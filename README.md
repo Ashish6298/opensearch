@@ -903,7 +903,7 @@ $ audit --privacy-boundaries
 | **Milestone 14** | **Developer Platform & CLI Tooling**    | Phases 43 – 44 | OpenAPI 3.1.0 spec (`/docs`), standalone `@opensearch/cli` terminal tool | `[PASSED]` |
 | **Milestone 15** | **Release Convergence & Benchmarking**  | Phase 45       | Full regression testing, sub-5ms P99 latency SLA, v1.2.0 verification    | `[PASSED]` |
 | **Milestone 26** | **Repository Audit & Baseline (v1.5.0)**| Phases 66 – 68 | Architecture inventory, baseline measurements, product & privacy contracts | `[PASSED]` |
-| **Milestone 27** | **Search Providers & Source Reliability**| Phases 69 – 71 (69–72) | Standard provider interface, zero brittle scraping, timeouts, retries, caching & partial results | `[PHASE 69–71 PASSED]` |
+| **Milestone 27** | **Search Providers & Source Reliability**| Phases 69 – 72 | Standard provider interface, zero brittle scraping, resilience, attribution compliance | `[PASSED]` |
 
 <br/>
 
@@ -918,10 +918,10 @@ $ npm test
 ✓ packages/ranking/tests/instant-answers.test.ts (26 tests)
 ...
 Test Files  53 passed (53)
-     Tests  555 passed (555)
+     Tests  557 passed (557)
   Duration  5.99s -- 100% Passing Pass Rate
 ────────────────────────────────────────────────────────────
-TOTAL RESULT: 555 / 555 TESTS PASSED (100.0%) -- V1.5.0 PHASE 71 VERIFIED
+TOTAL RESULT: 557 / 557 TESTS PASSED (100.0%) -- V1.5.0 PHASE 72 VERIFIED
 ```
 
 ---
