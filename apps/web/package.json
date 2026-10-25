@@ -8,7 +8,7 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc -b && npm run build:assets",
-    "build:assets": "node -e \"fs.cpSync('src/style.css', 'dist/style.css'); fs.cpSync('src/app.js', 'dist/app.js');\"",
+    "build:assets": "node -e \"fs.cpSync('src/style.css', 'dist/style.css'); fs.cpSync('src/app.js', 'dist/app.js'); fs.cpSync('src/sw.js', 'dist/sw.js'); fs.cpSync('src/manifest.json', 'dist/manifest.json');\"",
     "start": "node ./dist/index.js",
     "clean": "node -e \"fs.rmSync('dist', { recursive: true, force: true })\""
   },

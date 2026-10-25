@@ -22,6 +22,8 @@ export interface QueryFilter {
   exact?: string[];
   /** File extension filter (e.g., 'pdf', 'json', 'md') */
   filetype?: string;
+  /** Workspace category filter ('dev' | 'news' | 'papers') */
+  workspace?: 'dev' | 'news' | 'papers';
 }
 
 export interface ParsedQuery {
