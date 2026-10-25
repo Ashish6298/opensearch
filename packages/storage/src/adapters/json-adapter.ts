@@ -15,6 +15,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import {
+  createStorageBackup,
+  restoreStorageBackup,
+  verifyStorageIntegrity,
+} from '../backup/backup-manager.js';
 
 import {
   Logger,
@@ -46,6 +51,9 @@ import {
   DocumentRepository,
   IndexMetadataRepository,
   StorageAdapter,
+  StorageBackupResult,
+  StorageIntegrityReport,
+  StorageRestoreResult,
   StorageHealth,
   UrlRepository,
 } from '../repositories.js';
@@ -580,6 +588,29 @@ export class JsonStorageAdapter implements StorageAdapter {
       indexMetadataCount: (await this._indexMetadata.list()).length,
       storageDir: this.storageDir,
     };
+  }
+
+  async backup(destinationDir: string): Promise<StorageBackupResult> {
+    this.requireInitialized();
+    return createStorageBackup(this.storageDir, destinationDir);
+  }
+
+  async restore(sourceDir: string): Promise<StorageRestoreResult> {
+    this.requireInitialized();
+    const result = await restoreStorageBackup(sourceDir, this.storageDir);
+    this._documents.load();
+    this._urls.load();
+    this._crawls.load();
+    this._indexMetadata.load();
+    this.logger.info('Storage restored and reloaded into memory', {
+      restoredFrom: sourceDir,
+      totalRecordsRestored: result.totalRecordsRestored,
+    });
+    return result;
+  }
+
+  async verifyIntegrity(): Promise<StorageIntegrityReport> {
+    return verifyStorageIntegrity(this.storageDir);
   }
 
   private requireInitialized(): void {

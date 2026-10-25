@@ -20,6 +20,19 @@ export type { JsonStorageAdapterOptions } from './adapters/json-adapter.js';
 export { createStorageAdapter } from './factory.js';
 export type { StorageFactoryOptions } from './factory.js';
 
+// ── Phase 74: Backup, Restore & Integrity Audit (V1.5.0) ──────────────────
+export {
+  STORAGE_COLLECTION_FILES,
+  computeFileChecksum,
+  createStorageBackup,
+  restoreStorageBackup,
+  verifyStorageIntegrity,
+} from './backup/backup-manager.js';
+export type {
+  BackupCollectionMeta,
+  BackupManifest,
+} from './backup/backup-manager.js';
+
 // ── Phase 53: Variable-Byte & Delta Index Compression (V1.3.0) ────────────
 export type {
   CompactPostingRecord,
