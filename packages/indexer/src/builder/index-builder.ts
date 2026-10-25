@@ -12,11 +12,21 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { createHash } from 'node:crypto';
 import { Logger, createLogger } from '@opensearch/shared';
-import { INDEX_STATUS, IndexMetadataRecord, StorageAdapter } from '@opensearch/storage';
+import {
+  DocumentRecord,
+  INDEX_STATUS,
+  IndexMetadataRecord,
+  StorageAdapter,
+} from '@opensearch/storage';
 import { DocumentProcessor } from '../pipeline/pipeline-types.js';
 import { createDocumentProcessor } from '../pipeline/document-processor.js';
-import { InvertedIndex } from '../index/index-types.js';
+import {
+  CURRENT_INDEX_SCHEMA_VERSION,
+  INDEX_FILE_NAME,
+  InvertedIndex,
+} from '../index/index-types.js';
 import { createInvertedIndex } from '../index/index-factory.js';
 import { validateIndexFile } from '../index/index-validator.js';
 import {
@@ -24,6 +34,11 @@ import {
   IndexBuildStats,
   IndexBuildSummary,
   IndexBuilder,
+  IndexDocumentResult,
+  GenerationCleanupOptions,
+  GenerationCleanupResult,
+  IndexHealth,
+  IndexHealthActiveGeneration,
 } from './builder-types.js';
 
 export interface IndexBuilderOptions {
@@ -32,6 +47,38 @@ export interface IndexBuilderOptions {
   processor?: DocumentProcessor;
   logger?: Logger;
   indexDir?: string;
+}
+
+export function computeDocumentFingerprint(doc: {
+  title?: string;
+  headings?: string;
+  description?: string;
+  bodyText?: string;
+  contentHash?: string | null;
+}): string {
+  if (doc.contentHash) return doc.contentHash;
+  const raw = `${doc.title || ''}\n${doc.headings || ''}\n${doc.description || ''}\n${doc.bodyText || ''}`;
+  const normalized = raw.toLowerCase().replace(/\s+/g, ' ').trim();
+  return createHash('sha256').update(normalized, 'utf-8').digest('hex');
+}
+
+function getDirectorySizeBytes(dirPath: string): number {
+  if (!fs.existsSync(dirPath)) return 0;
+  let totalBytes = 0;
+  try {
+    const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dirPath, entry.name);
+      if (entry.isDirectory()) {
+        totalBytes += getDirectorySizeBytes(fullPath);
+      } else if (entry.isFile()) {
+        totalBytes += fs.statSync(fullPath).size;
+      }
+    }
+  } catch {
+    // Ignore read errors
+  }
+  return totalBytes;
 }
 
 export class DefaultIndexBuilder implements IndexBuilder {
@@ -209,6 +256,21 @@ export class DefaultIndexBuilder implements IndexBuilder {
             continue;
           }
 
+          const fingerprint = computeDocumentFingerprint(docRecord);
+          const existingMeta = newIndex.getDocumentMeta(docRecord.id);
+
+          // Track document fingerprints to avoid unnecessary processing
+          if (
+            mode === 'incremental' &&
+            existingMeta &&
+            existingMeta.fingerprint === fingerprint &&
+            !options.force
+          ) {
+            stats.documentsSkipped++;
+            documentsToUpdateStatus.push(docRecord.id);
+            continue;
+          }
+
           // Process document via Phase 9 DocumentProcessor
           const processedDoc = this.processor.process(docRecord);
 
@@ -279,6 +341,13 @@ export class DefaultIndexBuilder implements IndexBuilder {
         durationMs: stats.durationMs,
       });
 
+      // Clean up obsolete generations according to documented retention rules
+      try {
+        await this.cleanObsoleteGenerations();
+      } catch {
+        // Non-blocking cleanup
+      }
+
       return {
         buildId,
         status: 'success',
@@ -325,5 +394,272 @@ export class DefaultIndexBuilder implements IndexBuilder {
         errorMessage: errorMsg,
       };
     }
+  }
+
+  /**
+   * Idempotently indexes or updates a single DocumentRecord.
+   * Compares document content fingerprint to skip processing if unchanged.
+   */
+  async indexDocument(
+    docRecord: DocumentRecord,
+    options: { force?: boolean } = {}
+  ): Promise<IndexDocumentResult> {
+    const startMs = Date.now();
+    await this.loadActiveIndex();
+    if (!this.activeIndex) {
+      throw new Error('No active index available for document indexing');
+    }
+
+    const fingerprint = computeDocumentFingerprint(docRecord);
+    const existingMeta = this.activeIndex.getDocumentMeta(docRecord.id);
+
+    // If document already indexed and content fingerprint has not changed, skip processing
+    if (existingMeta && existingMeta.fingerprint === fingerprint && !options.force) {
+      return {
+        action: 'skipped',
+        documentId: docRecord.id,
+        fingerprint,
+        termsCount: existingMeta.totalTerms,
+        durationMs: Date.now() - startMs,
+      };
+    }
+
+    // Process document through tokenizer and normalizer
+    const processedDoc = this.processor.process(docRecord);
+    this.activeIndex.addDocument(processedDoc);
+
+    const activeMeta = await this.getActiveMetadata();
+    if (activeMeta && activeMeta.indexPath) {
+      await this.activeIndex.save(activeMeta.indexPath);
+      const stats = this.activeIndex.getStats();
+      await this.storage.indexMetadata.update(activeMeta.buildId, {
+        documentCount: stats.totalDocuments,
+        termCount: stats.totalTerms,
+      });
+    }
+
+    await this.storage.documents.update(docRecord.id, {
+      indexStatus: INDEX_STATUS.INDEXED,
+      lastIndexedAt: new Date().toISOString(),
+      indexVersion: activeMeta?.buildId ?? null,
+    });
+
+    return {
+      action: existingMeta ? 'updated' : 'indexed',
+      documentId: docRecord.id,
+      fingerprint,
+      termsCount: processedDoc.totalTokens,
+      durationMs: Date.now() - startMs,
+    };
+  }
+
+  /**
+   * Idempotently deletes a document from the active index and purges its postings.
+   */
+  async deleteDocument(documentId: string): Promise<boolean> {
+    await this.loadActiveIndex();
+    if (!this.activeIndex) {
+      return false;
+    }
+
+    const removed = this.activeIndex.removeDocument(documentId);
+    if (!removed) {
+      return false;
+    }
+
+    const activeMeta = await this.getActiveMetadata();
+    if (activeMeta && activeMeta.indexPath) {
+      await this.activeIndex.save(activeMeta.indexPath);
+      const stats = this.activeIndex.getStats();
+      await this.storage.indexMetadata.update(activeMeta.buildId, {
+        documentCount: stats.totalDocuments,
+        termCount: stats.totalTerms,
+      });
+    }
+
+    try {
+      await this.storage.documents.update(documentId, {
+        indexStatus: INDEX_STATUS.NOT_INDEXED,
+      });
+    } catch {
+      // document might not exist in repository
+    }
+
+    return true;
+  }
+
+  /**
+   * Cleans up obsolete index generations on disk according to retention rules.
+   * Guarantees the active generation is never pruned.
+   */
+  async cleanObsoleteGenerations(
+    options: GenerationCleanupOptions = {}
+  ): Promise<GenerationCleanupResult> {
+    const maxRetained = Math.max(1, options.maxRetained ?? 3);
+    const keepFailed = options.keepFailed ?? false;
+
+    const activeMeta = await this.getActiveMetadata();
+    const activeBuildId = activeMeta?.buildId ?? null;
+
+    const allMetadata = await this.storage.indexMetadata.list();
+    const readyBuilds = allMetadata.filter(m => m.status === 'ready');
+
+    // Build the set of buildIds to retain
+    const retainedBuildIds = new Set<string>();
+    if (activeBuildId) {
+      retainedBuildIds.add(activeBuildId);
+    }
+
+    // Retain up to maxRetained - 1 additional ready generations
+    for (const meta of readyBuilds) {
+      if (retainedBuildIds.size >= maxRetained) break;
+      retainedBuildIds.add(meta.buildId);
+    }
+
+    let bytesFreed = 0;
+    const prunedBuildIds: string[] = [];
+    const buildsBaseDir = path.join(this.rootIndexDir, 'builds');
+
+    // Prune obsolete builds
+    for (const meta of allMetadata) {
+      if (retainedBuildIds.has(meta.buildId)) continue;
+
+      const shouldPrune =
+        meta.status === 'stale' ||
+        meta.status === 'ready' ||
+        (!keepFailed && (meta.status === 'failed' || meta.status === 'building'));
+
+      if (shouldPrune) {
+        const buildDir = meta.indexPath || path.join(buildsBaseDir, meta.buildId);
+        if (fs.existsSync(buildDir)) {
+          bytesFreed += getDirectorySizeBytes(buildDir);
+          try {
+            fs.rmSync(buildDir, { recursive: true, force: true });
+          } catch {
+            // ignore cleanup failure
+          }
+        }
+        prunedBuildIds.push(meta.buildId);
+        try {
+          await this.storage.indexMetadata.update(meta.buildId, { status: 'stale' });
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    // Also scan physical directory for orphaned build folders
+    if (fs.existsSync(buildsBaseDir)) {
+      try {
+        const physicalFolders = fs.readdirSync(buildsBaseDir);
+        for (const folder of physicalFolders) {
+          if (!retainedBuildIds.has(folder) && !prunedBuildIds.includes(folder)) {
+            const folderPath = path.join(buildsBaseDir, folder);
+            bytesFreed += getDirectorySizeBytes(folderPath);
+            try {
+              fs.rmSync(folderPath, { recursive: true, force: true });
+              prunedBuildIds.push(folder);
+            } catch {
+              // ignore
+            }
+          }
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    return {
+      activeBuildId,
+      retainedBuildIds: Array.from(retainedBuildIds),
+      prunedBuildIds,
+      bytesFreed,
+    };
+  }
+
+  /**
+   * Returns current index health diagnostics without leaking queries or user content.
+   */
+  async getIndexHealth(): Promise<IndexHealth> {
+    const activeMeta = await this.getActiveMetadata();
+    const allGenerations = await this.storage.indexMetadata.list();
+
+    const pendingDocs = await this.storage.documents.findByIndexStatus(INDEX_STATUS.PENDING, {
+      limit: 10000,
+    });
+    const staleDocs = await this.storage.documents.findByIndexStatus(INDEX_STATUS.STALE, {
+      limit: 10000,
+    });
+    const indexedDocs = await this.storage.documents.findByIndexStatus(INDEX_STATUS.INDEXED, {
+      limit: 10000,
+    });
+
+    let activeGenHealth: IndexHealthActiveGeneration | null = null;
+    let status: IndexHealth['status'] = 'uninitialized';
+
+    if (activeMeta) {
+      const indexFileExists = fs.existsSync(path.join(activeMeta.indexPath, INDEX_FILE_NAME));
+      let integrityValid = false;
+      let fileSize = 0;
+
+      if (indexFileExists) {
+        const audit = validateIndexFile(activeMeta.indexPath);
+        integrityValid = audit.valid;
+        try {
+          fileSize = fs.statSync(path.join(activeMeta.indexPath, INDEX_FILE_NAME)).size;
+        } catch {
+          fileSize = 0;
+        }
+      }
+
+      const memoryStats = this.activeIndex ? this.activeIndex.getStats() : null;
+
+      activeGenHealth = {
+        buildId: activeMeta.buildId,
+        version: activeMeta.version,
+        documentCount: memoryStats?.totalDocuments ?? activeMeta.documentCount,
+        termCount: memoryStats?.totalTerms ?? activeMeta.termCount,
+        avgDocumentLength: memoryStats?.avgDocumentLength ?? 0,
+        totalPostings: memoryStats?.totalPostings ?? 0,
+        builtAt: activeMeta.completedAt ?? activeMeta.startedAt,
+        indexPath: activeMeta.indexPath,
+        integrityValid,
+        fileSizeBytes: fileSize,
+      };
+
+      if (!integrityValid) {
+        status = 'corrupt';
+      } else if (pendingDocs.length > 0 || staleDocs.length > 0) {
+        status = 'degraded';
+      } else {
+        status = 'healthy';
+      }
+    }
+
+    const sortedGens = [...allGenerations].sort(
+      (a, b) => new Date(a.startedAt).getTime() - new Date(b.startedAt).getTime()
+    );
+
+    const oldestGen = sortedGens[0];
+    const newestGen = sortedGens[sortedGens.length - 1];
+
+    return {
+      status,
+      schemaVersion: CURRENT_INDEX_SCHEMA_VERSION,
+      activeGeneration: activeGenHealth,
+      generations: {
+        totalGenerations: allGenerations.length,
+        retainedCount: allGenerations.filter(g => g.status === 'ready' || g.isActive).length,
+        oldestGenerationAt: oldestGen ? oldestGen.startedAt : null,
+        newestGenerationAt: newestGen ? newestGen.startedAt : null,
+      },
+      pendingDocuments: {
+        pendingCount: pendingDocs.length,
+        staleCount: staleDocs.length,
+        indexedCount: indexedDocs.length,
+        needsReindex: pendingDocs.length > 0 || staleDocs.length > 0,
+      },
+      lastCheckedAt: new Date().toISOString(),
+    };
   }
 }

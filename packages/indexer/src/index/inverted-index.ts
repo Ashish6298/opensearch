@@ -70,6 +70,7 @@ export class MemoryInvertedIndex implements InvertedIndex {
       totalTerms: doc.totalTokens,
       fieldLengths,
       indexedAt: new Date().toISOString(),
+      fingerprint: doc.fingerprint,
     };
     this.documents.set(doc.documentId, docMeta);
 

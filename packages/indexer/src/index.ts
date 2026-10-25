@@ -73,9 +73,16 @@ export type {
   IndexBuildStats,
   IndexBuildSummary,
   IndexBuilder,
+  IndexDocumentResult,
+  GenerationCleanupOptions,
+  GenerationCleanupResult,
+  IndexHealthActiveGeneration,
+  IndexHealthGenerations,
+  IndexHealthPendingDocuments,
+  IndexHealth,
 } from './builder/builder-types.js';
 
-export { DefaultIndexBuilder } from './builder/index-builder.js';
+export { DefaultIndexBuilder, computeDocumentFingerprint } from './builder/index-builder.js';
 export type { IndexBuilderOptions } from './builder/index-builder.js';
 
 export { createIndexBuilder } from './builder/builder-factory.js';

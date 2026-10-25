@@ -62,6 +62,8 @@ export interface IndexedDocumentMeta {
   lastModified?: string;
   /** Timestamp when document was crawled if known */
   lastCrawledAt?: string;
+  /** SHA-256 content fingerprint for change detection and idempotent indexing */
+  fingerprint?: string;
 }
 
 export interface IndexStats {
