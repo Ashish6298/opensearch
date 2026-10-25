@@ -855,7 +855,7 @@
             <span class="result-index">[${itemNum}]</span>
             <a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="result-title-link">${displayTitle}</a>
           </div>
-          <div class="result-url-line">&gt; ${safeDisplayUrl}</div>
+          <div class="result-url-line">&gt; ${safeDisplayUrl}${item.attribution ? ` <span class="result-attribution" style="opacity: 0.8; font-size: 0.85em;">[${escapeHtml(item.attribution)}]</span>` : (item.source && item.source !== 'local-index' ? ` <span class="result-attribution" style="opacity: 0.8; font-size: 0.85em;">[source: ${escapeHtml(item.source)}]</span>` : '')}</div>
           <p class="result-snippet">${displaySnippet}</p>
         </article>
       `;

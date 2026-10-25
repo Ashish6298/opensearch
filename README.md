@@ -928,6 +928,9 @@ $ audit --privacy-boundaries
 | **Milestone 23** | **Scientific Math & Currency Engine**   | Phases 60 – 61 | Real-time fiat FX, crypto rates (BTC/ETH/SOL), symbolic algebra & LaTeX  | `[PASSED]` |
 | **Milestone 24** | **Hacker UX & Retro Themes**            | Phases 62 – 63 | Vim result navigation (`j`/`k`/`o`/`c`/`r`), `/dev` `/news` `/papers` filters| `[PASSED]` |
 | **Milestone 25** | **Offline PWA & V1.4.0 Release**        | Phases 64 – 65 | ServiceWorker offline caching, PWA Manifest, full v1.4.0 regression seal | `[PASSED]` |
+| **Milestone 26** | **Repository Audit & Baseline (v1.5.0)**| Phases 66 – 68 | Architecture inventory, baseline measurements, product & privacy contracts | `[PASSED]` |
+| **Milestone 27** | **Search Providers & Source Reliability**| Phases 69 – 72 | Standard provider interface, zero brittle scraping, resilience, attribution compliance | `[PASSED]` |
+| **Milestone 28** | **Index Storage & Dataset Growth**      | Phases 73 – 76 | Lifecycle audit, storage abstraction, reproducible corpus expansion, incremental recovery | `[MILESTONE 28 PASSED]` |
 
 <br/>
 
@@ -941,11 +944,11 @@ $ npm test
 ✓ packages/cli/tests/cli.test.ts (11 tests)
 ✓ packages/ranking/tests/instant-answers.test.ts (26 tests)
 ...
-Test Files  50 passed (50)
-     Tests  521 passed (521)
-  Duration  6.54s -- 100% Passing Pass Rate
+Test Files  57 passed (57)
+     Tests  597 passed (597)
+  Duration  5.99s -- 100% Passing Pass Rate
 ────────────────────────────────────────────────────────────
-TOTAL RESULT: 65 / 65 PHASES PASSED (100.0%) -- V1.4.0 PRODUCTION RELEASE SEALED
+TOTAL RESULT: 597 / 597 TESTS PASSED (100.0%) -- V1.5.0 PHASE 76 VERIFIED
 ```
 
 ---

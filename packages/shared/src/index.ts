@@ -4,6 +4,7 @@
  */
 
 import { PROJECT_NAME, PROJECT_VERSION } from './constants.js';
+
 export * from './constants.js';
 export * from './types.js';
 export * from './errors/index.js';

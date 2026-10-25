@@ -119,6 +119,39 @@ describe('Phase 19, 20 & 21 — Search UI & Accessibility Hardening Suite', () =
       expect(cardHtml).toContain('&lt;img src=x onerror=alert(1)&gt;');
     });
 
+    it('renders attribution badge when attribution is provided (Phase 72)', () => {
+      const cardHtml = renderResultCard({
+        documentId: 'wiki-1',
+        url: 'https://en.wikipedia.org/wiki/Search_engine',
+        displayUrl: 'en.wikipedia.org › wiki › Search_engine',
+        domain: 'en.wikipedia.org',
+        title: 'Search Engine — Wikipedia',
+        snippet: 'A search engine is an information retrieval system...',
+        source: 'wikimedia',
+        attribution: 'Source: Wikipedia (CC BY-SA 4.0)',
+      });
+
+      expect(cardHtml).toContain(
+        '<span class="result-attribution-badge" aria-label="Attribution">[Source: Wikipedia (CC BY-SA 4.0)]</span>',
+      );
+    });
+
+    it('renders source badge when non-local source is provided without custom attribution (Phase 72)', () => {
+      const cardHtml = renderResultCard({
+        documentId: 'hn-1',
+        url: 'https://news.ycombinator.com/item?id=12345',
+        displayUrl: 'news.ycombinator.com › item',
+        domain: 'news.ycombinator.com',
+        title: 'Ask HN: Best Search Engines',
+        snippet: 'Discussion of search architecture...',
+        source: 'hackernews',
+      });
+
+      expect(cardHtml).toContain(
+        '<span class="result-source-badge" aria-label="Source">[source: hackernews]</span>',
+      );
+    });
+
     it('preserves safe <mark> tags while escaping other nested HTML tags', () => {
       const sanitized = sanitizeHighlightedHtml(
         '<b>Bold text</b> with <mark>safe highlight</mark> and <script>alert(1)</script>',

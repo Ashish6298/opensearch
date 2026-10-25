@@ -1,14 +1,23 @@
 /**
- * @opensearch/indexer — Inverted Index Types (Phase 10)
+ * @opensearch/indexer — Inverted Index Types (Phase 10 & Phase 73)
  *
- * Defines the domain models and interfaces for the core inverted index:
+ * Defines the domain models, schema specifications, and interfaces for the core inverted index:
  * - Posting: record of a term's occurrence in a specific document (frequencies + positions)
  * - PostingList: array/map of postings for a specific term with document frequency
  * - IndexedDocumentMeta: document-level metrics (total terms, field lengths, URL, title)
+ * - IndexStats: statistical overview and length distributions
+ * - SerializedIndexPayload: strictly versioned disk persistence schema
  * - InvertedIndex: primary searchable index interface
+ * - Diagnostic errors with actionable recovery suggestions
  */
 
 import { FieldName, ProcessedDocument } from '../pipeline/pipeline-types.js';
+
+export const CURRENT_INDEX_SCHEMA_VERSION = 1;
+export const SUPPORTED_INDEX_SCHEMA_VERSIONS: readonly number[] = [1];
+export const INDEX_FORMAT_IDENTIFIER = 'opensearch-inverted-index';
+export const INDEX_FILE_NAME = 'index-data.json';
+export const INDEX_TMP_FILE_NAME = 'index-data.json.tmp';
 
 export interface Posting {
   /** Target document ID */
@@ -53,6 +62,8 @@ export interface IndexedDocumentMeta {
   lastModified?: string;
   /** Timestamp when document was crawled if known */
   lastCrawledAt?: string;
+  /** SHA-256 content fingerprint for change detection and idempotent indexing */
+  fingerprint?: string;
 }
 
 export interface IndexStats {
@@ -71,10 +82,21 @@ export interface IndexStats {
 }
 
 export interface SerializedIndexPayload {
-  version: number;
+  /** Canonical schema version number */
+  schemaVersion: number;
+  /** Legacy alias for backward compatibility with pre-v1.5 indexes */
+  version?: number;
+  /** Canonical format signature identifier */
+  format?: string;
+  /** SHA-256 integrity checksum over sorted document IDs and terms */
+  checksum?: string;
+  /** ISO 8601 creation timestamp */
   createdAt: string;
+  /** Operational statistics snapshot */
   stats: IndexStats;
+  /** Array of indexed document metadata headers */
   documents: IndexedDocumentMeta[];
+  /** Inverted dictionary array with posting lists */
   dictionary: Array<{
     term: string;
     documentFrequency: number;
@@ -158,4 +180,46 @@ export interface InvertedIndex {
    * Loads and deserializes index data from disk in the specified directory.
    */
   load(targetDir?: string): Promise<void>;
+}
+
+/**
+ * Thrown when an index file is corrupt, truncated, or structurally malformed.
+ */
+export class IndexCorruptError extends Error {
+  public readonly recoverySuggestion: string;
+  public readonly diagnostics?: Record<string, unknown>;
+
+  constructor(
+    message: string,
+    recoverySuggestion: string,
+    diagnostics?: Record<string, unknown>,
+  ) {
+    super(`${message}. Action: ${recoverySuggestion}`);
+    this.name = 'IndexCorruptError';
+    this.recoverySuggestion = recoverySuggestion;
+    this.diagnostics = diagnostics;
+  }
+}
+
+/**
+ * Thrown when an index schema version is incompatible with current engine version.
+ */
+export class IndexIncompatibleSchemaError extends Error {
+  public readonly foundVersion: number;
+  public readonly supportedVersions: readonly number[];
+  public readonly recoverySuggestion: string;
+
+  constructor(
+    foundVersion: number,
+    supportedVersions: readonly number[],
+    recoverySuggestion: string,
+  ) {
+    super(
+      `Index schema version ${foundVersion} is incompatible with supported versions [${supportedVersions.join(', ')}]. Action: ${recoverySuggestion}`,
+    );
+    this.name = 'IndexIncompatibleSchemaError';
+    this.foundVersion = foundVersion;
+    this.supportedVersions = supportedVersions;
+    this.recoverySuggestion = recoverySuggestion;
+  }
 }

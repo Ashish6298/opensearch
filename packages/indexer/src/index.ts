@@ -37,7 +37,16 @@ export {
   createDocumentProcessor,
 } from './pipeline/document-processor.js';
 
-// ── Phase 10: Inverted Index ─────────────────────────────────
+// ── Phase 10 & 73: Inverted Index & Schema Lifecycle Audit ──
+export {
+  CURRENT_INDEX_SCHEMA_VERSION,
+  SUPPORTED_INDEX_SCHEMA_VERSIONS,
+  INDEX_FORMAT_IDENTIFIER,
+  INDEX_FILE_NAME,
+  INDEX_TMP_FILE_NAME,
+  IndexCorruptError,
+  IndexIncompatibleSchemaError,
+} from './index/index-types.js';
 export type {
   Posting,
   PostingList,
@@ -51,15 +60,29 @@ export type {
 export { MemoryInvertedIndex } from './index/inverted-index.js';
 export { createInvertedIndex } from './index/index-factory.js';
 
+export {
+  validateIndexFile,
+  validateIndexPayload,
+  computeIndexChecksum,
+} from './index/index-validator.js';
+export type { IndexValidationResult } from './index/index-validator.js';
+
 // ── Phase 11: Index Builder & Rebuild Pipeline ───────────────
 export type {
   IndexBuildOptions,
   IndexBuildStats,
   IndexBuildSummary,
   IndexBuilder,
+  IndexDocumentResult,
+  GenerationCleanupOptions,
+  GenerationCleanupResult,
+  IndexHealthActiveGeneration,
+  IndexHealthGenerations,
+  IndexHealthPendingDocuments,
+  IndexHealth,
 } from './builder/builder-types.js';
 
-export { DefaultIndexBuilder } from './builder/index-builder.js';
+export { DefaultIndexBuilder, computeDocumentFingerprint } from './builder/index-builder.js';
 export type { IndexBuilderOptions } from './builder/index-builder.js';
 
 export { createIndexBuilder } from './builder/builder-factory.js';
@@ -90,4 +113,33 @@ export {
 // ── Phase 59: Zero-Trace Reader Mode Extractor (V1.4.0) ──────────
 export type { ReaderDocument } from './reader/reader-extractor.js';
 export { ReaderExtractor } from './reader/reader-extractor.js';
+
+// ── Phase 75: Reproducible Corpus Expansion (V1.5.0) ──────────────
+export type {
+  CorpusTier,
+  CorpusSourceMetadata,
+  CorpusDocument,
+  CorpusSourceSummary,
+  CorpusManifest,
+  CorpusGenerationOptions,
+  CorpusIngestionResult,
+} from './corpus/corpus-types.js';
+
+export {
+  PERMITTED_CORPUS_SOURCES,
+  getDemoCorpus,
+} from './corpus/demo-corpus.js';
+
+export {
+  SeededRandom,
+  generateReproducibleCorpus,
+} from './corpus/corpus-generator.js';
+
+export {
+  validateCorpusDocument,
+  ingestCorpus,
+  loadCorpusFromFile,
+  verifyCorpusChecksum,
+} from './corpus/corpus-ingestion.js';
+export type { IngestionOptions } from './corpus/corpus-ingestion.js';
 

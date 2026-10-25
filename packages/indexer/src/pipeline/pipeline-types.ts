@@ -93,6 +93,8 @@ export interface ProcessedDocument {
   uniqueTerms: number;
   /** ISO timestamp when processing occurred */
   processedAt: string;
+  /** SHA-256 content fingerprint of document */
+  fingerprint?: string;
 }
 
 export interface DocumentProcessorOptions {

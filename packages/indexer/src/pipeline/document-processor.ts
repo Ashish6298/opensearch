@@ -111,6 +111,11 @@ export class DefaultDocumentProcessor implements DocumentProcessor {
       totalTokens += tokens.length;
     }
 
+    const rawContent = `${title}\n${headings}\n${description}\n${bodyText}`;
+    const fingerprint =
+      (input as DocumentRecord).contentHash ||
+      createHash('sha256').update(rawContent.toLowerCase().replace(/\s+/g, ' ').trim(), 'utf-8').digest('hex');
+
     return {
       documentId,
       url,
@@ -123,6 +128,7 @@ export class DefaultDocumentProcessor implements DocumentProcessor {
       totalTokens,
       uniqueTerms: terms.size,
       processedAt: new Date().toISOString(),
+      fingerprint,
     };
   }
 

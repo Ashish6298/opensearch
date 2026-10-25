@@ -5,7 +5,7 @@ describe('Shared Package Foundation', () => {
   it('should export correct project identity', () => {
     const identity = getProjectIdentity();
     expect(identity.name).toBe('OpenSearch');
-    expect(identity.version).toBe('1.4.0');
+    expect(identity.version).toBe(PROJECT_VERSION);
     expect(PROJECT_NAME).toBe('OpenSearch');
     expect(PROJECT_VERSION).toBe('1.4.0');
   });

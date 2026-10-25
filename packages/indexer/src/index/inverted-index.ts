@@ -1,26 +1,35 @@
 /**
- * @opensearch/indexer — Inverted Index Implementation (Phase 10)
+ * @opensearch/indexer — Inverted Index Implementation (Phase 10 & Phase 73)
  *
  * Implements the core in-memory inverted index with:
  * 1. Term dictionary and posting lists with field-level frequencies and positions
  * 2. Document frequency tracking for BM25 and TF-IDF rankers
  * 3. Document metadata store and length statistics
  * 4. Safe atomic mutations: add, update, remove
- * 5. Full disk serialization and deserialization
+ * 5. Full disk serialization with checksumming and atomic temporary-file promotion
+ * 6. Strict validation and corruption detection during deserialization
  */
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { FieldName, ProcessedDocument } from '../pipeline/pipeline-types.js';
 import {
+  CURRENT_INDEX_SCHEMA_VERSION,
+  INDEX_FILE_NAME,
+  INDEX_FORMAT_IDENTIFIER,
+  INDEX_TMP_FILE_NAME,
+  IndexCorruptError,
+  IndexIncompatibleSchemaError,
   IndexedDocumentMeta,
   IndexStats,
   InvertedIndex,
   InvertedIndexOptions,
   Posting,
   PostingList,
+  SUPPORTED_INDEX_SCHEMA_VERSIONS,
   SerializedIndexPayload,
 } from './index-types.js';
+import { computeIndexChecksum, validateIndexFile } from './index-validator.js';
 
 export class MemoryInvertedIndex implements InvertedIndex {
   private readonly defaultIndexDir: string;
@@ -61,6 +70,7 @@ export class MemoryInvertedIndex implements InvertedIndex {
       totalTerms: doc.totalTokens,
       fieldLengths,
       indexedAt: new Date().toISOString(),
+      fingerprint: doc.fingerprint,
     };
     this.documents.set(doc.documentId, docMeta);
 
@@ -222,17 +232,26 @@ export class MemoryInvertedIndex implements InvertedIndex {
       postings: Array.from(pList.postings.values()),
     }));
 
+    const checksum = computeIndexChecksum({
+      documents: documentsList,
+      dictionary: dictionaryList,
+    });
+
     const payload: SerializedIndexPayload = {
-      version: 1,
+      schemaVersion: CURRENT_INDEX_SCHEMA_VERSION,
+      version: CURRENT_INDEX_SCHEMA_VERSION,
+      format: INDEX_FORMAT_IDENTIFIER,
+      checksum,
       createdAt: new Date().toISOString(),
       stats,
       documents: documentsList,
       dictionary: dictionaryList,
     };
 
-    const tmpFile = path.join(dir, 'index-data.json.tmp');
-    const finalFile = path.join(dir, 'index-data.json');
+    const tmpFile = path.join(dir, INDEX_TMP_FILE_NAME);
+    const finalFile = path.join(dir, INDEX_FILE_NAME);
 
+    // Atomic save: write to temporary file first, then atomically rename
     fs.writeFileSync(tmpFile, JSON.stringify(payload, null, 2), 'utf-8');
     fs.renameSync(tmpFile, finalFile);
   }
@@ -241,19 +260,33 @@ export class MemoryInvertedIndex implements InvertedIndex {
 
   async load(targetDir?: string): Promise<void> {
     const dir = targetDir || this.defaultIndexDir;
-    const filePath =
-      fs.existsSync(dir) && fs.statSync(dir).isFile() ? dir : path.join(dir, 'index-data.json');
 
-    if (!fs.existsSync(filePath)) {
-      throw new Error(`Index file not found at: ${filePath}`);
+    // Comprehensive lifecycle and integrity validation
+    const validation = validateIndexFile(dir);
+    if (!validation.valid) {
+      if (validation.incompatibleSchema) {
+        throw new IndexIncompatibleSchemaError(
+          validation.schemaVersion || 0,
+          SUPPORTED_INDEX_SCHEMA_VERSIONS,
+          validation.recoverySuggestion || 'Rebuild index to current schema version',
+        );
+      }
+
+      throw new IndexCorruptError(
+        `Failed to load index from "${dir}": ${validation.errors.join('; ')}`,
+        validation.recoverySuggestion ||
+          "Run 'opensearch index --rebuild' or call indexBuilder.build({ mode: 'full' })",
+        validation.diagnostics,
+      );
     }
+
+    const filePath =
+      fs.existsSync(dir) && fs.statSync(dir).isFile()
+        ? dir
+        : path.join(dir, INDEX_FILE_NAME);
 
     const raw = fs.readFileSync(filePath, 'utf-8');
     const payload = JSON.parse(raw) as SerializedIndexPayload;
-
-    if (!payload || payload.version !== 1 || !Array.isArray(payload.documents)) {
-      throw new Error('Invalid or corrupted index file format');
-    }
 
     this.clear();
 

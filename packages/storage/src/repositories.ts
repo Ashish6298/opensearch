@@ -195,6 +195,56 @@ export interface StorageAdapter {
    * Returns human-readable storage health/statistics for diagnostics.
    */
   health(): Promise<StorageHealth>;
+
+  /**
+   * Creates an atomic backup snapshot of all persistent collections.
+   */
+  backup(destinationDir: string): Promise<StorageBackupResult>;
+
+  /**
+   * Restores all collections from a backup snapshot, validating checksums and schema.
+   */
+  restore(sourceDir: string): Promise<StorageRestoreResult>;
+
+  /**
+   * Verifies the physical integrity of all stored JSON collections on disk.
+   */
+  verifyIntegrity(): Promise<StorageIntegrityReport>;
+}
+
+export interface StorageBackupResult {
+  success: boolean;
+  backupDir: string;
+  timestamp: string;
+  collectionsBackedUp: string[];
+  totalRecords: number;
+  totalSizeBytes: number;
+  manifestPath: string;
+}
+
+export interface StorageRestoreResult {
+  success: boolean;
+  restoredFrom: string;
+  timestamp: string;
+  collectionsRestored: string[];
+  totalRecordsRestored: number;
+}
+
+export interface StorageIntegrityReport {
+  valid: boolean;
+  checkedAt: string;
+  storageDir: string;
+  collections: Record<
+    string,
+    {
+      exists: boolean;
+      recordCount: number;
+      sizeBytes: number;
+      corrupted: boolean;
+      errorMessage?: string;
+    }
+  >;
+  errors: string[];
 }
 
 export interface StorageHealth {

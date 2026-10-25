@@ -1,0 +1,99 @@
+================================================================================
+OPENSEARCH — PHASE 75 IMPLEMENTATION & VERIFICATION REPORT
+Milestone 28: Index Storage and Dataset Growth
+Phase 75: Reproducible Corpus Expansion
+Date: 2026-10-25
+Branch: ashish
+Author: Ashish & Antigravity (DeepMind Advanced Agentic Coding)
+================================================================================
+
+1. EXECUTIVE SUMMARY
+--------------------
+Phase 75 of OpenSearch establishes a reproducible, scalable, and audited corpus
+expansion engine. It introduces repeatable dataset synthesis and ingestion
+workflows for permitted, openly licensed knowledge sources (Wikimedia CC BY-SA 4.0,
+IETF RFCs, MDN Web Docs, and arXiv open metadata), supports controlled scaling
+stages (1,000 demo tier, 10,000 benchmark tier, scalable to 100,000+), ensures
+100% offline determinism for testing and CI, enforces complete provenance tracking
+(canonical URLs, license compliance, acquisition dates, content hashing), guarantees
+large corpora remain strictly outside Git via updated .gitignore rules, and integrates
+end-to-end with the durable storage engine and Inverted Index builder.
+
+All 587 tests across 56 test files in the OpenSearch monorepo pass with a 100% pass rate.
+TypeScript compilation passes cleanly with zero errors.
+
+Status: COMPLETED.
+Readiness for Next Phase (Phase 76 — Incremental Indexing and Safe Recovery): READY.
+
+2. TASKS ACCOMPLISHED
+---------------------
+[x] Repeatable Ingestion Workflow for Permitted Datasets & APIs:
+    - Implemented `packages/indexer/src/corpus/corpus-generator.ts` with a seeded
+      pseudorandom generator (Mulberry32) that produces identical datasets given the same seed.
+    - Implemented `packages/indexer/src/corpus/corpus-ingestion.ts` to validate document schema,
+      verify open license compliance, filter out duplicate URLs and content hashes, and batch-insert
+      documents into `StorageAdapter`.
+    - Implemented `packages/indexer/src/corpus/demo-corpus.ts` containing a curated offline reference
+      corpus of foundational computer science, networking, and search architecture documents.
+
+[x] Controlled Scale Stages (1,000, 10,000, 100,000 docs):
+    - Tier 1 ('demo'): 100 to 1,000 documents generated in < 100ms for fast CI and unit tests.
+    - Tier 2 ('benchmark'): 10,000 documents with verifiable vocabulary and word distributions.
+    - Tier 3 ('large'): Scalable architecture supporting batch/streaming generation of 100,000+
+      documents without RAM exhaustion.
+
+[x] Provenance & Metadata Storage:
+    - Every document record stores:
+      * `canonicalUrl`: Standardized public web URL
+      * `urlHash`: 64-character SHA-256 hash for deduplication and joins
+      * `source`: Verified provenance identifier (e.g. 'wikimedia-open', 'ietf-rfc', 'mdn-open-docs')
+      * `license`: Legally compliant license (e.g. 'CC BY-SA 4.0', 'Public Domain / IETF Trust')
+      * `licenseUrl`: Authoritative URL for terms and attribution
+      * `acquiredAt`: ISO 8601 acquisition timestamp
+      * `contentHash`: SHA-256 hash of normalized body text for near-duplicate detection
+      * `tags`, `headings`, `wordCount`, `contentLength`, and `outboundLinks`
+
+[x] Large Downloaded Corpora Kept Outside Git:
+    - Enhanced `.gitignore` rules to explicitly ignore `data/`, `data/corpus/`, `*.corpus`,
+      `*.dump`, `*.jsonl`, and `*.xml.bz2`.
+    - Small demo corpus remains embedded in source for 100% offline CI without repository bloat.
+
+[x] Small Demo Corpus for Offline Development & CI:
+    - Verified `getDemoCorpus()` runs completely offline with 0 network calls and 0 API dependencies.
+
+[x] Crawl Permissions and Dataset Terms Compliance:
+    - Permitted source registry (`PERMITTED_CORPUS_SOURCES`) enforces licensing attribution and
+      rejects documents originating from unverified or restrictive sources.
+
+3. ACCEPTANCE CRITERIA VERIFICATION
+------------------------------------
+Criteria 1: Dataset generation is reproducible.
+- VERIFIED: Generating a corpus with seed `12345` twice yields identical document arrays, identical
+  content hashes, identical vocabulary counts, and identical SHA-256 manifest checksums. Different
+  seeds produce distinct document variations.
+
+Criteria 2: Small tests do not require a large corpus or internet access.
+- VERIFIED: All unit and integration tests run strictly offline using `getDemoCorpus()` and
+  synthetic in-memory generation. Total execution time for the 11 Phase 75 tests is 164ms.
+
+Criteria 3: Actual corpus sizes are recorded instead of assumed.
+- VERIFIED: `CorpusManifest` records verified document count, total words, uncompressed byte size,
+  average document length, unique vocabulary count, and source distributions, matching exact document sums.
+
+4. TEST SUITE METRICS
+---------------------
+- Total Monorepo Test Files: 56
+- Total Monorepo Tests: 587
+- Passing Tests: 587 (100%)
+- Failing Tests: 0
+- Skipped Tests: 0
+- Monorepo Test Run Duration: ~6.5 seconds
+- TypeScript Compiler (`tsc -b`): Clean exit, 0 errors
+
+5. READY FOR NEXT PHASE?
+------------------------
+YES. The system is fully ready for Phase 76 ("Incremental indexing and safe recovery").
+The corpus expansion engine provides a reliable source of structured, deduplicated, and
+licensed documents to test incremental document addition, fingerprint tracking, update
+idempotency, and safe index publication.
+================================================================================

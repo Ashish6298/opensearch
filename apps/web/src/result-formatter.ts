@@ -19,6 +19,9 @@ export interface FormattedResultItem {
   highlightedSnippet?: string;
   score?: number;
   rank?: number;
+  source?: string;
+  attribution?: string;
+  contentType?: string;
 }
 
 export interface PaginationData {
@@ -70,6 +73,8 @@ export function renderResultCard(item: FormattedResultItem): string {
   const safeUrl = escapeHtml(item.url || '#');
   const safeDomain = escapeHtml(item.domain || '');
   const safeDisplayUrl = escapeHtml(item.displayUrl || item.url || '');
+  const safeAttribution = item.attribution ? escapeHtml(item.attribution) : '';
+  const safeSource = item.source && item.source !== 'local-index' ? escapeHtml(item.source) : '';
 
   const displayTitle = item.highlightedTitle
     ? sanitizeHighlightedHtml(item.highlightedTitle)
@@ -79,11 +84,15 @@ export function renderResultCard(item: FormattedResultItem): string {
     ? sanitizeHighlightedHtml(item.highlightedSnippet)
     : escapeHtml(item.snippet || 'No description available.');
 
+  const provenanceBadge = safeAttribution
+    ? `<span class="result-attribution-badge" aria-label="Attribution">[${safeAttribution}]</span>`
+    : (safeSource ? `<span class="result-source-badge" aria-label="Source">[source: ${safeSource}]</span>` : '');
+
   return `
     <article class="result-card" data-document-id="${escapeHtml(item.documentId)}" role="article" aria-labelledby="result-title-${escapeHtml(item.documentId)}">
       <div class="result-header">
         ${safeDomain ? `<span class="result-domain-badge" aria-label="Domain">${safeDomain}</span>` : ''}
-        <cite class="result-url" title="${safeUrl}">${safeDisplayUrl}</cite>
+        ${provenanceBadge ? `${provenanceBadge} ` : ''}<cite class="result-url" title="${safeUrl}">${safeDisplayUrl}</cite>
       </div>
       <h2 class="result-title" id="result-title-${escapeHtml(item.documentId)}">
         <a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="result-link" aria-label="${escapeHtml(item.title || 'Untitled Document')} (opens in new tab)">
