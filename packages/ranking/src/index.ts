@@ -211,3 +211,6 @@ export { CurrencyConverterEngine } from './answers/currency-converter.js';
 export type { MathSolverResult } from './answers/math-engine.js';
 export { SymbolicMathEngine } from './answers/math-engine.js';
 
+// ── Phase 69: Standard Provider Interface (V1.5.0) ───────────────────────
+export * from './providers/index.js';
+

@@ -87,6 +87,14 @@ export interface SearchResultItem {
   language: string | null;
   /** ISO timestamp when page was indexed or crawled */
   indexedAt: string;
+  /** Result provenance source identifier (e.g., 'local-index', 'wikimedia') */
+  source?: string;
+  /** Content type classification */
+  contentType?: string;
+  /** Attribution notice or license */
+  attribution?: string;
+  /** Optional thumbnail URL */
+  thumbnailUrl?: string;
 }
 
 export interface SearchResultSet {
