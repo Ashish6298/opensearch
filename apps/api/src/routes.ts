@@ -17,6 +17,7 @@ import {
   SuggestApiResponse,
 } from './types.js';
 import { fetchExternalWebResults } from './external-search.js';
+import { SafeSearchLevel, filterSafeSearchResults, getSafeSearchDisclosure } from '@opensearch/ranking';
 import { generateOpenApiSpec } from './openapi-spec.js';
 import { generateDocsHtml } from './docs-html.js';
 
@@ -379,6 +380,10 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
     totalHits = finalResults.length;
   }
 
+  // Phase 81 — Safe Search and Content Controls:
+  const rawSafeSearch = ((req.query['safeSearch'] as string) || (req.query['safe'] as string) || 'moderate').toLowerCase().trim();
+  const safeSearchLevel: SafeSearchLevel = rawSafeSearch === 'strict' || rawSafeSearch === 'off' ? rawSafeSearch : 'moderate';
+
   const isLocalOnly = req.query['localOnly'] === 'true' || req.query['mode'] === 'local';
 
   // Query live web search when local indexed results are insufficient (unless in local-only mode)
@@ -389,6 +394,7 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
         pageSize - finalResults.length,
         undefined,
         requestedCategory,
+        safeSearchLevel,
       );
       if (liveItems.length > 0) {
         const existingUrls = new Set(finalResults.map(r => r.url.toLowerCase()));
@@ -404,6 +410,12 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
       // Fallback gracefully to local results
     }
   }
+
+  // Apply consistent local Safe Search filtering to both local index and provider results
+  const safeFilterResult = filterSafeSearchResults(finalResults, safeSearchLevel);
+  finalResults = safeFilterResult.filtered;
+  totalHits = Math.max(0, totalHits - safeFilterResult.excludedCount);
+  const safeSearchDisclosure = getSafeSearchDisclosure(safeSearchLevel);
 
   // 7. Instant Answers & Bang Shortcuts Evaluation (Phase 38)
   const instantAnswerEngine = context.services.instantAnswerEngine;
@@ -462,6 +474,17 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
       durationMs: Date.now() - startMs,
       timestamp: new Date().toISOString(),
       explainPlan: explain,
+      category: requestedCategory,
+      categoryAvailable: isLocalOnly && (requestedCategory === 'images' || requestedCategory === 'news') && finalResults.length === 0
+        ? false
+        : true,
+      safeSearch: {
+        level: safeSearchLevel,
+        filteredCount: safeFilterResult.excludedCount,
+        explanation: safeSearchDisclosure.summaryExplanation,
+        whatItCovers: safeSearchDisclosure.whatItCovers,
+        whatItDoesNotCover: safeSearchDisclosure.whatItDoesNotCover,
+      },
     },
   };
 

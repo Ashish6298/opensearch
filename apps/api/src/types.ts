@@ -152,6 +152,16 @@ export interface SearchApiResponse {
     durationMs: number;
     timestamp: string;
     explainPlan?: boolean;
+    category?: string;
+    categoryAvailable?: boolean;
+    safeSearch?: {
+      level: string;
+      filteredCount: number;
+      explanation: string;
+      whatItCovers?: string;
+      whatItDoesNotCover?: string;
+    };
+    [key: string]: unknown;
   };
 }
 

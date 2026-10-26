@@ -214,3 +214,6 @@ export { SymbolicMathEngine } from './answers/math-engine.js';
 // ── Phase 69: Standard Provider Interface (V1.5.0) ───────────────────────
 export * from './providers/index.js';
 
+
+// ── Phase 81: Safe Search & Content Controls (V1.5.0) ───────────────────
+export * from './safety/safe-search.js';

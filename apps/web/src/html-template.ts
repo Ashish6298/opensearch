@@ -348,6 +348,24 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
             </p>
           </div>
 
+          <!-- Phase 81: Safe Search & Content Controls -->
+          <div class="settings-section">
+            <label class="settings-label" for="setting-safe-search-select"><strong>Safe Search Content Controls:</strong></label>
+            <select id="setting-safe-search-select" class="settings-select" aria-label="Select Safe Search level">
+              <option value="strict">Strict (Filter titles, URLs, and snippets)</option>
+              <option value="moderate" selected>Moderate (Filter explicit titles and domains - Default)</option>
+              <option value="off">Off (Disable all content filtering)</option>
+            </select>
+            <div class="safe-search-disclosure" id="safe-search-disclosure">
+              <p class="settings-hint">
+                <strong>What Safe Search covers:</strong> OpenSearch applies consistent local filtering to exclude adult, sexually explicit, and mature terms across search results.
+              </p>
+              <p class="settings-hint">
+                <strong>What Safe Search does not cover:</strong> Community-driven external providers (Wikipedia, Hacker News, Wikimedia Commons) do not support upstream server-side safe search parameters. OpenSearch applies post-retrieval filtering locally.
+              </p>
+            </div>
+          </div>
+
           <!-- Open in new tab -->
           <div class="settings-section">
             <div class="settings-toggle-row">

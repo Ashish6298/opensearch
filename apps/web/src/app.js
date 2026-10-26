@@ -53,6 +53,7 @@
   const settingThemeSelect = document.getElementById('setting-theme-select');
   const settingLocalOnlyToggle = document.getElementById('setting-local-only-toggle');
   const settingNewTabToggle = document.getElementById('setting-new-tab-toggle');
+  const settingSafeSearchSelect = document.getElementById('setting-safe-search-select');
   const resetSettingsBtn = document.getElementById('reset-settings-btn');
   const showOnboardingBtn = document.getElementById('show-onboarding-btn');
   const settingsStatusMsg = document.getElementById('settings-status-msg');
@@ -86,10 +87,13 @@
   let currentThemePreference = 'system';
   let isLocalOnly = false;
   let openInNewTab = true;
+    currentSafeSearch = 'moderate';
+  let currentSafeSearch = 'moderate';
 
   const PREFERENCE_KEYS = {
     THEME: 'opensearch_theme',
     LOCAL_ONLY: 'opensearch_local_only',
+    SAFE_SEARCH: 'opensearch_safe_search',
     OPEN_NEW_TAB: 'opensearch_open_new_tab',
     ONBOARDING_DISMISSED: 'opensearch_onboarding_dismissed',
   };
@@ -684,6 +688,7 @@
     if (settingThemeSelect) settingThemeSelect.value = currentThemePreference;
     if (settingLocalOnlyToggle) settingLocalOnlyToggle.checked = isLocalOnly;
     if (settingNewTabToggle) settingNewTabToggle.checked = openInNewTab;
+    if (settingSafeSearchSelect) settingSafeSearchSelect.value = currentSafeSearch;
     announceA11y('Settings dialog opened. Press Escape to close.');
   }
 
@@ -710,6 +715,7 @@
     if (settingThemeSelect) settingThemeSelect.value = 'system';
     if (settingLocalOnlyToggle) settingLocalOnlyToggle.checked = false;
     if (settingNewTabToggle) settingNewTabToggle.checked = true;
+    if (settingSafeSearchSelect) settingSafeSearchSelect.value = 'moderate';
 
     if (settingsStatusMsg) {
       settingsStatusMsg.textContent = 'Settings reset to default values. Local index data preserved.';
@@ -1074,6 +1080,9 @@
       if (activeFilter && activeFilter !== 'all') {
         fetchUrl += `&filter=${encodeURIComponent(activeFilter)}&category=${encodeURIComponent(activeFilter)}`;
       }
+      if (currentSafeSearch) {
+        fetchUrl += `&safeSearch=${encodeURIComponent(currentSafeSearch)}`;
+      }
       if (isLocalOnly) {
         fetchUrl += '&localOnly=true';
       }
@@ -1307,6 +1316,9 @@
           filterTokens.push(`exact:${e}`);
         });
       }
+    }
+    if (data.meta?.safeSearch?.filteredCount && data.meta.safeSearch.filteredCount > 0) {
+      summaryText += ` [safe-search: ${data.meta.safeSearch.filteredCount} filtered]`;
     }
     if (filterTokens.length > 0) {
       summaryText += ` [filters: ${filterTokens.join(', ')}]`;

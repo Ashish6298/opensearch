@@ -1,5 +1,5 @@
 /**
- * @opensearch/api — Documented External Provider Integration (Phase 70 & Phase 80)
+ * @opensearch/api — Documented External Provider Integration (Phase 70, Phase 80 & Phase 81)
  *
  * Replaces brittle HTML scraping (Google Suggest, DuckDuckGo HTML regex scraping)
  * with the standard, typed SearchProvider interface and permitted APIs:
@@ -17,6 +17,7 @@ import {
   convertToSearchResultItem,
   ProviderRegistry,
   QueryCategory,
+  SafeSearchLevel,
 } from '@opensearch/ranking';
 
 let sharedRegistry: ProviderRegistry | null = null;
@@ -40,6 +41,7 @@ export async function fetchExternalWebResults(
   limit = 10,
   registryOverride?: ProviderRegistry,
   category = 'all',
+  safeSearch: SafeSearchLevel = 'moderate',
 ): Promise<SearchResultItem[]> {
   const registry = registryOverride ?? getSharedProviderRegistry();
 
@@ -58,6 +60,7 @@ export async function fetchExternalWebResults(
     limit,
     categories: targetCategories,
     timeoutMs: 3000,
+    safeSearch,
   });
 
   return summary.results

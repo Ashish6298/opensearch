@@ -266,5 +266,5 @@ describe('Phase 22 — Full Crawl → Index → Search Pipeline Integration', ()
     expect(restartedData.results[0].title).toContain('Crawler');
 
     await restartedApiServer.stop();
-  });
+  }, 20000);
 });

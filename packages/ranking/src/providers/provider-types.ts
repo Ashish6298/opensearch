@@ -155,6 +155,8 @@ export interface ProviderQueryOptions {
   bypassCircuitBreaker?: boolean;
   /** Categories associated with the query */
   categories?: QueryCategory[];
+  /** Safe search level requested (Phase 81) */
+  safeSearch?: 'strict' | 'moderate' | 'off';
   /** Abort signal for request cancellation */
   signal?: AbortSignal;
 }

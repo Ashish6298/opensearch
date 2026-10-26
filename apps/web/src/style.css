@@ -1906,3 +1906,25 @@ html[data-theme='light'] .run-btn:hover {
   opacity: 0.85;
   font-family: var(--font-mono);
 }
+
+/* -------------------------------------------------------------------------- */
+/* Phase 81: Safe Search Content Controls                                     */
+/* -------------------------------------------------------------------------- */
+
+.safe-search-disclosure {
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: var(--bg-surface, #0d1117);
+  border: 1px solid var(--border-terminal);
+  border-radius: var(--border-radius, 4px);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.safe-search-disclosure .settings-hint {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--text-muted-70);
+}

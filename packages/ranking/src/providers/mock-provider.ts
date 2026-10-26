@@ -259,6 +259,14 @@ export class MockSearchProvider implements SearchProvider {
       matched = filtered.length > 0 ? filtered : this.fixtures;
     }
 
+    // Upstream safe search simulation (Phase 81)
+    if (options.safeSearch && options.safeSearch !== 'off') {
+      matched = matched.filter(f => {
+        const text = `${f.title} ${f.snippet} ${f.canonicalUrl}`.toLowerCase();
+        return !/(porn|xxx|nsfw|adult|explicit|hentai|erotic)/.test(text);
+      });
+    }
+
     const sliced = matched.slice(0, limit);
 
     return {
