@@ -22,6 +22,9 @@ export interface FormattedResultItem {
   source?: string;
   attribution?: string;
   contentType?: string;
+  publishedAt?: string;
+  publicationDate?: string;
+  thumbnailUrl?: string;
 }
 
 export interface PaginationData {
@@ -75,6 +78,22 @@ export function renderResultCard(item: FormattedResultItem): string {
   const safeDisplayUrl = escapeHtml(item.displayUrl || item.url || '');
   const safeAttribution = item.attribution ? escapeHtml(item.attribution) : '';
   const safeSource = item.source && item.source !== 'local-index' ? escapeHtml(item.source) : '';
+  const safeContentType = item.contentType ? escapeHtml(item.contentType) : '';
+
+  const rawDate = item.publishedAt || item.publicationDate;
+  let formattedDate = '';
+  if (rawDate) {
+    try {
+      const parsed = new Date(rawDate);
+      if (!isNaN(parsed.getTime())) {
+        formattedDate = parsed.toISOString().split('T')[0] ?? '';
+      } else {
+        formattedDate = escapeHtml(String(rawDate));
+      }
+    } catch {
+      formattedDate = escapeHtml(String(rawDate));
+    }
+  }
 
   const displayTitle = item.highlightedTitle
     ? sanitizeHighlightedHtml(item.highlightedTitle)
@@ -88,20 +107,35 @@ export function renderResultCard(item: FormattedResultItem): string {
     ? `<span class="result-attribution-badge" aria-label="Attribution">[${safeAttribution}]</span>`
     : (safeSource ? `<span class="result-source-badge" aria-label="Source">[source: ${safeSource}]</span>` : '');
 
+  const contentTypeBadge = safeContentType
+    ? `<span class="result-content-type-badge" aria-label="Content Type">[${safeContentType}]</span>`
+    : '';
+
+  const dateBadge = formattedDate
+    ? `<time class="result-date-badge" datetime="${escapeHtml(rawDate)}" aria-label="Published date">${formattedDate}</time>`
+    : '';
+
+  const thumbnailHtml = item.thumbnailUrl
+    ? `<div class="result-thumbnail"><img src="${escapeHtml(item.thumbnailUrl)}" alt="" loading="lazy" class="result-thumbnail-img" onerror="this.closest('.result-thumbnail')?.remove();" /></div>`
+    : '';
+
   return `
     <article class="result-card" data-document-id="${escapeHtml(item.documentId)}" role="article" aria-labelledby="result-title-${escapeHtml(item.documentId)}">
-      <div class="result-header">
-        ${safeDomain ? `<span class="result-domain-badge" aria-label="Domain">${safeDomain}</span>` : ''}
-        ${provenanceBadge ? `${provenanceBadge} ` : ''}<cite class="result-url" title="${safeUrl}">${safeDisplayUrl}</cite>
+      ${thumbnailHtml}
+      <div class="result-content">
+        <div class="result-header">
+          ${safeDomain ? `<span class="result-domain-badge" aria-label="Domain">${safeDomain}</span>` : ''}
+          ${provenanceBadge ? `${provenanceBadge} ` : ''}${contentTypeBadge ? `${contentTypeBadge} ` : ''}${dateBadge ? `${dateBadge} ` : ''}<cite class="result-url" title="${safeUrl}">${safeDisplayUrl}</cite>
+        </div>
+        <h2 class="result-title" id="result-title-${escapeHtml(item.documentId)}">
+          <a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="result-link" aria-label="${escapeHtml(item.title || 'Untitled Document')} (opens in new tab)">
+            ${displayTitle}
+          </a>
+        </h2>
+        <p class="result-snippet">
+          ${displaySnippet}
+        </p>
       </div>
-      <h2 class="result-title" id="result-title-${escapeHtml(item.documentId)}">
-        <a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="result-link" aria-label="${escapeHtml(item.title || 'Untitled Document')} (opens in new tab)">
-          ${displayTitle}
-        </a>
-      </h2>
-      <p class="result-snippet">
-        ${displaySnippet}
-      </p>
     </article>
   `.trim();
 }

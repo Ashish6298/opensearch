@@ -29,6 +29,18 @@
   const shortcutsToggleBtn = document.getElementById('shortcuts-toggle-btn');
   const shortcutsCloseBtn = document.getElementById('shortcuts-close-btn');
   const themeSwitcherBtn = document.getElementById('theme-switcher-btn');
+  const partialResultsBanner = document.getElementById('partial-results-banner');
+  const partialResultsText = document.getElementById('partial-results-text');
+  const partialRetryBtn = document.getElementById('partial-retry-btn');
+  const offlineState = document.getElementById('offline-state');
+  const offlineRetryBtn = document.getElementById('offline-retry-btn');
+  const providerFailureState = document.getElementById('provider-failure-state');
+  const providerFailureMessage = document.getElementById('provider-failure-message');
+  const providerRetryBtn = document.getElementById('provider-retry-btn');
+  const rateLimitState = document.getElementById('rate-limit-state');
+  const rateLimitCountdown = document.getElementById('rate-limit-countdown');
+  const rateLimitRetryBtn = document.getElementById('rate-limit-retry-btn');
+  const resultFiltersBar = document.getElementById('result-filters-bar');
 
   // Configuration
   const rawApiUrl = window.__OPENSEARCH_API_URL__ || '';
@@ -52,14 +64,21 @@
   let currentActiveResultIndex = -1;
   let currentResultItems = [];
   let currentTheme = 'dark';
+  let currentRequestId = 0;
+  let activeFilter = 'all';
+  let rateLimitTimer = null;
+  let rateLimitSecondsLeft = 0;
 
   function init() {
     initTheme();
 
-    // Check URL parameters for pre-filled query and page
+    // Check URL parameters for pre-filled query, page, and filter
     const params = new URLSearchParams(window.location.search);
     const initialQuery = params.get('q') || '';
     const initialPage = parseInt(params.get('page') || '1', 10) || 1;
+    const initialFilter = params.get('filter') || 'all';
+    activeFilter = initialFilter;
+    updateActiveFilterUI(activeFilter);
 
     if (initialQuery) {
       searchInput.value = initialQuery;
@@ -152,6 +171,76 @@
         }
       });
     });
+
+    // Phase 78: Result filters bar button clicks (preserves current query)
+    if (resultFiltersBar) {
+      resultFiltersBar.addEventListener('click', function (e) {
+        const btn = e.target.closest('.result-filter-btn');
+        if (!btn) return;
+        const filterVal = btn.getAttribute('data-filter') || 'all';
+        if (filterVal === activeFilter) return;
+
+        activeFilter = filterVal;
+        updateActiveFilterUI(activeFilter);
+
+        const query = currentQuery || searchInput.value.trim();
+        if (query) {
+          currentPage = 1;
+          updateUrl(query, currentPage, activeFilter);
+          performSearch(query, currentPage);
+        }
+      });
+    }
+
+    // Phase 78: Network connectivity listeners
+    window.addEventListener('offline', function () {
+      showOfflineState();
+    });
+
+    window.addEventListener('online', function () {
+      if (offlineState && offlineState.style.display !== 'none') {
+        offlineState.style.display = 'none';
+        if (currentQuery) {
+          performSearch(currentQuery, currentPage);
+        }
+      }
+    });
+
+    // Phase 78: State retry buttons
+    if (offlineRetryBtn) {
+      offlineRetryBtn.addEventListener('click', function () {
+        if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+          showOfflineState();
+          announceA11y('Still offline. Please check network connection.');
+        } else if (currentQuery) {
+          performSearch(currentQuery, currentPage);
+        }
+      });
+    }
+
+    if (providerRetryBtn) {
+      providerRetryBtn.addEventListener('click', function () {
+        if (currentQuery) {
+          performSearch(currentQuery, currentPage);
+        }
+      });
+    }
+
+    if (partialRetryBtn) {
+      partialRetryBtn.addEventListener('click', function () {
+        if (currentQuery) {
+          performSearch(currentQuery, currentPage);
+        }
+      });
+    }
+
+    if (rateLimitRetryBtn) {
+      rateLimitRetryBtn.addEventListener('click', function () {
+        if (rateLimitSecondsLeft <= 0 && currentQuery) {
+          performSearch(currentQuery, currentPage);
+        }
+      });
+    }
 
     // Keyboard navigation (Autocomplete & search input keys)
     searchInput.addEventListener('keydown', function (e) {
@@ -617,7 +706,7 @@
     activeSuggestionIndex = -1;
   }
 
-  function updateUrl(query, page) {
+  function updateUrl(query, page, filter = activeFilter) {
     const url = new URL(window.location.href);
     if (query) {
       url.searchParams.set('q', query);
@@ -626,17 +715,38 @@
       } else {
         url.searchParams.delete('page');
       }
+      if (filter && filter !== 'all') {
+        url.searchParams.set('filter', filter);
+      } else {
+        url.searchParams.delete('filter');
+      }
     } else {
       url.searchParams.delete('q');
       url.searchParams.delete('page');
+      url.searchParams.delete('filter');
     }
-    window.history.pushState({ q: query, page }, '', url.toString());
+    window.history.pushState({ q: query, page, filter }, '', url.toString());
+  }
+
+  function updateActiveFilterUI(filter) {
+    if (!resultFiltersBar) return;
+    const btns = resultFiltersBar.querySelectorAll('.result-filter-btn');
+    btns.forEach(function (btn) {
+      const bFilter = btn.getAttribute('data-filter');
+      const isActive = bFilter === filter;
+      btn.classList.toggle('active', isActive);
+      btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    });
   }
 
   function hideAllStates() {
     if (loadingIndicator) loadingIndicator.style.display = 'none';
     if (emptyState) emptyState.style.display = 'none';
     if (errorState) errorState.style.display = 'none';
+    if (partialResultsBanner) partialResultsBanner.style.display = 'none';
+    if (offlineState) offlineState.style.display = 'none';
+    if (providerFailureState) providerFailureState.style.display = 'none';
+    if (rateLimitState) rateLimitState.style.display = 'none';
     if (instantAnswerCard) {
       instantAnswerCard.style.display = 'none';
       instantAnswerCard.innerHTML = '';
@@ -648,10 +758,77 @@
     clearActiveResultHighlight();
   }
 
+  function showOfflineState() {
+    hideAllStates();
+    if (offlineState) offlineState.style.display = 'flex';
+    if (resultsArea) resultsArea.innerHTML = '';
+    if (resultsMeta) resultsMeta.textContent = '';
+    if (paginationArea) paginationArea.innerHTML = '';
+    announceA11y('Offline mode: Network connection is down. Please reconnect.');
+  }
+
+  function showProviderFailureState(msg) {
+    hideAllStates();
+    if (providerFailureMessage && msg) {
+      providerFailureMessage.textContent = msg;
+    }
+    if (providerFailureState) providerFailureState.style.display = 'flex';
+    if (resultsArea) resultsArea.innerHTML = '';
+    if (resultsMeta) resultsMeta.textContent = '';
+    if (paginationArea) paginationArea.innerHTML = '';
+    announceA11y(`Search provider failure: ${msg || 'Provider unavailable'}`);
+  }
+
+  function showRateLimitState(retryAfterSeconds = 5) {
+    hideAllStates();
+    if (rateLimitTimer) {
+      clearInterval(rateLimitTimer);
+      rateLimitTimer = null;
+    }
+    rateLimitSecondsLeft = retryAfterSeconds;
+    if (rateLimitCountdown) {
+      rateLimitCountdown.textContent = `${rateLimitSecondsLeft}s`;
+    }
+    if (rateLimitRetryBtn) {
+      rateLimitRetryBtn.disabled = true;
+      rateLimitRetryBtn.textContent = `[ wait ${rateLimitSecondsLeft}s ]`;
+    }
+    if (rateLimitState) rateLimitState.style.display = 'flex';
+    if (resultsArea) resultsArea.innerHTML = '';
+    if (resultsMeta) resultsMeta.textContent = '';
+    if (paginationArea) paginationArea.innerHTML = '';
+
+    rateLimitTimer = setInterval(function () {
+      rateLimitSecondsLeft--;
+      if (rateLimitSecondsLeft <= 0) {
+        clearInterval(rateLimitTimer);
+        rateLimitTimer = null;
+        if (rateLimitCountdown) rateLimitCountdown.textContent = 'ready';
+        if (rateLimitRetryBtn) {
+          rateLimitRetryBtn.disabled = false;
+          rateLimitRetryBtn.textContent = '[ retry now ]';
+        }
+      } else {
+        if (rateLimitCountdown) rateLimitCountdown.textContent = `${rateLimitSecondsLeft}s`;
+        if (rateLimitRetryBtn) rateLimitRetryBtn.textContent = `[ wait ${rateLimitSecondsLeft}s ]`;
+      }
+    }, 1000);
+
+    announceA11y(`Search rate limited. Please wait ${retryAfterSeconds} seconds.`);
+  }
+
   async function performSearch(query, page = 1) {
+    const thisRequestId = ++currentRequestId;
+
     if (activeAbortController) {
       activeAbortController.abort();
       activeAbortController = null;
+    }
+
+    // Check offline status before network dispatch
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      showOfflineState();
+      return;
     }
 
     currentQuery = query;
@@ -664,10 +841,32 @@
 
     activeAbortController = new AbortController();
     const signal = activeAbortController.signal;
+    const requestStartMs = performance.now();
 
     try {
-      const fetchUrl = `${API_ENDPOINT}?q=${encodeURIComponent(query)}&page=${page}&pageSize=${PAGE_SIZE}`;
+      let fetchUrl = `${API_ENDPOINT}?q=${encodeURIComponent(query)}&page=${page}&pageSize=${PAGE_SIZE}`;
+      if (activeFilter && activeFilter !== 'all') {
+        fetchUrl += `&filter=${encodeURIComponent(activeFilter)}`;
+      }
       const res = await fetch(fetchUrl, { signal });
+
+      // Stale response guard (Race-condition protection)
+      if (thisRequestId !== currentRequestId) {
+        return;
+      }
+
+      if (res.status === 429) {
+        const retryHeader = res.headers ? res.headers.get('Retry-After') : null;
+        const retrySec = parseInt(retryHeader || '5', 10) || 5;
+        showRateLimitState(retrySec);
+        return;
+      }
+
+      if (res.status === 502 || res.status === 503 || res.status === 504) {
+        const errJson = await res.json().catch(() => ({}));
+        showProviderFailureState(errJson.error?.message || 'External search provider temporarily unavailable.');
+        return;
+      }
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
@@ -678,26 +877,58 @@
       }
 
       const data = await res.json();
-      renderSearchResults(data);
+
+      // Check again after asynchronous JSON parsing
+      if (thisRequestId !== currentRequestId) {
+        return;
+      }
+
+      renderSearchResults(data, requestStartMs);
     } catch (err) {
-      if (err.name === 'AbortError') {
+      if (thisRequestId !== currentRequestId || err.name === 'AbortError') {
+        return;
+      }
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+        showOfflineState();
         return;
       }
       showError(
         'Unable to reach OpenSearch API server. Ensure API service is running on port 3000.',
       );
     } finally {
-      if (loadingIndicator) loadingIndicator.style.display = 'none';
-      activeAbortController = null;
+      if (thisRequestId === currentRequestId) {
+        if (loadingIndicator) loadingIndicator.style.display = 'none';
+        activeAbortController = null;
+      }
     }
   }
 
-  function renderSearchResults(data) {
+  function renderSearchResults(data, requestStartMs) {
     hideAllStates();
 
+    // Phase 78: Partial results representation
+    const isPartial = Boolean(
+      data.meta?.partialResults ||
+      (Array.isArray(data.warnings) && data.warnings.some(w => w.toLowerCase().includes('timeout') || w.toLowerCase().includes('timed out'))) ||
+      (Array.isArray(data.meta?.providers) && data.meta.providers.some(p => p.status === 'timeout' || p.status === 'degraded'))
+    );
+
+    if (isPartial && partialResultsBanner) {
+      partialResultsBanner.style.display = 'flex';
+      if (partialResultsText && data.warnings && data.warnings.length > 0) {
+        partialResultsText.textContent = `Partial Results: ${data.warnings.join('; ')}`;
+      }
+    }
+
+    if (resultFiltersBar) {
+      resultFiltersBar.style.display = 'flex';
+    }
+
     const hits = data.results || [];
-    const totalHits = data.meta?.totalHits || 0;
-    const durationMs = data.meta?.durationMs || 0;
+    const totalHits = typeof data.meta?.totalHits === 'number' ? data.meta.totalHits : hits.length;
+    const durationMs = typeof data.meta?.durationMs === 'number'
+      ? data.meta.durationMs
+      : Math.round(performance.now() - (requestStartMs || performance.now()));
     const pagination = data.pagination;
     const didYouMean = data.didYouMean;
     const instantAnswer = data.instantAnswer;
@@ -860,22 +1091,66 @@
       const safeDisplayUrl = escapeHtml(item.displayUrl || item.url || '');
       const itemNum = startIdx + index + 1;
 
+      // Safe handling of long titles and missing titles
       const displayTitle = item.highlightedTitle
         ? sanitizeHighlightedHtml(item.highlightedTitle)
         : escapeHtml(item.title) || 'Untitled Document';
 
+      // Safe handling of missing snippets
       const displaySnippet = item.highlightedSnippet
         ? sanitizeHighlightedHtml(item.highlightedSnippet)
-        : escapeHtml(item.snippet || 'No snippet description available.');
+        : escapeHtml(item.snippet || 'No description available.');
+
+      const provenanceBadge = item.attribution
+        ? `<span class="result-attribution" style="opacity: 0.8; font-size: 0.85em;">[${escapeHtml(item.attribution)}]</span>`
+        : (item.source && item.source !== 'local-index' ? `<span class="result-source-badge" style="opacity: 0.8; font-size: 0.85em;">[source: ${escapeHtml(item.source)}]</span>` : '');
+
+      const contentTypeBadge = item.contentType
+        ? `<span class="result-content-type-badge" aria-label="Content Type">[${escapeHtml(item.contentType)}]</span>`
+        : '';
+
+      const rawDate = item.publishedAt || item.publicationDate;
+      let formattedDate = '';
+      if (rawDate) {
+        try {
+          const d = new Date(rawDate);
+          if (!isNaN(d.getTime())) {
+            formattedDate = d.toISOString().split('T')[0];
+          } else {
+            formattedDate = escapeHtml(String(rawDate));
+          }
+        } catch {
+          formattedDate = escapeHtml(String(rawDate));
+        }
+      }
+
+      const dateBadge = formattedDate
+        ? `<time class="result-date-badge" datetime="${escapeHtml(rawDate)}" aria-label="Published date">${formattedDate}</time>`
+        : '';
+
+      const thumbnailHtml = item.thumbnailUrl
+        ? `<div class="result-thumbnail"><img src="${escapeHtml(item.thumbnailUrl)}" alt="" loading="lazy" class="result-thumbnail-img" onerror="this.closest('.result-thumbnail')?.remove();" /></div>`
+        : '';
 
       resultsHtml += `
         <article class="terminal-result-item" data-document-id="${escapeHtml(item.documentId || '')}">
-          <div class="result-index-title">
-            <span class="result-index">[${itemNum}]</span>
-            <a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="result-title-link">${displayTitle}</a>
+          <div class="result-item-main">
+            ${thumbnailHtml}
+            <div class="result-item-body">
+              <div class="result-index-title">
+                <span class="result-index">[${itemNum}]</span>
+                <a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="result-title-link">${displayTitle}</a>
+              </div>
+              <div class="result-url-line">
+                <span class="result-prompt-sym">&gt;</span>
+                <cite class="result-destination" title="${safeUrl}">${safeDisplayUrl}</cite>
+                ${provenanceBadge ? ` ${provenanceBadge}` : ''}
+                ${contentTypeBadge ? ` ${contentTypeBadge}` : ''}
+                ${dateBadge ? ` ${dateBadge}` : ''}
+              </div>
+              <p class="result-snippet">${displaySnippet}</p>
+            </div>
           </div>
-          <div class="result-url-line">&gt; ${safeDisplayUrl}${item.attribution ? ` <span class="result-attribution" style="opacity: 0.8; font-size: 0.85em;">[${escapeHtml(item.attribution)}]</span>` : (item.source && item.source !== 'local-index' ? ` <span class="result-attribution" style="opacity: 0.8; font-size: 0.85em;">[source: ${escapeHtml(item.source)}]</span>` : '')}</div>
-          <p class="result-snippet">${displaySnippet}</p>
         </article>
       `;
     });

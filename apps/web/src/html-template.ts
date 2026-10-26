@@ -148,6 +148,15 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
           </form>
         </div>
 
+        <!-- Phase 78: Result Filters (Preserves current search query) -->
+        <nav class="result-filters-bar" id="result-filters-bar" aria-label="Search result filters" style="display:none;">
+          <button type="button" class="result-filter-btn active" data-filter="all" aria-pressed="true">All</button>
+          <button type="button" class="result-filter-btn" data-filter="web" aria-pressed="false">Web</button>
+          <button type="button" class="result-filter-btn" data-filter="code" aria-pressed="false">Code</button>
+          <button type="button" class="result-filter-btn" data-filter="docs" aria-pressed="false">Documents</button>
+          <button type="button" class="result-filter-btn" data-filter="news" aria-pressed="false">News</button>
+        </nav>
+
         <!-- UI State Containers & Results -->
         <div class="state-container" id="state-container">
           <div class="loading-indicator" id="loading-indicator" role="status" aria-live="polite" aria-label="Loading search results" style="display:none;">
@@ -162,6 +171,42 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
           <div class="error-state" id="error-state" role="alert" aria-live="assertive" style="display:none;">
             <div class="cli-error">[ERROR] search query failed: <span id="error-message">connection refused</span></div>
             <button type="button" class="cli-retry-btn" id="error-retry-btn">[ retry ]</button>
+          </div>
+
+          <!-- Phase 78: Partial Results Banner -->
+          <div class="partial-results-banner" id="partial-results-banner" role="status" aria-live="polite" style="display:none;">
+            <div class="partial-results-content">
+              <span class="state-icon" aria-hidden="true">⚡</span>
+              <span class="partial-results-text" id="partial-results-text">Partial Results: One or more search providers timed out or were unavailable. Displaying available results.</span>
+            </div>
+            <button type="button" class="partial-retry-btn" id="partial-retry-btn" aria-label="Retry timed out providers">[ retry provider ]</button>
+          </div>
+
+          <!-- Phase 78: Offline Status State -->
+          <div class="offline-state" id="offline-state" role="alert" aria-live="assertive" style="display:none;">
+            <div class="cli-error cli-offline">
+              <span class="state-icon" aria-hidden="true">📶</span>
+              [OFFLINE] Network connection is currently offline. Showing cached results if available.
+            </div>
+            <button type="button" class="cli-retry-btn" id="offline-retry-btn">[ retry connection ]</button>
+          </div>
+
+          <!-- Phase 78: Provider Failure State -->
+          <div class="provider-failure-state" id="provider-failure-state" role="alert" aria-live="assertive" style="display:none;">
+            <div class="cli-error cli-provider-fail">
+              <span class="state-icon" aria-hidden="true">⚠️</span>
+              [PROVIDER UNAVAILABLE] Search provider is temporarily unreachable. <span id="provider-failure-message">Local index search remains active.</span>
+            </div>
+            <button type="button" class="cli-retry-btn" id="provider-retry-btn">[ retry provider ]</button>
+          </div>
+
+          <!-- Phase 78: Rate Limiting State (HTTP 429) -->
+          <div class="rate-limit-state" id="rate-limit-state" role="alert" aria-live="assertive" style="display:none;">
+            <div class="cli-error cli-rate-limit">
+              <span class="state-icon" aria-hidden="true">⏳</span>
+              [RATE LIMITED] Too many search queries. Please wait <span id="rate-limit-countdown">a moment</span> before searching again.
+            </div>
+            <button type="button" class="cli-retry-btn" id="rate-limit-retry-btn" disabled>[ wait ]</button>
           </div>
 
           <div class="results-meta" id="results-meta" role="status" aria-live="polite"></div>
