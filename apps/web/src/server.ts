@@ -137,6 +137,17 @@ export class WebServer {
     .privacy-content th { background: #1e293b; }
     .back-btn { display: inline-block; margin-bottom: 1rem; color: #38bdf8; text-decoration: none; font-weight: 600; }
   </style>
+  <script>
+    (function () {
+      try {
+        var theme = localStorage.getItem('opensearch_theme') || 'dark';
+        if (theme === 'system' || !localStorage.getItem('opensearch_theme')) {
+          theme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+        }
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body>
   <div class="privacy-content">
@@ -183,6 +194,17 @@ export class WebServer {
     .about-content h1, .about-content h2 { color: var(--accent-primary, #38bdf8); }
     .back-btn { display: inline-block; margin-bottom: 1rem; color: #38bdf8; text-decoration: none; font-weight: 600; }
   </style>
+  <script>
+    (function () {
+      try {
+        var theme = localStorage.getItem('opensearch_theme') || 'dark';
+        if (theme === 'system' || !localStorage.getItem('opensearch_theme')) {
+          theme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+        }
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body>
   <div class="about-content">

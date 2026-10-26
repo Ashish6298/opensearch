@@ -41,6 +41,20 @@
   const rateLimitCountdown = document.getElementById('rate-limit-countdown');
   const rateLimitRetryBtn = document.getElementById('rate-limit-retry-btn');
   const resultFiltersBar = document.getElementById('result-filters-bar');
+  const onboardingCard = document.getElementById('onboarding-card');
+  const onboardingDismissX = document.getElementById('onboarding-dismiss-x');
+  const onboardingGotItBtn = document.getElementById('onboarding-got-it-btn');
+  const onboardingSettingsLink = document.getElementById('onboarding-settings-link');
+  const settingsModal = document.getElementById('settings-modal');
+  const settingsToggleBtn = document.getElementById('settings-toggle-btn');
+  const footerSettingsBtn = document.getElementById('footer-settings-btn');
+  const settingsCloseBtn = document.getElementById('settings-close-btn');
+  const settingThemeSelect = document.getElementById('setting-theme-select');
+  const settingLocalOnlyToggle = document.getElementById('setting-local-only-toggle');
+  const settingNewTabToggle = document.getElementById('setting-new-tab-toggle');
+  const resetSettingsBtn = document.getElementById('reset-settings-btn');
+  const showOnboardingBtn = document.getElementById('show-onboarding-btn');
+  const settingsStatusMsg = document.getElementById('settings-status-msg');
 
   // Configuration
   const rawApiUrl = window.__OPENSEARCH_API_URL__ || '';
@@ -68,8 +82,19 @@
   let activeFilter = 'all';
   let rateLimitTimer = null;
   let rateLimitSecondsLeft = 0;
+  let currentThemePreference = 'system';
+  let isLocalOnly = false;
+  let openInNewTab = true;
+
+  const PREFERENCE_KEYS = {
+    THEME: 'opensearch_theme',
+    LOCAL_ONLY: 'opensearch_local_only',
+    OPEN_NEW_TAB: 'opensearch_open_new_tab',
+    ONBOARDING_DISMISSED: 'opensearch_onboarding_dismissed',
+  };
 
   function init() {
+    initPreferences();
     initTheme();
 
     // Check URL parameters for pre-filled query, page, and filter
@@ -88,6 +113,28 @@
     }
 
     attachEventListeners();
+  }
+
+  function initPreferences() {
+    try {
+      const storedTheme = localStorage.getItem(PREFERENCE_KEYS.THEME) || 'system';
+      currentThemePreference = storedTheme;
+
+      isLocalOnly = localStorage.getItem(PREFERENCE_KEYS.LOCAL_ONLY) === 'true';
+      if (settingLocalOnlyToggle) {
+        settingLocalOnlyToggle.checked = isLocalOnly;
+      }
+
+      openInNewTab = localStorage.getItem(PREFERENCE_KEYS.OPEN_NEW_TAB) !== 'false';
+      if (settingNewTabToggle) {
+        settingNewTabToggle.checked = openInNewTab;
+      }
+
+      const dismissed = localStorage.getItem(PREFERENCE_KEYS.ONBOARDING_DISMISSED) === 'true';
+      if (!dismissed && onboardingCard) {
+        onboardingCard.style.display = 'block';
+      }
+    } catch {}
   }
 
   function attachEventListeners() {
@@ -238,6 +285,91 @@
       rateLimitRetryBtn.addEventListener('click', function () {
         if (rateLimitSecondsLeft <= 0 && currentQuery) {
           performSearch(currentQuery, currentPage);
+        }
+      });
+    }
+
+
+    // Phase 79: Onboarding dismissal & configuration
+    if (onboardingDismissX) {
+      onboardingDismissX.addEventListener('click', function () {
+        dismissOnboarding();
+      });
+    }
+
+    if (onboardingGotItBtn) {
+      onboardingGotItBtn.addEventListener('click', function () {
+        dismissOnboarding();
+      });
+    }
+
+    if (onboardingSettingsLink) {
+      onboardingSettingsLink.addEventListener('click', function () {
+        dismissOnboarding();
+        openSettingsModal();
+      });
+    }
+
+    // Phase 79: Settings modal open/close triggers
+    if (settingsToggleBtn) {
+      settingsToggleBtn.addEventListener('click', function () {
+        openSettingsModal();
+      });
+    }
+
+    if (footerSettingsBtn) {
+      footerSettingsBtn.addEventListener('click', function () {
+        openSettingsModal();
+      });
+    }
+
+    if (settingsCloseBtn) {
+      settingsCloseBtn.addEventListener('click', function () {
+        closeSettingsModal();
+      });
+    }
+
+    if (settingThemeSelect) {
+      settingThemeSelect.addEventListener('change', function () {
+        applyTheme(settingThemeSelect.value, true);
+      });
+    }
+
+    if (settingLocalOnlyToggle) {
+      settingLocalOnlyToggle.addEventListener('change', function () {
+        isLocalOnly = settingLocalOnlyToggle.checked;
+        try {
+          localStorage.setItem(PREFERENCE_KEYS.LOCAL_ONLY, String(isLocalOnly));
+        } catch {}
+        announceA11y(`Local-only search mode ${isLocalOnly ? 'enabled' : 'disabled'}.`);
+        if (currentQuery) {
+          performSearch(currentQuery, currentPage);
+        }
+      });
+    }
+
+    if (settingNewTabToggle) {
+      settingNewTabToggle.addEventListener('change', function () {
+        openInNewTab = settingNewTabToggle.checked;
+        try {
+          localStorage.setItem(PREFERENCE_KEYS.OPEN_NEW_TAB, String(openInNewTab));
+        } catch {}
+        announceA11y(`Open in new tab ${openInNewTab ? 'enabled' : 'disabled'}.`);
+      });
+    }
+
+    if (resetSettingsBtn) {
+      resetSettingsBtn.addEventListener('click', function () {
+        resetPreferences();
+      });
+    }
+
+    if (showOnboardingBtn) {
+      showOnboardingBtn.addEventListener('click', function () {
+        closeSettingsModal();
+        if (onboardingCard) {
+          onboardingCard.style.display = 'block';
+          announceA11y('Privacy guide reopened.');
         }
       });
     }
@@ -440,24 +572,56 @@
     });
   }
 
+  function getSystemTheme() {
+    if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    }
+    return 'light';
+  }
+
+  function resolveEffectiveTheme(themeChoice) {
+    if (themeChoice === 'system' || !themeChoice) {
+      return getSystemTheme();
+    }
+    return themeChoice;
+  }
+
   function initTheme() {
     try {
       const savedTheme = localStorage.getItem('opensearch_theme');
-      if (savedTheme && THEMES.includes(savedTheme)) {
-        currentTheme = savedTheme;
+      if (savedTheme && (THEMES.includes(savedTheme) || savedTheme === 'system')) {
+        currentThemePreference = savedTheme;
+        currentTheme = savedTheme === 'system' ? getSystemTheme() : savedTheme;
       } else {
-        currentTheme = 'dark';
+        currentThemePreference = 'system';
+        currentTheme = getSystemTheme();
       }
     } catch (e) {
+      currentThemePreference = 'dark';
       currentTheme = 'dark';
     }
-    applyTheme(currentTheme, false);
+    applyTheme(currentThemePreference, false);
+
+    // Dynamic OS color-scheme watcher
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function (e) {
+        if (currentThemePreference === 'system') {
+          const effective = e.matches ? 'dark' : 'light';
+          document.documentElement.setAttribute('data-theme', effective);
+          announceA11y(`System color scheme changed: updated to ${effective} mode.`);
+        }
+      });
+    }
   }
 
   function applyTheme(themeName, announce = true) {
-    if (!THEMES.includes(themeName)) return;
-    currentTheme = themeName;
-    document.documentElement.setAttribute('data-theme', themeName);
+    const validThemes = [...THEMES, 'system'];
+    if (!validThemes.includes(themeName)) return;
+
+    currentThemePreference = themeName;
+    const effectiveTheme = resolveEffectiveTheme(themeName);
+    currentTheme = effectiveTheme;
+    document.documentElement.setAttribute('data-theme', effectiveTheme);
 
     try {
       localStorage.setItem('opensearch_theme', themeName);
@@ -470,9 +634,13 @@
       themeSwitcherBtn.setAttribute('aria-label', `Toggle color theme (Current: ${themeName})`);
     }
 
+    if (settingThemeSelect) {
+      settingThemeSelect.value = themeName;
+    }
+
     const submitBtn = document.getElementById('search-submit-btn');
     if (submitBtn) {
-      const isRetro = ['matrix', 'amber', 'dracula', 'nord', 'monokai'].includes(themeName);
+      const isRetro = ['matrix', 'amber', 'dracula', 'nord', 'monokai'].includes(effectiveTheme);
       submitBtn.textContent = isRetro ? 'RUN' : 'Search';
     }
 
@@ -497,6 +665,59 @@
     if (!shortcutsModal) return;
     shortcutsModal.style.display = 'flex';
     announceA11y('Keyboard shortcuts dialog opened. Press Escape to close.');
+  }
+
+  function dismissOnboarding() {
+    if (onboardingCard) {
+      onboardingCard.style.display = 'none';
+    }
+    try {
+      localStorage.setItem(PREFERENCE_KEYS.ONBOARDING_DISMISSED, 'true');
+    } catch {}
+    announceA11y('Privacy guide dismissed.');
+  }
+
+  function openSettingsModal() {
+    if (!settingsModal) return;
+    settingsModal.style.display = 'flex';
+    if (settingThemeSelect) settingThemeSelect.value = currentThemePreference;
+    if (settingLocalOnlyToggle) settingLocalOnlyToggle.checked = isLocalOnly;
+    if (settingNewTabToggle) settingNewTabToggle.checked = openInNewTab;
+    announceA11y('Settings dialog opened. Press Escape to close.');
+  }
+
+  function closeSettingsModal() {
+    if (!settingsModal) return;
+    settingsModal.style.display = 'none';
+    announceA11y('Settings dialog closed.');
+  }
+
+  function resetPreferences() {
+    try {
+      // Clear ONLY non-sensitive UI settings - NEVER touch server indexes or datasets
+      Object.values(PREFERENCE_KEYS).forEach(k => {
+        localStorage.removeItem(k);
+      });
+    } catch {}
+
+    // Reset runtime state
+    currentThemePreference = 'system';
+    isLocalOnly = false;
+    openInNewTab = true;
+
+    applyTheme('system', false);
+    if (settingThemeSelect) settingThemeSelect.value = 'system';
+    if (settingLocalOnlyToggle) settingLocalOnlyToggle.checked = false;
+    if (settingNewTabToggle) settingNewTabToggle.checked = true;
+
+    if (settingsStatusMsg) {
+      settingsStatusMsg.textContent = 'Settings reset to default values. Local index data preserved.';
+      settingsStatusMsg.style.display = 'block';
+      setTimeout(() => {
+        if (settingsStatusMsg) settingsStatusMsg.style.display = 'none';
+      }, 3000);
+    }
+    announceA11y('Preferences reset to default values. Index storage preserved.');
   }
 
   function closeShortcutsModal() {
@@ -848,6 +1069,9 @@
       if (activeFilter && activeFilter !== 'all') {
         fetchUrl += `&filter=${encodeURIComponent(activeFilter)}`;
       }
+      if (isLocalOnly) {
+        fetchUrl += '&localOnly=true';
+      }
       const res = await fetch(fetchUrl, { signal });
 
       // Stale response guard (Race-condition protection)
@@ -1052,7 +1276,7 @@
     }
 
     const plural = totalHits === 1 ? 'hit' : 'hits';
-    let summaryText = `[status: 200 OK] ${totalHits.toLocaleString()} ${plural} (${durationMs}ms)`;
+    let summaryText = `[status: 200 OK] ${totalHits.toLocaleString()} ${plural} (${durationMs}ms)${isLocalOnly ? ' [mode: local-only]' : ''}`;
 
     // Display active filters in the search summary meta line (Phase 37)
     const filters = data.query?.filters;
@@ -1139,7 +1363,7 @@
             <div class="result-item-body">
               <div class="result-index-title">
                 <span class="result-index">[${itemNum}]</span>
-                <a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="result-title-link">${displayTitle}</a>
+                <a href="${safeUrl}" ${openInNewTab ? 'target="_blank" rel="noopener noreferrer"' : ''} class="result-title-link">${displayTitle}</a>
               </div>
               <div class="result-url-line">
                 <span class="result-prompt-sym">&gt;</span>

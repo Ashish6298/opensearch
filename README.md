@@ -931,7 +931,7 @@ $ audit --privacy-boundaries
 | **Milestone 26** | **Repository Audit & Baseline (v1.5.0)**| Phases 66 – 68 | Architecture inventory, baseline measurements, product & privacy contracts | `[PASSED]` |
 | **Milestone 27** | **Search Providers & Source Reliability**| Phases 69 – 72 | Standard provider interface, zero brittle scraping, resilience, attribution compliance | `[PASSED]` |
 | **Milestone 28** | **Index Storage & Dataset Growth**      | Phases 73 – 76 | Lifecycle audit, storage abstraction, reproducible corpus expansion, incremental recovery | `[MILESTONE 28 PASSED]` |
-| **Milestone 29** | **Everyday-User Interface**             | Phases 77 – 80 | Search-first responsive home, result cards & states, privacy receipt, customizable sources | `[PHASE 78 PASSED]` |
+| **Milestone 29** | **Everyday-User Interface**             | Phases 77 – 80 | Search-first responsive home, result cards & states, privacy receipt, customizable sources | `[PHASE 79 PASSED]` |
 
 <br/>
 
@@ -945,11 +945,11 @@ $ npm test
 ✓ packages/cli/tests/cli.test.ts (11 tests)
 ✓ packages/ranking/tests/instant-answers.test.ts (26 tests)
 ...
-Test Files  59 passed (59)
-     Tests  622 passed (622)
-  Duration  10.73s -- 100% Passing Pass Rate
+Test Files  60 passed (60)
+     Tests  635 passed (635)
+  Duration  9.13s -- 100% Passing Pass Rate
 ────────────────────────────────────────────────────────────
-TOTAL RESULT: 622 / 622 TESTS PASSED (100.0%) -- V1.5.0 PHASE 78 VERIFIED
+TOTAL RESULT: 635 / 635 TESTS PASSED (100.0%) -- V1.5.0 PHASE 79 VERIFIED
 ```
 
 ---

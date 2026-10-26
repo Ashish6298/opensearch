@@ -36,6 +36,9 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
     (function () {
       try {
         var theme = localStorage.getItem('opensearch_theme') || 'dark';
+        if (theme === 'system' || !localStorage.getItem('opensearch_theme')) {
+          theme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+        }
         document.documentElement.setAttribute('data-theme', theme);
       } catch (e) {}
       if ('serviceWorker' in navigator) {
@@ -55,6 +58,7 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
     <!-- Header Controls in Top Corner (Theme Switcher & Version) -->
     <div class="corner-header-controls">
       <button type="button" class="theme-switcher-btn" id="theme-switcher-btn" aria-label="Toggle color theme" title="Click to cycle theme (Dark, Light, Matrix, Amber, Dracula, Nord, Monokai)">[theme: dark]</button>
+      <button type="button" class="settings-toggle-btn" id="settings-toggle-btn" aria-label="Open settings and preferences" title="Search settings and privacy options">⚙️ settings</button>
       <div class="corner-version">v1.4.0</div>
     </div>
 
@@ -77,6 +81,33 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
             <span class="badge-item"><span class="badge-icon" aria-hidden="true">⚡</span> Pure relevance</span>
           </div>
         </header>
+
+        <!-- Phase 79: Non-blocking Privacy & Provider Onboarding -->
+        <div class="onboarding-card" id="onboarding-card" role="region" aria-label="Privacy and search engine guide" style="display:none;">
+          <div class="onboarding-content">
+            <div class="onboarding-header">
+              <span class="onboarding-badge">🔒 Privacy &amp; Provider Transparency</span>
+              <button type="button" class="onboarding-close-btn" id="onboarding-dismiss-x" aria-label="Dismiss privacy guide">✕</button>
+            </div>
+            <p class="onboarding-desc">
+              OpenSearch is built from first principles for zero-tracking search. We never store search queries, user identifiers, or profiling cookies.
+            </p>
+            <div class="onboarding-grid">
+              <div class="onboarding-item">
+                <div class="onboarding-item-title">🌐 External Search Providers</div>
+                <div class="onboarding-item-desc">Queries local indexes alongside privacy-friendly sources (Wikipedia, DuckDuckGo) without third-party ad networks.</div>
+              </div>
+              <div class="onboarding-item">
+                <div class="onboarding-item-title">🛡️ Local-Only Mode</div>
+                <div class="onboarding-item-desc">Disable all outbound network calls to search strictly within local documents for 100% air-gapped privacy.</div>
+              </div>
+            </div>
+            <div class="onboarding-actions">
+              <button type="button" class="onboarding-btn primary" id="onboarding-got-it-btn">Got it</button>
+              <button type="button" class="onboarding-btn secondary" id="onboarding-settings-link">Configure Settings</button>
+            </div>
+          </div>
+        </div>
 
         <div class="ascii-wrapper">
           <pre class="ascii-art" aria-label="OpenSearch">${ASCII_LOGO}</pre>
@@ -223,7 +254,7 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
     <!-- Terminal Footer -->
     <footer class="terminal-footer">
       <div class="footer-container">
-        <span class="footer-text"><a href="/about">about</a> · <a href="/docs">docs</a> · <a href="/privacy">privacy</a> · <a href="/health" target="_blank" rel="noopener noreferrer">status</a> · <button type="button" class="footer-shortcuts-btn" id="shortcuts-toggle-btn" aria-label="Keyboard Shortcuts (Press ?)">shortcuts [?]</button> · <a href="https://github.com/Ashish6298/opensearch" target="_blank" rel="noopener noreferrer">source</a> — v1.2.0</span>
+        <span class="footer-text"><a href="/about">about</a> · <a href="/docs">docs</a> · <a href="/privacy">privacy</a> · <a href="/health" target="_blank" rel="noopener noreferrer">status</a> · <button type="button" class="footer-settings-btn" id="footer-settings-btn" aria-label="Open search settings">settings</button> · <button type="button" class="footer-shortcuts-btn" id="shortcuts-toggle-btn" aria-label="Keyboard Shortcuts (Press ?)">shortcuts [?]</button> · <a href="https://github.com/Ashish6298/opensearch" target="_blank" rel="noopener noreferrer">source</a> — v1.2.0</span>
       </div>
     </footer>
 
@@ -274,6 +305,66 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
             </div>
           </div>
           <div class="shortcuts-footer-hint">&gt; Tip: Press any key or click outside to dismiss.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 79: Settings & Preferences Modal Overlay -->
+    <div id="settings-modal" class="settings-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="settings-title" style="display:none;">
+      <div class="settings-modal-dialog">
+        <div class="settings-modal-header">
+          <span class="settings-modal-title" id="settings-title">&gt; SEARCH SETTINGS &amp; PREFERENCES</span>
+          <button type="button" class="settings-modal-close-btn" id="settings-close-btn" aria-label="Close settings modal">[ESC / X]</button>
+        </div>
+        <div class="settings-modal-body">
+          <!-- Theme Preference -->
+          <div class="settings-section">
+            <label class="settings-label" for="setting-theme-select"><strong>Appearance Theme:</strong></label>
+            <select id="setting-theme-select" class="settings-select" aria-label="Select color theme">
+              <option value="system">System Preference (Auto)</option>
+              <option value="dark">Modern Dark</option>
+              <option value="light">Modern Light</option>
+              <option value="matrix">Matrix Phosphor (CRT Green)</option>
+              <option value="amber">Cyberpunk Amber (CRT Amber)</option>
+              <option value="dracula">Dracula Neon</option>
+              <option value="nord">Nord Arctic Frost</option>
+              <option value="monokai">Monokai High Contrast</option>
+            </select>
+            <p class="settings-hint">System mode automatically follows your operating system's light or dark mode.</p>
+          </div>
+
+          <!-- Local-Only Search Mode -->
+          <div class="settings-section">
+            <div class="settings-toggle-row">
+              <label class="settings-label" for="setting-local-only-toggle"><strong>Local-Only Search Mode:</strong></label>
+              <input type="checkbox" id="setting-local-only-toggle" class="settings-checkbox" />
+            </div>
+            <p class="settings-hint">
+              <strong>What is Local-only mode?</strong> When enabled, OpenSearch disables all outbound network calls to external web providers. Only queries documents indexed locally on your machine or private server. Provides 100% air-gapped search privacy with no external dependencies.
+            </p>
+          </div>
+
+          <!-- Open in new tab -->
+          <div class="settings-section">
+            <div class="settings-toggle-row">
+              <label class="settings-label" for="setting-new-tab-toggle"><strong>Open links in new tab:</strong></label>
+              <input type="checkbox" id="setting-new-tab-toggle" class="settings-checkbox" checked />
+            </div>
+            <p class="settings-hint">Opens search result destinations in a new browser tab with noopener/noreferrer protection.</p>
+          </div>
+
+          <!-- Privacy & Data Storage Guarantee Notice -->
+          <div class="settings-privacy-box">
+            <span class="settings-privacy-badge">🔒 Zero-Tracking Guarantee</span>
+            <p>Preferences are stored strictly in your browser's local memory. No user identifiers, cookies, sessions, or queries are stored.</p>
+          </div>
+
+          <!-- Actions: Reset Settings & Show Guide -->
+          <div class="settings-actions-row">
+            <button type="button" class="settings-btn danger" id="reset-settings-btn" title="Reset all UI settings to default without touching indexed data">Reset Preferences</button>
+            <button type="button" class="settings-btn" id="show-onboarding-btn">Show Privacy Guide</button>
+          </div>
+          <div id="settings-status-msg" class="settings-status-msg" role="status" aria-live="polite" style="display:none;"></div>
         </div>
       </div>
     </div>

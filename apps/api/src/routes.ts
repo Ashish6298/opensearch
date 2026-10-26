@@ -357,8 +357,10 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
   let finalResults = [...searchResultSet.items];
   let totalHits = searchResultSet.pagination.totalHits;
 
-  // Query live web search when local indexed results are insufficient
-  if (page === 1 && process.env.NODE_ENV !== 'test' && finalResults.length < pageSize) {
+  const isLocalOnly = req.query['localOnly'] === 'true' || req.query['mode'] === 'local';
+
+  // Query live web search when local indexed results are insufficient (unless in local-only mode)
+  if (!isLocalOnly && page === 1 && process.env.NODE_ENV !== 'test' && finalResults.length < pageSize) {
     try {
       const liveItems = await fetchExternalWebResults(rawQuery, pageSize - finalResults.length);
       if (liveItems.length > 0) {
