@@ -79,3 +79,9 @@ export {
 export {
   createDefaultProviderRegistry,
 } from './default-providers.js';
+
+export {
+  validateProviderPrivacyContract,
+  assertProviderPrivacyContract,
+} from './privacy-contract.js';
+export type { PrivacyContractValidationResult } from './privacy-contract.js';
