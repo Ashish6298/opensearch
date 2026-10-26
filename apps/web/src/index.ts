@@ -23,6 +23,7 @@ export { generateHtmlShell } from './html-template.js';
 export type { HtmlTemplateOptions } from './html-template.js';
 export {
   renderResultCard,
+  renderImageCard,
   renderResultsSummary,
   renderPaginationControls,
   escapeHtml,

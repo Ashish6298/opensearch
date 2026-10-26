@@ -26,6 +26,7 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="OpenSearch is a public, privacy-first search engine built from scratch.">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="theme-color" content="#0d0d0d">
   <link rel="manifest" href="/manifest.json">
   <title>${title}</title>

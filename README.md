@@ -932,6 +932,7 @@ $ audit --privacy-boundaries
 | **Milestone 27** | **Search Providers & Source Reliability**| Phases 69 – 72 | Standard provider interface, zero brittle scraping, resilience, attribution compliance | `[PASSED]` |
 | **Milestone 28** | **Index Storage & Dataset Growth**      | Phases 73 – 76 | Lifecycle audit, storage abstraction, reproducible corpus expansion, incremental recovery | `[MILESTONE 28 PASSED]` |
 | **Milestone 29** | **Everyday-User Interface**             | Phases 77 – 81 | Search-first responsive home, result cards & states, themes & preferences, categories, safe search controls | `[MILESTONE 29 PASSED]` |
+| **Milestone 30** | **Privacy Receipt & Local-Only Mode**   | Phases 82 – 86 | Network & data-flow audit, local-only enforcement, privacy receipt schema, leak tests | `[PHASE 82 PASSED]` |
 
 <br/>
 
@@ -945,11 +946,11 @@ $ npm test
 ✓ packages/cli/tests/cli.test.ts (11 tests)
 ✓ packages/ranking/tests/instant-answers.test.ts (26 tests)
 ...
-Test Files  64 passed (64)
-     Tests  689 passed (689)
-  Duration  24.93s -- 100% Passing Pass Rate
+Test Files  65 passed (65)
+     Tests  704 passed (704)
+  Duration  11.05s -- 100% Passing Pass Rate
 ────────────────────────────────────────────────────────────
-TOTAL RESULT: 689 / 689 TESTS PASSED (100.0%) -- V1.5.0 PHASE 81 VERIFIED
+TOTAL RESULT: 704 / 704 TESTS PASSED (100.0%) -- V1.5.0 PHASE 82 VERIFIED
 ```
 
 ---

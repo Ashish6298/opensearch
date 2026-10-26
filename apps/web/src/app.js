@@ -1361,7 +1361,7 @@
           <div class="image-card" data-document-id="${escapeHtml(item.documentId || '')}" role="group" aria-label="${safeTitle}">
             <a href="${safeUrl}" ${openInNewTab ? 'target="_blank" rel="noopener noreferrer"' : ''} class="image-card-link" aria-label="${safeTitle} (opens in new tab)">
               <div class="image-card-thumb-container">
-                <img src="${escapeHtml(safeThumb)}" alt="${safeTitle}" loading="lazy" class="image-card-thumb" onerror="this.closest('.image-card')?.remove();" />
+                <img src="${escapeHtml(safeThumb)}" alt="${safeTitle}" loading="lazy" referrerpolicy="no-referrer" class="image-card-thumb" onerror="this.closest('.image-card')?.remove();" />
                 ${dimensions ? `<span class="image-card-dimensions">${dimensions}</span>` : ''}
               </div>
               <div class="image-card-info">

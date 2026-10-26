@@ -180,3 +180,6 @@ export function auditResponseHeaders(headers: Record<string, string | string[] |
     issues,
   };
 }
+
+export * from './network-audit.js';
+
