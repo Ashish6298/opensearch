@@ -79,6 +79,10 @@ export class WebServer {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader(
+      'Content-Security-Policy',
+      "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://upload.wikimedia.org https://commons.wikimedia.org; connect-src 'self' http://localhost:* http://127.0.0.1:* https:; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'",
+    );
 
     // Phase 31: Add HSTS header when accessed over HTTPS / TLS reverse proxy
     const isHttps =
@@ -137,6 +141,17 @@ export class WebServer {
     .privacy-content th { background: #1e293b; }
     .back-btn { display: inline-block; margin-bottom: 1rem; color: #38bdf8; text-decoration: none; font-weight: 600; }
   </style>
+  <script>
+    (function () {
+      try {
+        var theme = localStorage.getItem('opensearch_theme') || 'dark';
+        if (theme === 'system' || !localStorage.getItem('opensearch_theme')) {
+          theme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+        }
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body>
   <div class="privacy-content">
@@ -183,6 +198,17 @@ export class WebServer {
     .about-content h1, .about-content h2 { color: var(--accent-primary, #38bdf8); }
     .back-btn { display: inline-block; margin-bottom: 1rem; color: #38bdf8; text-decoration: none; font-weight: 600; }
   </style>
+  <script>
+    (function () {
+      try {
+        var theme = localStorage.getItem('opensearch_theme') || 'dark';
+        if (theme === 'system' || !localStorage.getItem('opensearch_theme')) {
+          theme = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+        }
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
 </head>
 <body>
   <div class="about-content">

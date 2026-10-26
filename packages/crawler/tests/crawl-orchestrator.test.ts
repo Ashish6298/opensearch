@@ -401,17 +401,23 @@ describe('CrawlOrchestrator (Phase 8)', () => {
     });
 
     await orchestrator.initialize();
-    await orchestrator.addSeeds(['https://example.com/page1']);
+    await orchestrator.addSeeds([
+      'https://example.com/page1',
+      'https://example.com/page2',
+      'https://example.com/page3',
+      'https://example.com/page4',
+      'https://example.com/page5',
+    ]);
 
-    // Stop after first page
+    // Stop after first few pages
     setTimeout(() => {
       abortController.abort();
-    }, 10);
+    }, 25);
 
     const summary = await orchestrator.start({
       signal: abortController.signal,
       maxPages: 100,
-      politenessDelayMs: 20,
+      politenessDelayMs: 50,
     });
 
     expect(summary.status).toBe('stopped');

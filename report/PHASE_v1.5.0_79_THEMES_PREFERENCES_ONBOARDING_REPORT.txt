@@ -1,0 +1,110 @@
+================================================================================
+OPENSEARCH — PHASE 79 IMPLEMENTATION & VERIFICATION REPORT
+Milestone 29: Everyday-User Interface
+Phase 79: Themes, preferences, and onboarding
+Date: 2026-10-26
+Branch: ashish
+Author: Ashish & Antigravity (DeepMind Advanced Agentic Coding)
+================================================================================
+
+1. EXECUTIVE SUMMARY
+--------------------
+Phase 79 implements a comprehensive, privacy-first personalization and onboarding
+experience for OpenSearch. By default, the application detects and adopts the
+operating system's color scheme (`prefers-color-scheme`) with zero tracking,
+while giving users complete control to override their preference with Light, Dark,
+or retro CRT Terminal themes. 
+
+All preferences are kept strictly local in `localStorage`, introducing zero user
+tracking or extraneous identifiers. A non-intrusive onboarding banner introduces
+external search providers (Wikipedia, DuckDuckGo) and explains privacy controls
+without blocking user interaction, and can be dismissed permanently or reopened at
+any time. A dedicated preferences modal exposes theme switching, search target
+preferences, and an explicit Local-Only mode explanation and toggle (with backend
+API integration ensuring zero outbound provider calls). Crucially, a predictable
+settings reset mechanism clears only UI preferences without jeopardizing or wiping
+local index stores or SQLite databases.
+
+All 635 tests across 60 test files in the OpenSearch monorepo pass with a 100%
+pass rate. TypeScript compilation (`tsc -b`) and asset synchronization pass cleanly
+with zero errors.
+
+Status: COMPLETED.
+Readiness for Next Phase (Milestone 30 — Phase 80 / Next Phase): READY.
+
+2. TASKS ACCOMPLISHED
+---------------------
+[x] System Theme Detection by Default with Explicit Overrides:
+    - Automatically queries `window.matchMedia('(prefers-color-scheme: dark)')`
+      to align with OS preferences upon initial load.
+    - Dynamically listens to OS theme changes via `change` event listener.
+    - Provides explicit theme selection options: System (default), Light, Dark,
+      and Retro CRT Terminal.
+    - Applied an inline theme initialization script in `<head>` to prevent flash
+      of unstyled content (FOUC).
+
+[x] Consistent Cross-Route Theme Synchronization:
+    - Injected theme bootstrap script across all server-rendered routes:
+      `/` (Home), `/search` (Search Results), `/privacy` (Privacy Policy), and
+      `/about` (About page).
+    - Guarantees visual theme persistence across page refreshes and multi-route
+      navigation.
+
+[x] Non-Sensitive, Zero-Identifier Preference Storage:
+    - Identified and isolated storage keys strictly under `PREFERENCE_KEYS`:
+      * `opensearch_theme`: theme string ('system' | 'light' | 'dark' | 'terminal')
+      * `opensearch_local_only`: boolean string ('true' | 'false')
+      * `opensearch_open_new_tab`: boolean string ('true' | 'false')
+      * `opensearch_onboarding_dismissed`: boolean string ('true' | 'false')
+    - Completely avoids cookies, device fingerprints, telemetry IDs, or tracking GUIDs.
+
+[x] Non-Blocking, Dismissible Privacy & Provider Onboarding:
+    - Inline onboarding card (`#onboarding-card`) situated above search views.
+    - Explains external providers (Wikipedia, DuckDuckGo) and privacy posture clearly.
+    - Non-blocking layout allows immediate searching without forced clicks.
+    - Includes dismiss actions (`#onboarding-dismiss-btn` and `#onboarding-close-btn`).
+    - Easily reopenable via settings modal or footer link.
+
+[x] Local-Only Mode Architecture:
+    - Clear explanatory text provided before user enablement: clarifies that
+      searches will strictly query local indexes and disable all external web
+      lookups for absolute air-gapped privacy.
+    - Client automatically appends `&localOnly=true` to API queries when active.
+    - Server API (`apps/api/src/routes.ts`) honors `req.query['localOnly'] === 'true'`,
+      completely bypassing upstream provider calls and returning strictly local documents.
+
+[x] Predictable Settings Reset Mechanism:
+    - Implemented `#reset-preferences-btn` with unambiguous user confirmation.
+    - Explicitly removes only the 4 specified UI preference keys from `localStorage`.
+    - Guarantees zero side effects on backend indexes, SQLite persistence, crawl queues,
+      or document caches.
+
+3. VERIFICATION & TEST METRICS
+------------------------------
+Full Monorepo Vitest Suite:
+- Test Files: 60 passed (60 total)
+- Tests:      635 passed (635 total)
+- Duration:   9.13s
+- Pass Rate:  100.0%
+
+New Dedicated Test Suite (`apps/web/tests/themes-preferences-onboarding.test.ts`):
+- 13 comprehensive tests covering:
+  * System theme preference initialization and auto-detection
+  * Explicit theme switching and persistence across reloads
+  * Cross-route theme loader presence across `/`, `/search`, `/privacy`, `/about`
+  * Non-blocking, dismissible onboarding UI and provider disclosures
+  * Storage isolation with zero tracking identifiers or GUIDs
+  * Predictable preferences reset protecting index data
+  * Local-only mode explanation, toggle, and backend query parameter forwarding
+  * Settings modal accessibility, focus management, and keyboard dismissal (Escape)
+
+TypeScript Compilation & Asset Pipeline:
+- Command: `npm run typecheck` -> 0 errors across all monorepo packages.
+- Command: `npm run build` -> Clean build across TypeScript and web assets.
+
+4. READINESS ASSESSMENT
+-----------------------
+Milestone 29 (Everyday-User Interface) Phases 77, 78, and 79 are fully implemented,
+thoroughly tested, and verified against all acceptance criteria. The codebase is
+fully ready for the next phase.
+================================================================================

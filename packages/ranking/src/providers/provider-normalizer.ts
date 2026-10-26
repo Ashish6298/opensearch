@@ -1,5 +1,5 @@
 /**
- * @opensearch/ranking — Search Provider Normalizer (Phase 69)
+ * @opensearch/ranking — Search Provider Normalizer (Phase 69 & Phase 80)
  *
  * Normalizes disparate search provider results into the shared NormalizedSearchResult schema
  * and provides seamless conversion to SearchResultItem for ranking and UI layers,
@@ -8,6 +8,7 @@
 
 import { SearchResultItem } from '../results/result-types.js';
 import { NormalizedSearchResult, ProviderMetadata } from './provider-types.js';
+import { validateSafeImageUrl, evaluateNewsRecency } from './image-validation.js';
 
 export interface RawResultInput {
   title?: string;
@@ -47,7 +48,17 @@ export function normalizeProviderResult(
 
   let thumbnail = raw.thumbnail;
   if (!thumbnail && raw.thumbnailUrl && typeof raw.thumbnailUrl === 'string') {
-    thumbnail = { url: raw.thumbnailUrl };
+    const safeUrl = validateSafeImageUrl(raw.thumbnailUrl);
+    if (safeUrl) {
+      thumbnail = { url: safeUrl };
+    }
+  } else if (thumbnail && thumbnail.url) {
+    const safeUrl = validateSafeImageUrl(thumbnail.url);
+    if (safeUrl) {
+      thumbnail = { ...thumbnail, url: safeUrl };
+    } else {
+      thumbnail = undefined;
+    }
   }
 
   const attribution =
@@ -94,6 +105,12 @@ export function convertToSearchResultItem(
 
   const displayUrl = domain ? `${domain} › ...` : normalized.canonicalUrl;
 
+  const safeThumbUrl = normalized.thumbnail?.url
+    ? validateSafeImageUrl(normalized.thumbnail.url) || undefined
+    : undefined;
+
+  const recency = evaluateNewsRecency(normalized.timestamp);
+
   return {
     documentId: `${normalized.source}-${rank}`,
     score: normalized.score ?? Math.max(0.1, baseScore - rank * 0.02),
@@ -107,9 +124,15 @@ export function convertToSearchResultItem(
     highlightedSnippet: normalized.snippet,
     language: 'en',
     indexedAt: normalized.timestamp || new Date().toISOString(),
+    publishedAt: normalized.timestamp, // Authentic publication timestamp, NEVER fabricated!
     source: normalized.source,
     contentType: normalized.contentType,
     attribution: normalized.attribution,
-    thumbnailUrl: normalized.thumbnail?.url,
+    license: (normalized.metadata?.['license'] as string) || undefined,
+    thumbnailUrl: safeThumbUrl,
+    imageWidth: normalized.thumbnail?.width,
+    imageHeight: normalized.thumbnail?.height,
+    isStale: recency?.isStale,
+    recencyLabel: recency?.label,
   };
 }

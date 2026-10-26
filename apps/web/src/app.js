@@ -29,6 +29,40 @@
   const shortcutsToggleBtn = document.getElementById('shortcuts-toggle-btn');
   const shortcutsCloseBtn = document.getElementById('shortcuts-close-btn');
   const themeSwitcherBtn = document.getElementById('theme-switcher-btn');
+  const partialResultsBanner = document.getElementById('partial-results-banner');
+  const partialResultsText = document.getElementById('partial-results-text');
+  const partialRetryBtn = document.getElementById('partial-retry-btn');
+  const offlineState = document.getElementById('offline-state');
+  const offlineRetryBtn = document.getElementById('offline-retry-btn');
+  const providerFailureState = document.getElementById('provider-failure-state');
+  const providerFailureMessage = document.getElementById('provider-failure-message');
+  const providerRetryBtn = document.getElementById('provider-retry-btn');
+  const rateLimitState = document.getElementById('rate-limit-state');
+  const rateLimitCountdown = document.getElementById('rate-limit-countdown');
+  const rateLimitRetryBtn = document.getElementById('rate-limit-retry-btn');
+  const resultFiltersBar = document.getElementById('result-filters-bar');
+  const onboardingCard = document.getElementById('onboarding-card');
+  const onboardingDismissX = document.getElementById('onboarding-dismiss-x');
+  const categoryEmptyStateContainer = document.getElementById('category-empty-state-container');
+  const onboardingGotItBtn = document.getElementById('onboarding-got-it-btn');
+  const onboardingSettingsLink = document.getElementById('onboarding-settings-link');
+  const settingsModal = document.getElementById('settings-modal');
+  const settingsToggleBtn = document.getElementById('settings-toggle-btn');
+  const footerSettingsBtn = document.getElementById('footer-settings-btn');
+  const settingsCloseBtn = document.getElementById('settings-close-btn');
+  const settingThemeSelect = document.getElementById('setting-theme-select');
+  const settingLocalOnlyToggle = document.getElementById('setting-local-only-toggle');
+  const settingNewTabToggle = document.getElementById('setting-new-tab-toggle');
+  const settingSafeSearchSelect = document.getElementById('setting-safe-search-select');
+  const localOnlyCheckbox = document.getElementById('local-only-checkbox');
+  const localOnlyNoticeBanner = document.getElementById('local-only-notice-banner');
+  const localOnlyNoticeText = document.getElementById('local-only-notice-text');
+  const disableLocalOnlyBtn = document.getElementById('disable-local-only-btn');
+  const emptyLocalOnlyAction = document.getElementById('empty-local-only-action');
+  const emptyDisableLocalOnlyBtn = document.getElementById('empty-disable-local-only-btn');
+  const resetSettingsBtn = document.getElementById('reset-settings-btn');
+  const showOnboardingBtn = document.getElementById('show-onboarding-btn');
+  const settingsStatusMsg = document.getElementById('settings-status-msg');
 
   // Configuration
   const rawApiUrl = window.__OPENSEARCH_API_URL__ || '';
@@ -39,7 +73,7 @@
     : '/api/v1/search';
   const SUGGEST_ENDPOINT = API_ENDPOINT.replace('/search', '/suggest');
   const PAGE_SIZE = 10;
-  const THEMES = ['matrix', 'amber', 'dracula', 'nord', 'monokai'];
+  const THEMES = ['dark', 'light', 'matrix', 'amber', 'dracula', 'nord', 'monokai'];
 
   // State
   let currentQuery = '';
@@ -51,15 +85,36 @@
   let currentSuggestions = [];
   let currentActiveResultIndex = -1;
   let currentResultItems = [];
-  let currentTheme = 'matrix';
+  let currentTheme = 'dark';
+  let currentRequestId = 0;
+  let activeFilter = 'all';
+  let rateLimitTimer = null;
+  let rateLimitSecondsLeft = 0;
+  let currentThemePreference = 'system';
+  let isLocalOnly = false;
+  let openInNewTab = true;
+    currentSafeSearch = 'moderate';
+  let currentSafeSearch = 'moderate';
+
+  const PREFERENCE_KEYS = {
+    THEME: 'opensearch_theme',
+    LOCAL_ONLY: 'opensearch_local_only',
+    SAFE_SEARCH: 'opensearch_safe_search',
+    OPEN_NEW_TAB: 'opensearch_open_new_tab',
+    ONBOARDING_DISMISSED: 'opensearch_onboarding_dismissed',
+  };
 
   function init() {
+    initPreferences();
     initTheme();
 
-    // Check URL parameters for pre-filled query and page
+    // Check URL parameters for pre-filled query, page, and filter
     const params = new URLSearchParams(window.location.search);
     const initialQuery = params.get('q') || '';
     const initialPage = parseInt(params.get('page') || '1', 10) || 1;
+    const initialFilter = params.get('filter') || 'all';
+    activeFilter = initialFilter;
+    updateActiveFilterUI(activeFilter);
 
     if (initialQuery) {
       searchInput.value = initialQuery;
@@ -69,6 +124,31 @@
     }
 
     attachEventListeners();
+  }
+
+  function initPreferences() {
+    try {
+      const storedTheme = localStorage.getItem(PREFERENCE_KEYS.THEME) || 'system';
+      currentThemePreference = storedTheme;
+
+      isLocalOnly = localStorage.getItem(PREFERENCE_KEYS.LOCAL_ONLY) === 'true';
+      if (settingLocalOnlyToggle) {
+        settingLocalOnlyToggle.checked = isLocalOnly;
+      }
+      if (localOnlyCheckbox) {
+        localOnlyCheckbox.checked = isLocalOnly;
+      }
+
+      openInNewTab = localStorage.getItem(PREFERENCE_KEYS.OPEN_NEW_TAB) !== 'false';
+      if (settingNewTabToggle) {
+        settingNewTabToggle.checked = openInNewTab;
+      }
+
+      const dismissed = localStorage.getItem(PREFERENCE_KEYS.ONBOARDING_DISMISSED) === 'true';
+      if (!dismissed && onboardingCard) {
+        onboardingCard.style.display = 'block';
+      }
+    } catch {}
   }
 
   function attachEventListeners() {
@@ -137,6 +217,211 @@
     if (themeSwitcherBtn) {
       themeSwitcherBtn.addEventListener('click', function () {
         cycleTheme();
+      });
+    }
+
+    // Phase 77: Quick topic pills
+    const quickTopicBtns = document.querySelectorAll('.quick-topic-tag');
+    quickTopicBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const query = btn.getAttribute('data-query');
+        if (query && searchInput) {
+          searchInput.value = query;
+          searchInput.focus();
+          performSearch(query, 1);
+        }
+      });
+    });
+
+    // Phase 78: Result filters bar button clicks (preserves current query)
+    if (resultFiltersBar) {
+      resultFiltersBar.addEventListener('click', function (e) {
+        const btn = e.target.closest('.result-filter-btn');
+        if (!btn) return;
+        const filterVal = btn.getAttribute('data-filter') || 'all';
+        if (filterVal === activeFilter) return;
+
+        activeFilter = filterVal;
+        updateActiveFilterUI(activeFilter);
+
+        const query = currentQuery || searchInput.value.trim();
+        if (query) {
+          currentPage = 1;
+          updateUrl(query, currentPage, activeFilter);
+          performSearch(query, currentPage);
+        }
+      });
+    }
+
+    // Phase 78: Network connectivity listeners
+    window.addEventListener('offline', function () {
+      showOfflineState();
+    });
+
+    window.addEventListener('online', function () {
+      if (offlineState && offlineState.style.display !== 'none') {
+        offlineState.style.display = 'none';
+        if (currentQuery) {
+          performSearch(currentQuery, currentPage);
+        }
+      }
+    });
+
+    // Phase 78: State retry buttons
+    if (offlineRetryBtn) {
+      offlineRetryBtn.addEventListener('click', function () {
+        if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+          showOfflineState();
+          announceA11y('Still offline. Please check network connection.');
+        } else if (currentQuery) {
+          performSearch(currentQuery, currentPage);
+        }
+      });
+    }
+
+    if (providerRetryBtn) {
+      providerRetryBtn.addEventListener('click', function () {
+        if (currentQuery) {
+          performSearch(currentQuery, currentPage);
+        }
+      });
+    }
+
+    if (partialRetryBtn) {
+      partialRetryBtn.addEventListener('click', function () {
+        if (currentQuery) {
+          performSearch(currentQuery, currentPage);
+        }
+      });
+    }
+
+    if (rateLimitRetryBtn) {
+      rateLimitRetryBtn.addEventListener('click', function () {
+        if (rateLimitSecondsLeft <= 0 && currentQuery) {
+          performSearch(currentQuery, currentPage);
+        }
+      });
+    }
+
+
+    // Phase 79: Onboarding dismissal & configuration
+    if (onboardingDismissX) {
+      onboardingDismissX.addEventListener('click', function () {
+        dismissOnboarding();
+      });
+    }
+
+    if (onboardingGotItBtn) {
+      onboardingGotItBtn.addEventListener('click', function () {
+        dismissOnboarding();
+      });
+    }
+
+    if (onboardingSettingsLink) {
+      onboardingSettingsLink.addEventListener('click', function () {
+        dismissOnboarding();
+        openSettingsModal();
+      });
+    }
+
+    // Phase 79: Settings modal open/close triggers
+    if (settingsToggleBtn) {
+      settingsToggleBtn.addEventListener('click', function () {
+        openSettingsModal();
+      });
+    }
+
+    if (footerSettingsBtn) {
+      footerSettingsBtn.addEventListener('click', function () {
+        openSettingsModal();
+      });
+    }
+
+    if (settingsCloseBtn) {
+      settingsCloseBtn.addEventListener('click', function () {
+        closeSettingsModal();
+      });
+    }
+
+    if (settingThemeSelect) {
+      settingThemeSelect.addEventListener('change', function () {
+        applyTheme(settingThemeSelect.value, true);
+      });
+    }
+
+    if (localOnlyCheckbox) {
+      localOnlyCheckbox.addEventListener('change', function () {
+        isLocalOnly = localOnlyCheckbox.checked;
+        if (settingLocalOnlyToggle) settingLocalOnlyToggle.checked = isLocalOnly;
+        try {
+          localStorage.setItem(PREFERENCE_KEYS.LOCAL_ONLY, String(isLocalOnly));
+        } catch {}
+        announceA11y(`Local-only search mode ${isLocalOnly ? 'enabled' : 'disabled'}.`);
+        if (currentQuery) {
+          performSearch(currentQuery, 1);
+        }
+      });
+    }
+
+    function disableLocalOnlyAndSearch() {
+      isLocalOnly = false;
+      try {
+        localStorage.setItem(PREFERENCE_KEYS.LOCAL_ONLY, 'false');
+      } catch {}
+      if (localOnlyCheckbox) localOnlyCheckbox.checked = false;
+      if (settingLocalOnlyToggle) settingLocalOnlyToggle.checked = false;
+      if (localOnlyNoticeBanner) localOnlyNoticeBanner.style.display = 'none';
+      if (emptyLocalOnlyAction) emptyLocalOnlyAction.style.display = 'none';
+      announceA11y('Local-only search mode disabled. Searching web.');
+      if (currentQuery) {
+        performSearch(currentQuery, 1);
+      }
+    }
+
+    if (disableLocalOnlyBtn) {
+      disableLocalOnlyBtn.addEventListener('click', disableLocalOnlyAndSearch);
+    }
+    if (emptyDisableLocalOnlyBtn) {
+      emptyDisableLocalOnlyBtn.addEventListener('click', disableLocalOnlyAndSearch);
+    }
+
+    if (settingLocalOnlyToggle) {
+      settingLocalOnlyToggle.addEventListener('change', function () {
+        isLocalOnly = settingLocalOnlyToggle.checked;
+        if (localOnlyCheckbox) localOnlyCheckbox.checked = isLocalOnly;
+        try {
+          localStorage.setItem(PREFERENCE_KEYS.LOCAL_ONLY, String(isLocalOnly));
+        } catch {}
+        announceA11y(`Local-only search mode ${isLocalOnly ? 'enabled' : 'disabled'}.`);
+        if (currentQuery) {
+          performSearch(currentQuery, currentPage);
+        }
+      });
+    }
+
+    if (settingNewTabToggle) {
+      settingNewTabToggle.addEventListener('change', function () {
+        openInNewTab = settingNewTabToggle.checked;
+        try {
+          localStorage.setItem(PREFERENCE_KEYS.OPEN_NEW_TAB, String(openInNewTab));
+        } catch {}
+        announceA11y(`Open in new tab ${openInNewTab ? 'enabled' : 'disabled'}.`);
+      });
+    }
+
+    if (resetSettingsBtn) {
+      resetSettingsBtn.addEventListener('click', function () {
+        resetPreferences();
+      });
+    }
+
+    if (showOnboardingBtn) {
+      showOnboardingBtn.addEventListener('click', function () {
+        closeSettingsModal();
+        if (onboardingCard) {
+          onboardingCard.style.display = 'block';
+          announceA11y('Privacy guide reopened.');
+        }
       });
     }
 
@@ -338,24 +623,56 @@
     });
   }
 
+  function getSystemTheme() {
+    if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    }
+    return 'light';
+  }
+
+  function resolveEffectiveTheme(themeChoice) {
+    if (themeChoice === 'system' || !themeChoice) {
+      return getSystemTheme();
+    }
+    return themeChoice;
+  }
+
   function initTheme() {
     try {
       const savedTheme = localStorage.getItem('opensearch_theme');
-      if (savedTheme && THEMES.includes(savedTheme)) {
-        currentTheme = savedTheme;
+      if (savedTheme && (THEMES.includes(savedTheme) || savedTheme === 'system')) {
+        currentThemePreference = savedTheme;
+        currentTheme = savedTheme === 'system' ? getSystemTheme() : savedTheme;
       } else {
-        currentTheme = 'matrix';
+        currentThemePreference = 'system';
+        currentTheme = getSystemTheme();
       }
     } catch (e) {
-      currentTheme = 'matrix';
+      currentThemePreference = 'dark';
+      currentTheme = 'dark';
     }
-    applyTheme(currentTheme, false);
+    applyTheme(currentThemePreference, false);
+
+    // Dynamic OS color-scheme watcher
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function (e) {
+        if (currentThemePreference === 'system') {
+          const effective = e.matches ? 'dark' : 'light';
+          document.documentElement.setAttribute('data-theme', effective);
+          announceA11y(`System color scheme changed: updated to ${effective} mode.`);
+        }
+      });
+    }
   }
 
   function applyTheme(themeName, announce = true) {
-    if (!THEMES.includes(themeName)) return;
-    currentTheme = themeName;
-    document.documentElement.setAttribute('data-theme', themeName);
+    const validThemes = [...THEMES, 'system'];
+    if (!validThemes.includes(themeName)) return;
+
+    currentThemePreference = themeName;
+    const effectiveTheme = resolveEffectiveTheme(themeName);
+    currentTheme = effectiveTheme;
+    document.documentElement.setAttribute('data-theme', effectiveTheme);
 
     try {
       localStorage.setItem('opensearch_theme', themeName);
@@ -366,6 +683,16 @@
     if (themeSwitcherBtn) {
       themeSwitcherBtn.textContent = `[theme: ${themeName}]`;
       themeSwitcherBtn.setAttribute('aria-label', `Toggle color theme (Current: ${themeName})`);
+    }
+
+    if (settingThemeSelect) {
+      settingThemeSelect.value = themeName;
+    }
+
+    const submitBtn = document.getElementById('search-submit-btn');
+    if (submitBtn) {
+      const isRetro = ['matrix', 'amber', 'dracula', 'nord', 'monokai'].includes(effectiveTheme);
+      submitBtn.textContent = isRetro ? 'RUN' : 'Search';
     }
 
     if (announce) {
@@ -389,6 +716,61 @@
     if (!shortcutsModal) return;
     shortcutsModal.style.display = 'flex';
     announceA11y('Keyboard shortcuts dialog opened. Press Escape to close.');
+  }
+
+  function dismissOnboarding() {
+    if (onboardingCard) {
+      onboardingCard.style.display = 'none';
+    }
+    try {
+      localStorage.setItem(PREFERENCE_KEYS.ONBOARDING_DISMISSED, 'true');
+    } catch {}
+    announceA11y('Privacy guide dismissed.');
+  }
+
+  function openSettingsModal() {
+    if (!settingsModal) return;
+    settingsModal.style.display = 'flex';
+    if (settingThemeSelect) settingThemeSelect.value = currentThemePreference;
+    if (settingLocalOnlyToggle) settingLocalOnlyToggle.checked = isLocalOnly;
+    if (settingNewTabToggle) settingNewTabToggle.checked = openInNewTab;
+    if (settingSafeSearchSelect) settingSafeSearchSelect.value = currentSafeSearch;
+    announceA11y('Settings dialog opened. Press Escape to close.');
+  }
+
+  function closeSettingsModal() {
+    if (!settingsModal) return;
+    settingsModal.style.display = 'none';
+    announceA11y('Settings dialog closed.');
+  }
+
+  function resetPreferences() {
+    try {
+      // Clear ONLY non-sensitive UI settings - NEVER touch server indexes or datasets
+      Object.values(PREFERENCE_KEYS).forEach(k => {
+        localStorage.removeItem(k);
+      });
+    } catch {}
+
+    // Reset runtime state
+    currentThemePreference = 'system';
+    isLocalOnly = false;
+    openInNewTab = true;
+
+    applyTheme('system', false);
+    if (settingThemeSelect) settingThemeSelect.value = 'system';
+    if (settingLocalOnlyToggle) settingLocalOnlyToggle.checked = false;
+    if (settingNewTabToggle) settingNewTabToggle.checked = true;
+    if (settingSafeSearchSelect) settingSafeSearchSelect.value = 'moderate';
+
+    if (settingsStatusMsg) {
+      settingsStatusMsg.textContent = 'Settings reset to default values. Local index data preserved.';
+      settingsStatusMsg.style.display = 'block';
+      setTimeout(() => {
+        if (settingsStatusMsg) settingsStatusMsg.style.display = 'none';
+      }, 3000);
+    }
+    announceA11y('Preferences reset to default values. Index storage preserved.');
   }
 
   function closeShortcutsModal() {
@@ -598,7 +980,7 @@
     activeSuggestionIndex = -1;
   }
 
-  function updateUrl(query, page) {
+  function updateUrl(query, page, filter = activeFilter) {
     const url = new URL(window.location.href);
     if (query) {
       url.searchParams.set('q', query);
@@ -607,17 +989,44 @@
       } else {
         url.searchParams.delete('page');
       }
+      if (filter && filter !== 'all') {
+        url.searchParams.set('filter', filter);
+      } else {
+        url.searchParams.delete('filter');
+      }
     } else {
       url.searchParams.delete('q');
       url.searchParams.delete('page');
+      url.searchParams.delete('filter');
     }
-    window.history.pushState({ q: query, page }, '', url.toString());
+    window.history.pushState({ q: query, page, filter }, '', url.toString());
+  }
+
+  function updateActiveFilterUI(filter) {
+    if (!resultFiltersBar) return;
+    const btns = resultFiltersBar.querySelectorAll('.result-filter-btn');
+    btns.forEach(function (btn) {
+      const bFilter = btn.getAttribute('data-filter');
+      const isActive = bFilter === filter;
+      btn.classList.toggle('active', isActive);
+      btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    });
   }
 
   function hideAllStates() {
     if (loadingIndicator) loadingIndicator.style.display = 'none';
+    if (localOnlyNoticeBanner) localOnlyNoticeBanner.style.display = 'none';
+    if (emptyLocalOnlyAction) emptyLocalOnlyAction.style.display = 'none';
     if (emptyState) emptyState.style.display = 'none';
     if (errorState) errorState.style.display = 'none';
+    if (partialResultsBanner) partialResultsBanner.style.display = 'none';
+    if (offlineState) offlineState.style.display = 'none';
+    if (providerFailureState) providerFailureState.style.display = 'none';
+    if (rateLimitState) rateLimitState.style.display = 'none';
+    if (categoryEmptyStateContainer) {
+      categoryEmptyStateContainer.style.display = 'none';
+      categoryEmptyStateContainer.innerHTML = '';
+    }
     if (instantAnswerCard) {
       instantAnswerCard.style.display = 'none';
       instantAnswerCard.innerHTML = '';
@@ -629,10 +1038,77 @@
     clearActiveResultHighlight();
   }
 
+  function showOfflineState() {
+    hideAllStates();
+    if (offlineState) offlineState.style.display = 'flex';
+    if (resultsArea) resultsArea.innerHTML = '';
+    if (resultsMeta) resultsMeta.textContent = '';
+    if (paginationArea) paginationArea.innerHTML = '';
+    announceA11y('Offline mode: Network connection is down. Please reconnect.');
+  }
+
+  function showProviderFailureState(msg) {
+    hideAllStates();
+    if (providerFailureMessage && msg) {
+      providerFailureMessage.textContent = msg;
+    }
+    if (providerFailureState) providerFailureState.style.display = 'flex';
+    if (resultsArea) resultsArea.innerHTML = '';
+    if (resultsMeta) resultsMeta.textContent = '';
+    if (paginationArea) paginationArea.innerHTML = '';
+    announceA11y(`Search provider failure: ${msg || 'Provider unavailable'}`);
+  }
+
+  function showRateLimitState(retryAfterSeconds = 5) {
+    hideAllStates();
+    if (rateLimitTimer) {
+      clearInterval(rateLimitTimer);
+      rateLimitTimer = null;
+    }
+    rateLimitSecondsLeft = retryAfterSeconds;
+    if (rateLimitCountdown) {
+      rateLimitCountdown.textContent = `${rateLimitSecondsLeft}s`;
+    }
+    if (rateLimitRetryBtn) {
+      rateLimitRetryBtn.disabled = true;
+      rateLimitRetryBtn.textContent = `[ wait ${rateLimitSecondsLeft}s ]`;
+    }
+    if (rateLimitState) rateLimitState.style.display = 'flex';
+    if (resultsArea) resultsArea.innerHTML = '';
+    if (resultsMeta) resultsMeta.textContent = '';
+    if (paginationArea) paginationArea.innerHTML = '';
+
+    rateLimitTimer = setInterval(function () {
+      rateLimitSecondsLeft--;
+      if (rateLimitSecondsLeft <= 0) {
+        clearInterval(rateLimitTimer);
+        rateLimitTimer = null;
+        if (rateLimitCountdown) rateLimitCountdown.textContent = 'ready';
+        if (rateLimitRetryBtn) {
+          rateLimitRetryBtn.disabled = false;
+          rateLimitRetryBtn.textContent = '[ retry now ]';
+        }
+      } else {
+        if (rateLimitCountdown) rateLimitCountdown.textContent = `${rateLimitSecondsLeft}s`;
+        if (rateLimitRetryBtn) rateLimitRetryBtn.textContent = `[ wait ${rateLimitSecondsLeft}s ]`;
+      }
+    }, 1000);
+
+    announceA11y(`Search rate limited. Please wait ${retryAfterSeconds} seconds.`);
+  }
+
   async function performSearch(query, page = 1) {
+    const thisRequestId = ++currentRequestId;
+
     if (activeAbortController) {
       activeAbortController.abort();
       activeAbortController = null;
+    }
+
+    // Check offline status before network dispatch
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      showOfflineState();
+      return;
     }
 
     currentQuery = query;
@@ -645,10 +1121,38 @@
 
     activeAbortController = new AbortController();
     const signal = activeAbortController.signal;
+    const requestStartMs = performance.now();
 
     try {
-      const fetchUrl = `${API_ENDPOINT}?q=${encodeURIComponent(query)}&page=${page}&pageSize=${PAGE_SIZE}`;
+      let fetchUrl = `${API_ENDPOINT}?q=${encodeURIComponent(query)}&page=${page}&pageSize=${PAGE_SIZE}`;
+      if (activeFilter && activeFilter !== 'all') {
+        fetchUrl += `&filter=${encodeURIComponent(activeFilter)}&category=${encodeURIComponent(activeFilter)}`;
+      }
+      if (currentSafeSearch) {
+        fetchUrl += `&safeSearch=${encodeURIComponent(currentSafeSearch)}`;
+      }
+      if (isLocalOnly) {
+        fetchUrl += '&localOnly=true';
+      }
       const res = await fetch(fetchUrl, { signal });
+
+      // Stale response guard (Race-condition protection)
+      if (thisRequestId !== currentRequestId) {
+        return;
+      }
+
+      if (res.status === 429) {
+        const retryHeader = res.headers ? res.headers.get('Retry-After') : null;
+        const retrySec = parseInt(retryHeader || '5', 10) || 5;
+        showRateLimitState(retrySec);
+        return;
+      }
+
+      if (res.status === 502 || res.status === 503 || res.status === 504) {
+        const errJson = await res.json().catch(() => ({}));
+        showProviderFailureState(errJson.error?.message || 'External search provider temporarily unavailable.');
+        return;
+      }
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
@@ -659,26 +1163,58 @@
       }
 
       const data = await res.json();
-      renderSearchResults(data);
+
+      // Check again after asynchronous JSON parsing
+      if (thisRequestId !== currentRequestId) {
+        return;
+      }
+
+      renderSearchResults(data, requestStartMs);
     } catch (err) {
-      if (err.name === 'AbortError') {
+      if (thisRequestId !== currentRequestId || err.name === 'AbortError') {
+        return;
+      }
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+        showOfflineState();
         return;
       }
       showError(
         'Unable to reach OpenSearch API server. Ensure API service is running on port 3000.',
       );
     } finally {
-      if (loadingIndicator) loadingIndicator.style.display = 'none';
-      activeAbortController = null;
+      if (thisRequestId === currentRequestId) {
+        if (loadingIndicator) loadingIndicator.style.display = 'none';
+        activeAbortController = null;
+      }
     }
   }
 
-  function renderSearchResults(data) {
+  function renderSearchResults(data, requestStartMs) {
     hideAllStates();
 
+    // Phase 78: Partial results representation
+    const isPartial = Boolean(
+      data.meta?.partialResults ||
+      (Array.isArray(data.warnings) && data.warnings.some(w => w.toLowerCase().includes('timeout') || w.toLowerCase().includes('timed out'))) ||
+      (Array.isArray(data.meta?.providers) && data.meta.providers.some(p => p.status === 'timeout' || p.status === 'degraded'))
+    );
+
+    if (isPartial && partialResultsBanner) {
+      partialResultsBanner.style.display = 'flex';
+      if (partialResultsText && data.warnings && data.warnings.length > 0) {
+        partialResultsText.textContent = `Partial Results: ${data.warnings.join('; ')}`;
+      }
+    }
+
+    if (resultFiltersBar) {
+      resultFiltersBar.style.display = 'flex';
+    }
+
     const hits = data.results || [];
-    const totalHits = data.meta?.totalHits || 0;
-    const durationMs = data.meta?.durationMs || 0;
+    const totalHits = typeof data.meta?.totalHits === 'number' ? data.meta.totalHits : hits.length;
+    const durationMs = typeof data.meta?.durationMs === 'number'
+      ? data.meta.durationMs
+      : Math.round(performance.now() - (requestStartMs || performance.now()));
     const pagination = data.pagination;
     const didYouMean = data.didYouMean;
     const instantAnswer = data.instantAnswer;
@@ -789,11 +1325,24 @@
 
     if (hits.length === 0) {
       if (!instantAnswer) {
-        if (emptyQueryText) {
-          emptyQueryText.textContent = currentQuery;
+        if (activeFilter === 'images' || activeFilter === 'news') {
+          if (categoryEmptyStateContainer) {
+            categoryEmptyStateContainer.innerHTML = renderCategoryEmptyStateHtml(activeFilter, currentQuery, isLocalOnly);
+            categoryEmptyStateContainer.style.display = 'block';
+          }
+          announceA11y(`No ${activeFilter} results found for ${currentQuery}.`);
+        } else {
+          if (emptyQueryText) {
+            emptyQueryText.textContent = currentQuery;
+          }
+          if (emptyState) emptyState.style.display = 'block';
+        if (isLocalOnly) {
+          if (emptyLocalOnlyAction) emptyLocalOnlyAction.style.display = 'block';
+        } else {
+          if (emptyLocalOnlyAction) emptyLocalOnlyAction.style.display = 'none';
         }
-        if (emptyState) emptyState.style.display = 'block';
-        announceA11y(`No search results found for ${currentQuery}.`);
+          announceA11y(`No search results found for ${currentQuery}.`);
+        }
       }
       if (resultsMeta) resultsMeta.textContent = '';
       if (resultsArea) resultsArea.innerHTML = '';
@@ -802,7 +1351,7 @@
     }
 
     const plural = totalHits === 1 ? 'hit' : 'hits';
-    let summaryText = `[status: 200 OK] ${totalHits.toLocaleString()} ${plural} (${durationMs}ms)`;
+    let summaryText = `[status: 200 OK] ${totalHits.toLocaleString()} ${plural} (${durationMs}ms)${isLocalOnly ? ' [mode: local-only]' : ''}`;
 
     // Display active filters in the search summary meta line (Phase 37)
     const filters = data.query?.filters;
@@ -821,6 +1370,9 @@
         });
       }
     }
+    if (data.meta?.safeSearch?.filteredCount && data.meta.safeSearch.filteredCount > 0) {
+      summaryText += ` [safe-search: ${data.meta.safeSearch.filteredCount} filtered]`;
+    }
     if (filterTokens.length > 0) {
       summaryText += ` [filters: ${filterTokens.join(', ')}]`;
     }
@@ -832,7 +1384,79 @@
       `${summaryText} for query ${currentQuery}. Showing page ${pagination?.page || 1}.`,
     );
 
-    // Render terminal result cards
+    // Phase 80: Category-Specific Rendering & Enforcement (All, Images, News)
+    if (activeFilter === 'images' || activeFilter === 'multimedia') {
+      const validImageHits = hits.filter(function (it) {
+        return Boolean(validateSafeImageUrl(it.thumbnailUrl));
+      });
+
+      if (validImageHits.length === 0) {
+        if (categoryEmptyStateContainer) {
+          categoryEmptyStateContainer.innerHTML = renderCategoryEmptyStateHtml('images', currentQuery, isLocalOnly);
+          categoryEmptyStateContainer.style.display = 'block';
+        }
+        if (resultsArea) resultsArea.innerHTML = '';
+        if (paginationArea) paginationArea.innerHTML = '';
+        return;
+      }
+
+      let imageCardsHtml = '<div class="image-results-grid" role="region" aria-label="Image search results">';
+      validImageHits.forEach(function (item) {
+        const safeThumb = validateSafeImageUrl(item.thumbnailUrl);
+        const safeUrl = escapeHtml(item.url || '#');
+        const safeTitle = escapeHtml(item.title || 'Untitled Image');
+        const safeAttribution = escapeHtml(item.attribution || (item.source ? 'Source: ' + item.source : 'Wikimedia Commons'));
+        const safeLicense = item.license ? escapeHtml(item.license) : '';
+        const safeDomain = escapeHtml(item.domain || '');
+        const dimensions = (item.imageWidth && item.imageHeight) ? escapeHtml(item.imageWidth + '×' + item.imageHeight) : '';
+
+        imageCardsHtml += `
+          <div class="image-card" data-document-id="${escapeHtml(item.documentId || '')}" role="group" aria-label="${safeTitle}">
+            <a href="${safeUrl}" ${openInNewTab ? 'target="_blank" rel="noopener noreferrer"' : ''} class="image-card-link" aria-label="${safeTitle} (opens in new tab)">
+              <div class="image-card-thumb-container">
+                <img src="${escapeHtml(safeThumb)}" alt="${safeTitle}" loading="lazy" referrerpolicy="no-referrer" class="image-card-thumb" onerror="this.closest('.image-card')?.remove();" />
+                ${dimensions ? `<span class="image-card-dimensions">${dimensions}</span>` : ''}
+              </div>
+              <div class="image-card-info">
+                <div class="image-card-title" title="${safeTitle}">${safeTitle}</div>
+                <div class="image-card-meta">
+                  ${safeDomain ? `<span class="image-card-domain">${safeDomain}</span>` : ''}
+                  <span class="image-card-attribution" title="${safeAttribution}">[${safeAttribution}]</span>
+                  ${safeLicense ? `<span class="image-card-license">[${safeLicense}]</span>` : ''}
+                </div>
+              </div>
+            </a>
+          </div>
+        `;
+      });
+      imageCardsHtml += '</div>';
+
+      if (resultsArea) {
+        resultsArea.innerHTML = imageCardsHtml;
+      }
+      if (paginationArea && pagination) {
+        paginationArea.innerHTML = renderPaginationBar(pagination);
+      }
+      return;
+    }
+
+    if (activeFilter === 'news') {
+      const validNewsHits = hits.filter(function (it) {
+        return it.source === 'hackernews' || Boolean(it.publishedAt);
+      });
+
+      if (validNewsHits.length === 0) {
+        if (categoryEmptyStateContainer) {
+          categoryEmptyStateContainer.innerHTML = renderCategoryEmptyStateHtml('news', currentQuery, isLocalOnly);
+          categoryEmptyStateContainer.style.display = 'block';
+        }
+        if (resultsArea) resultsArea.innerHTML = '';
+        if (paginationArea) paginationArea.innerHTML = '';
+        return;
+      }
+    }
+
+    // Render terminal result cards (All / General / News)
     let resultsHtml = '';
     const startIdx = pagination ? (pagination.page - 1) * pagination.pageSize : 0;
 
@@ -841,22 +1465,82 @@
       const safeDisplayUrl = escapeHtml(item.displayUrl || item.url || '');
       const itemNum = startIdx + index + 1;
 
+      // Safe handling of long titles and missing titles
       const displayTitle = item.highlightedTitle
         ? sanitizeHighlightedHtml(item.highlightedTitle)
         : escapeHtml(item.title) || 'Untitled Document';
 
+      // Safe handling of missing snippets
       const displaySnippet = item.highlightedSnippet
         ? sanitizeHighlightedHtml(item.highlightedSnippet)
-        : escapeHtml(item.snippet || 'No snippet description available.');
+        : escapeHtml(item.snippet || 'No description available.');
+
+      const provenanceBadge = item.attribution
+        ? `<span class="result-attribution" style="opacity: 0.8; font-size: 0.85em;">[${escapeHtml(item.attribution)}]</span>`
+        : (item.source && item.source !== 'local-index' ? `<span class="result-source-badge" style="opacity: 0.8; font-size: 0.85em;">[source: ${escapeHtml(item.source)}]</span>` : '');
+
+      const contentTypeBadge = item.contentType
+        ? `<span class="result-content-type-badge" aria-label="Content Type">[${escapeHtml(item.contentType)}]</span>`
+        : '';
+
+      const rawDate = item.publishedAt || item.publicationDate;
+      let formattedDate = '';
+      if (rawDate) {
+        try {
+          const d = new Date(rawDate);
+          if (!isNaN(d.getTime())) {
+            formattedDate = d.toISOString().split('T')[0];
+          } else {
+            formattedDate = escapeHtml(String(rawDate));
+          }
+        } catch {
+          formattedDate = escapeHtml(String(rawDate));
+        }
+      }
+
+      let recencyBadge = '';
+      if (rawDate) {
+        const recency = evaluateNewsRecency(rawDate);
+        if (recency) {
+          if (recency.isRecent) {
+            recencyBadge = `<span class="news-recency-badge recent" aria-label="Recent news">${escapeHtml(recency.label)}</span>`;
+          } else if (recency.isStale) {
+            recencyBadge = `<span class="news-recency-badge stale" aria-label="Stale news">[stale: ${escapeHtml(recency.label)}]</span>`;
+          } else {
+            recencyBadge = `<span class="news-recency-badge standard">${escapeHtml(recency.label)}</span>`;
+          }
+        }
+      }
+
+      const dateBadge = formattedDate
+        ? `<time class="result-date-badge" datetime="${escapeHtml(rawDate)}" aria-label="Published date">${formattedDate}</time>`
+        : '';
+
+      const thumbnailHtml = item.thumbnailUrl
+        ? `<div class="result-thumbnail"><img src="${escapeHtml(item.thumbnailUrl)}" alt="" loading="lazy" class="result-thumbnail-img" onerror="this.closest('.result-thumbnail')?.remove();" /></div>`
+        : '';
 
       resultsHtml += `
         <article class="terminal-result-item" data-document-id="${escapeHtml(item.documentId || '')}">
-          <div class="result-index-title">
-            <span class="result-index">[${itemNum}]</span>
-            <a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="result-title-link">${displayTitle}</a>
+          <div class="result-item-main">
+            ${thumbnailHtml}
+            <div class="result-item-body">
+              <div class="result-index-title">
+                <span class="result-index">[${itemNum}]</span>
+                <a href="${safeUrl}" ${openInNewTab ? 'target="_blank" rel="noopener noreferrer"' : ''} class="result-title-link">${displayTitle}</a>
+              </div>
+              <div class="result-url-line">
+                <span class="result-prompt-sym">&gt;</span>
+                <cite class="result-destination" title="${safeUrl}">${safeDisplayUrl}</cite>
+                ${provenanceBadge ? ` ${provenanceBadge}` : ''}
+                ${item.license ? ` <span class="result-license-badge" aria-label="License">[${escapeHtml(item.license)}]</span>` : ''}
+                ${contentTypeBadge ? ` ${contentTypeBadge}` : ''}
+                ${dateBadge ? ` ${dateBadge}` : ''}
+                ${recencyBadge ? ` ${recencyBadge}` : ''}
+              </div>
+              <p class="result-snippet">${displaySnippet}</p>
+            </div>
           </div>
-          <div class="result-url-line">&gt; ${safeDisplayUrl}${item.attribution ? ` <span class="result-attribution" style="opacity: 0.8; font-size: 0.85em;">[${escapeHtml(item.attribution)}]</span>` : (item.source && item.source !== 'local-index' ? ` <span class="result-attribution" style="opacity: 0.8; font-size: 0.85em;">[source: ${escapeHtml(item.source)}]</span>` : '')}</div>
-          <p class="result-snippet">${displaySnippet}</p>
         </article>
       `;
     });
@@ -943,4 +1627,92 @@
   } else {
     init();
   }
+
+  // Phase 80: Image URL validation, news recency, and category empty state helpers
+  function validateSafeImageUrl(url) {
+    if (typeof url !== 'string') return null;
+    const trimmed = url.trim();
+    if (!trimmed || trimmed.length > 4096) return null;
+    if (/[\x00-\x1f\x7f]/.test(trimmed)) return null;
+    const lower = trimmed.toLowerCase();
+    const disallowed = ['javascript:', 'vbscript:', 'file:', 'ftp:', 'blob:', 'about:'];
+    for (let i = 0; i < disallowed.length; i++) {
+      if (lower.startsWith(disallowed[i])) return null;
+    }
+    try {
+      const parsed = new URL(trimmed);
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null;
+      if (!parsed.hostname) return null;
+      return parsed.href;
+    } catch {
+      return null;
+    }
+  }
+
+  function evaluateNewsRecency(publishedAt, nowMs) {
+    if (!publishedAt || typeof publishedAt !== 'string') return null;
+    const trimmed = publishedAt.trim();
+    if (!trimmed) return null;
+    const parsed = new Date(trimmed);
+    const timeMs = parsed.getTime();
+    if (isNaN(timeMs)) return null;
+    const refNow = typeof nowMs === 'number' ? nowMs : Date.now();
+    const ageMs = Math.max(0, refNow - timeMs);
+    const ageHours = Math.floor(ageMs / (60 * 60 * 1000));
+    const ageDays = Math.floor(ageMs / (24 * 60 * 60 * 1000));
+    const formattedDate = parsed.toISOString().split('T')[0] || '';
+    if (ageHours < 24) {
+      const ageMinutes = Math.floor(ageMs / (60 * 1000));
+      const label = ageHours < 1 ? (ageMinutes <= 1 ? 'Just now' : ageMinutes + 'm ago') : ageHours + 'h ago';
+      return { isRecent: true, isStale: false, label: label, formattedDate: formattedDate };
+    }
+    if (ageDays <= 7) {
+      return { isRecent: true, isStale: false, label: ageDays + 'd ago', formattedDate: formattedDate };
+    }
+    if (ageDays <= 30) {
+      return { isRecent: false, isStale: false, label: Math.floor(ageDays / 7) + 'w ago', formattedDate: formattedDate };
+    }
+    const months = Math.floor(ageDays / 30);
+    const staleLabel = ageDays > 365 ? Math.floor(ageDays / 365) + 'y ago' : months + 'mo ago';
+    return { isRecent: false, isStale: true, label: staleLabel, formattedDate: formattedDate };
+  }
+
+  function renderCategoryEmptyStateHtml(category, query, isLocalOnly) {
+    const cat = (category || '').toLowerCase().trim();
+    const safeQ = escapeHtml(query);
+    if (cat === 'images' || cat === 'multimedia' || cat === 'image') {
+      return `
+        <div class="category-empty-state" role="status" aria-live="polite">
+          <div class="category-empty-title">[0 image results]</div>
+          <p class="category-empty-desc">
+            ${isLocalOnly
+              ? 'Image search is unavailable in Local-only mode because the local index does not contain multimedia assets.'
+              : 'No verified image results found for "' + safeQ + '". Only authenticated sources with verified licenses and safe thumbnails are displayed.'}
+          </p>
+          <div class="category-empty-hint">&gt; Try switching to the "All" tab or searching for broader subjects.</div>
+        </div>
+      `.trim();
+    }
+    if (cat === 'news') {
+      return `
+        <div class="category-empty-state" role="status" aria-live="polite">
+          <div class="category-empty-title">[0 news articles]</div>
+          <p class="category-empty-desc">
+            ${isLocalOnly
+              ? 'News category search is unavailable in Local-only mode. No local documents are classified as news.'
+              : 'No recent news articles found for "' + safeQ + '". Results are restricted strictly to verified news sources with authentic timestamps.'}
+          </p>
+          <div class="category-empty-hint">&gt; General web and encyclopedia results can be viewed on the "All" tab.</div>
+        </div>
+      `.trim();
+    }
+    return `
+      <div class="category-empty-state" role="status" aria-live="polite">
+        <div class="category-empty-title">[0 hits]</div>
+        <p class="category-empty-desc">No results found in "${escapeHtml(category)}" category for "${safeQ}".</p>
+        <div class="category-empty-hint">&gt; Try switching to "All" to view combined general results.</div>
+      </div>
+    `.trim();
+  }
+
 })();

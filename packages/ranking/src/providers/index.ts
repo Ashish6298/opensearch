@@ -1,5 +1,5 @@
 /**
- * @opensearch/ranking — Providers Subsystem (Phase 69, Phase 70 & Phase 71)
+ * @opensearch/ranking — Providers Subsystem (Phase 69, Phase 70, Phase 71 & Phase 80)
  */
 
 export type {
@@ -23,6 +23,15 @@ export {
   convertToSearchResultItem,
 } from './provider-normalizer.js';
 export type { RawResultInput } from './provider-normalizer.js';
+
+export {
+  validateSafeImageUrl,
+  validateImageAttribution,
+  isImageResult,
+  isNewsResult,
+  evaluateNewsRecency,
+} from './image-validation.js';
+export type { NewsRecencyEvaluation } from './image-validation.js';
 
 export {
   MockSearchProvider,
@@ -63,5 +72,16 @@ export {
 } from './hackernews-provider.js';
 
 export {
+  WikimediaImageProvider,
+  WIKIMEDIA_IMAGE_PROVIDER_METADATA,
+} from './wikimedia-image-provider.js';
+
+export {
   createDefaultProviderRegistry,
 } from './default-providers.js';
+
+export {
+  validateProviderPrivacyContract,
+  assertProviderPrivacyContract,
+} from './privacy-contract.js';
+export type { PrivacyContractValidationResult } from './privacy-contract.js';

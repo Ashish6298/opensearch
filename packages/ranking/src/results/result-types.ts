@@ -95,6 +95,18 @@ export interface SearchResultItem {
   attribution?: string;
   /** Optional thumbnail URL */
   thumbnailUrl?: string;
+  /** Authentic ISO publication date (never fabricated) */
+  publishedAt?: string;
+  /** License information where available */
+  license?: string;
+  /** Thumbnail image width */
+  imageWidth?: number;
+  /** Thumbnail image height */
+  imageHeight?: number;
+  /** Whether news item is stale */
+  isStale?: boolean;
+  /** Formatted recency badge */
+  recencyLabel?: string;
 }
 
 export interface SearchResultSet {

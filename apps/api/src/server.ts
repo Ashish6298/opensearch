@@ -84,6 +84,9 @@ export class ApiServer {
 
     // Wire or initialize search subsystem services
     this.services = options.services ?? this.initializeSearchServices(options.index);
+    if (options.providerRegistry && !this.services.providerRegistry) {
+      this.services.providerRegistry = options.providerRegistry;
+    }
     this.customIndexProvided = Boolean(options.services || options.index);
 
     const timeoutMs = options.searchTimeoutMs ?? this.config.search.searchTimeoutMs ?? 5_000;
@@ -117,6 +120,7 @@ export class ApiServer {
       services: this.services,
       rateLimiter: this.rateLimiter,
       queryCache: this.queryCache,
+
     };
   }
 
@@ -152,6 +156,7 @@ export class ApiServer {
       rankingEngine,
       resultGenerator,
       queryCache: this.queryCache,
+
     };
   }
 

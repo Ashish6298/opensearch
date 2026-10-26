@@ -28,7 +28,9 @@ export type ContentType =
   | 'paper'
   | 'repository'
   | 'encyclopedia'
-  | 'dataset';
+  | 'dataset'
+  | 'image'
+  | 'multimedia';
 
 export type ProviderErrorCode =
   | 'TIMEOUT'
@@ -153,6 +155,8 @@ export interface ProviderQueryOptions {
   bypassCircuitBreaker?: boolean;
   /** Categories associated with the query */
   categories?: QueryCategory[];
+  /** Safe search level requested (Phase 81) */
+  safeSearch?: 'strict' | 'moderate' | 'off';
   /** Abort signal for request cancellation */
   signal?: AbortSignal;
 }

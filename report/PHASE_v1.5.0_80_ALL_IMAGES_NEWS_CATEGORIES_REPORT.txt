@@ -1,0 +1,108 @@
+================================================================================
+OPENSEARCH — PHASE 80 IMPLEMENTATION & VERIFICATION REPORT
+Milestone 29: Everyday-User Interface
+Phase 80: All, Images, and News categories
+Date: 2026-10-26
+Branch: ashish
+Author: Ashish & Antigravity (DeepMind Advanced Agentic Coding)
+================================================================================
+
+1. EXECUTIVE SUMMARY
+--------------------
+Phase 80 implements dedicated, typed search category routing and specialized result
+representations for "All", "Images", and "News". The application guarantees that
+category tabs are populated with reliable, permitted search sources, prevents
+fabricated publication timestamps, strictly enforces image attribution and safe URL
+protocols, evaluates news recency vs. staleness, and introduces helpful empty states
+when a category is unavailable (e.g. image search in local-only mode).
+
+Crucially, the system enforces non-relabeling invariants: general text results are
+never relabeled or presented as images or news.
+
+All 671 tests across 62 test files in the OpenSearch monorepo pass with a 100%
+pass rate. TypeScript compilation (`tsc -b`) and asset synchronization pass cleanly
+with zero errors.
+
+Status: COMPLETED.
+Readiness for Next Phase (Phase 81 — Safe Search and content controls): READY.
+
+2. TASKS ACCOMPLISHED
+---------------------
+[x] Reliable Category Sourcing & Provider Routing:
+    - Added dedicated category tabs: "All", "Images", and "News" (preserving
+      existing workspace filters).
+    - "All": Combines supported general results (Local Inverted Index + Wikimedia
+      OpenSearch + Hacker News stories).
+    - "Images": Powered by the new `WikimediaImageProvider` querying official
+      Wikimedia Commons Action APIs for Creative Commons and Public Domain images.
+    - "News": Powered by `HackerNewsProvider` and local article collections with
+      authentic publication dates.
+
+[x] Images Category Representation & Security:
+    - Safe Thumbnail & Protocol Enforcement: `validateSafeImageUrl` strictly allows
+      only valid `http:` and `https:` protocols, rejecting `javascript:`, `file:`,
+      `vbscript:`, `blob:`, and control characters.
+    - Image attribution and license preservation: Displays artist, source, and
+      license (e.g., `CC BY-SA 4.0`, `Public Domain`), along with image dimensions.
+    - Specialized image card grid layout (`.image-results-grid`, `.image-card`)
+      with graceful lazy loading and error fallbacks.
+
+[x] News Category Representation & Authenticity:
+    - Source and publication timestamps accurately displayed via semantic `<time>`
+      elements.
+    - Temporal Recency Evaluation (`evaluateNewsRecency`):
+      * < 24 hours: Displayed as recent ("Just now", "2h ago")
+      * 1 – 7 days: Displayed as recent ("4d ago")
+      * 8 – 30 days: Displayed as standard ("2w ago")
+      * > 30 days: Explicitly distinguished as stale/archived ("[stale: 2mo ago]", "[stale: 2y ago]")
+    - Zero Timestamp Fabrication Guarantee: Results without source publication
+      dates never render fabricated timestamps or recency badges.
+
+[x] Non-Relabeling Invariant:
+    - General text documents and encyclopedias are never relabeled as images or news.
+    - Image searches strictly filter for legitimate multimedia items with safe thumbnails.
+    - News searches strictly filter for verified news articles with authentic timestamps.
+
+[x] Useful Empty States for Unavailable Categories:
+    - Specialized empty states (`.category-empty-state`) explain why a category
+      yielded zero hits.
+    - Explains that Local-only mode lacks multimedia image assets or unindexed news.
+    - Transparently guides users to switch to the "All" tab.
+
+3. VERIFICATION & TEST METRICS
+------------------------------
+Full Monorepo Vitest Suite:
+- Test Files: 62 passed (62 total)
+- Tests:      671 passed (671 total)
+- Duration:   10.23s
+- Pass Rate:  100.0%
+
+New Dedicated Backend Test Suite (`packages/ranking/tests/categories-and-multimedia.test.ts`):
+- 22 comprehensive tests covering:
+  * Category routing & provider selection in `ProviderRegistry`
+  * Image URL safety validation and dangerous protocol rejection
+  * Image attribution and license metadata retention
+  * News recency vs. staleness temporal evaluation
+  * Publication timestamp authenticity (zero fabrication)
+  * Non-relabeling classification invariants
+  * `WikimediaImageProvider` contract and failure isolation
+
+New Dedicated Web UI Test Suite (`apps/web/tests/categories-all-images-news.test.ts`):
+- 14 comprehensive tests covering:
+  * Category tabs and container elements in HTML shell
+  * Image card rendering with safe thumbnail, dimensions, attribution, and license
+  * Unsafe image URL rejection
+  * News card rendering with source, `<time>`, and recency/staleness badges
+  * Undated document date omission (no fabricated dates)
+  * Useful empty states in local-only and zero-hit conditions
+  * CSS styling and `app.js` category handling
+
+TypeScript Compilation & Asset Pipeline:
+- Command: `npm run typecheck` -> 0 errors across monorepo (`tsc -b`).
+- Command: `npm run build` -> Clean build across TypeScript and web assets.
+
+4. READINESS ASSESSMENT
+-----------------------
+Milestone 29 (Everyday-User Interface) Phase 80 is fully implemented and verified.
+Codebase is ready to proceed to Phase 81 (Safe Search and content controls).
+================================================================================

@@ -21,8 +21,9 @@ import {
   InstantAnswerEngine,
   InstantAnswerPayload,
   BangResult,
+  ProviderRegistry,
 } from '@opensearch/ranking';
-import { AppConfig, Logger, SystemStatus } from '@opensearch/shared';
+import { AppConfig, Logger, SystemStatus, PrivacyReceipt } from '@opensearch/shared';
 import { MemoryRateLimiter } from './rate-limiter.js';
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'OPTIONS' | 'HEAD' | string;
@@ -91,6 +92,7 @@ export interface SearchServices {
   rankingEngine: RankingEngine;
   resultGenerator: ResultGenerator;
   queryCache?: LruQueryCache<SearchApiResponse>;
+  providerRegistry?: ProviderRegistry;
 }
 
 export interface ApiAppContext {
@@ -100,6 +102,7 @@ export interface ApiAppContext {
   services?: SearchServices;
   rateLimiter?: MemoryRateLimiter;
   queryCache?: LruQueryCache<SearchApiResponse>;
+  providerRegistry?: ProviderRegistry;
 }
 
 export interface ComponentHealth {
@@ -146,12 +149,26 @@ export interface SearchApiResponse {
   didYouMean?: DidYouMeanResult | null;
   results: Array<SearchResultItem & { explanation?: unknown }>;
   pagination: PaginationMeta;
+  privacyReceipt?: PrivacyReceipt;
   meta: {
     totalHits: number;
     candidateCount: number;
     durationMs: number;
     timestamp: string;
     explainPlan?: boolean;
+    category?: string;
+    categoryAvailable?: boolean;
+    localOnly?: boolean;
+    limitedResultsNotice?: string;
+    privacyReceipt?: PrivacyReceipt;
+    safeSearch?: {
+      level: string;
+      filteredCount: number;
+      explanation: string;
+      whatItCovers?: string;
+      whatItDoesNotCover?: string;
+    };
+    [key: string]: unknown;
   };
 }
 
@@ -163,6 +180,7 @@ export interface ApiServerOptions {
   corsOrigin?: string;
   services?: SearchServices;
   index?: InvertedIndex;
+  providerRegistry?: ProviderRegistry;
   rateLimitPerMinute?: number;
   searchTimeoutMs?: number;
 }
