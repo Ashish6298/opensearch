@@ -16,6 +16,7 @@ import {
   createDefaultProviderRegistry,
   convertToSearchResultItem,
   ProviderRegistry,
+  ProviderExecutionSummary,
   QueryCategory,
   SafeSearchLevel,
 } from '@opensearch/ranking';
@@ -33,16 +34,22 @@ export function resetSharedProviderRegistry(): void {
   sharedRegistry = null;
 }
 
+export interface ExternalSearchExecutionResult {
+  items: SearchResultItem[];
+  summary: ProviderExecutionSummary;
+}
+
 /**
- * Queries documented external search providers through the standard provider layer.
+ * Queries documented external search providers through the standard provider layer
+ * and returns both normalized results and live execution telemetry.
  */
-export async function fetchExternalWebResults(
+export async function fetchExternalWebWithTelemetry(
   query: string,
   limit = 10,
   registryOverride?: ProviderRegistry,
   category = 'all',
   safeSearch: SafeSearchLevel = 'moderate',
-): Promise<SearchResultItem[]> {
+): Promise<ExternalSearchExecutionResult> {
   const registry = registryOverride ?? getSharedProviderRegistry();
 
   let targetCategories: QueryCategory[] = ['general', 'encyclopedia', 'code', 'news'];
@@ -59,13 +66,35 @@ export async function fetchExternalWebResults(
   const summary = await registry.executeSearch(query, {
     limit,
     categories: targetCategories,
-    timeoutMs: 3000,
+    timeoutMs: 1200,
     safeSearch,
   });
 
-  return summary.results
+  const items = summary.results
     .slice(0, limit)
     .map((norm, idx) => convertToSearchResultItem(norm, idx + 1));
+
+  return { items, summary };
+}
+
+/**
+ * Queries documented external search providers through the standard provider layer.
+ */
+export async function fetchExternalWebResults(
+  query: string,
+  limit = 10,
+  registryOverride?: ProviderRegistry,
+  category = 'all',
+  safeSearch: SafeSearchLevel = 'moderate',
+): Promise<SearchResultItem[]> {
+  const result = await fetchExternalWebWithTelemetry(
+    query,
+    limit,
+    registryOverride,
+    category,
+    safeSearch,
+  );
+  return result.items;
 }
 
 /**

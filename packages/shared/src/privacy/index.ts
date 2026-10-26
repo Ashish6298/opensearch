@@ -182,4 +182,5 @@ export function auditResponseHeaders(headers: Record<string, string | string[] |
 }
 
 export * from './network-audit.js';
+export * from './privacy-receipt.js';
 

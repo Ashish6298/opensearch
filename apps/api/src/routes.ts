@@ -9,14 +9,24 @@
  * - POST /api/v1/search: JSON body search endpoint for complex queries
  */
 
-import { HTTP_STATUS, PROJECT_NAME, PROJECT_VERSION, ValidationError } from '@opensearch/shared';
+import {
+  HTTP_STATUS,
+  PROJECT_NAME,
+  PROJECT_VERSION,
+  ValidationError,
+  createPrivacyReceipt,
+  ContactedProviderRecord,
+  SkippedProviderRecord,
+  getProviderMetadataDefaults,
+  ProviderExecutionStatus,
+} from '@opensearch/shared';
 import {
   HealthCheckResponse,
   RouteHandler,
   SearchApiResponse,
   SuggestApiResponse,
 } from './types.js';
-import { fetchExternalWebResults } from './external-search.js';
+import { fetchExternalWebWithTelemetry, getSharedProviderRegistry } from './external-search.js';
 import { SafeSearchLevel, filterSafeSearchResults, getSafeSearchDisclosure } from '@opensearch/ranking';
 import { generateOpenApiSpec } from './openapi-spec.js';
 import { generateDocsHtml } from './docs-html.js';
@@ -391,15 +401,109 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
   const providerRegistry = context.services.providerRegistry ?? context.providerRegistry;
   const canFetchExternal = !isLocalOnly && (process.env.NODE_ENV !== 'test' || Boolean(providerRegistry));
 
-  if (canFetchExternal && page === 1 && finalResults.length < pageSize) {
+  // Phase 84 — Privacy Receipt Telemetry Collection:
+  const contactedProviders: ContactedProviderRecord[] = [];
+  const skippedProviders: SkippedProviderRecord[] = [];
+  let isPartialResult = false;
+  let searchDeadlineExceeded = false;
+
+  const activeRegistry = providerRegistry ?? getSharedProviderRegistry();
+
+  if (isLocalOnly) {
+    if (activeRegistry) {
+      for (const p of activeRegistry.getAllProviders()) {
+        skippedProviders.push({
+          providerId: p.metadata.id,
+          reason: 'local-only-mode',
+          details: 'External search provider suppressed because Local-only search mode is active.',
+        });
+      }
+    }
+  } else if (finalResults.length >= pageSize) {
+    if (activeRegistry) {
+      for (const p of activeRegistry.getAllProviders()) {
+        skippedProviders.push({
+          providerId: p.metadata.id,
+          reason: 'sufficient-local-results',
+          details: 'Local index provided sufficient results without outbound queries.',
+        });
+      }
+    }
+  } else if (canFetchExternal && page === 1 && finalResults.length < pageSize) {
     try {
-      const liveItems = await fetchExternalWebResults(
+      const liveExecution = await fetchExternalWebWithTelemetry(
         rawQuery,
         pageSize - finalResults.length,
         providerRegistry,
         requestedCategory,
         safeSearchLevel,
       );
+
+      isPartialResult = liveExecution.summary.isPartial || liveExecution.summary.failedProviders > 0;
+      searchDeadlineExceeded = Boolean(liveExecution.summary.searchDeadlineExceeded);
+
+      for (const pResult of liveExecution.summary.providerResults) {
+        const defaults = getProviderMetadataDefaults(pResult.providerId);
+        const provObj = activeRegistry?.getProvider(pResult.providerId);
+        const endpoint = provObj?.metadata.endpoint || defaults.endpoint;
+        const purpose = defaults.purpose;
+
+        let status: ProviderExecutionStatus = 'success';
+        let statusCode = 200;
+
+        if (pResult.cached) {
+          status = 'cached';
+          statusCode = 200;
+        } else if (pResult.errorCode === 'TIMEOUT') {
+          status = 'timeout';
+          statusCode = 504;
+        } else if (pResult.errorCode === 'RATE_LIMITED') {
+          status = 'rate-limited';
+          statusCode = 429;
+        } else if (pResult.errorCode === 'CIRCUIT_OPEN') {
+          status = 'circuit-breaker-open';
+          statusCode = 503;
+        } else if (pResult.error || pResult.errorCode) {
+          status = 'failed';
+          statusCode = 502;
+        }
+
+        contactedProviders.push({
+          providerId: pResult.providerId,
+          endpoint,
+          purpose,
+          statusCode,
+          latencyMs: pResult.durationMs,
+          queryTransmitted: true,
+          clientIpForwarded: false,
+          status,
+          ...(pResult.cached ? { cached: true } : {}),
+          ...(pResult.errorCode ? { errorCategory: pResult.errorCode } : {}),
+        });
+      }
+
+      if (activeRegistry) {
+        const contactedSet = new Set(liveExecution.summary.providerResults.map((p) => p.providerId));
+        for (const prov of activeRegistry.getAllProviders()) {
+          if (!contactedSet.has(prov.metadata.id)) {
+            if (!prov.isEnabled()) {
+              skippedProviders.push({
+                providerId: prov.metadata.id,
+                reason: 'disabled-by-configuration',
+                details: 'Provider is disabled in configuration.',
+              });
+            } else {
+              skippedProviders.push({
+                providerId: prov.metadata.id,
+                reason: 'category-mismatch',
+                details: `Provider does not support requested category "${requestedCategory}".`,
+              });
+            }
+          }
+        }
+      }
+
+      const liveItems = liveExecution.items;
       if (liveItems.length > 0) {
         const existingUrls = new Set(finalResults.map(r => r.url.toLowerCase()));
         const uniqueLive = liveItems.filter(item => !existingUrls.has(item.url.toLowerCase()));
@@ -411,7 +515,7 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
         totalHits = Math.max(totalHits, finalResults.length);
       }
     } catch {
-      // Fallback gracefully to local results
+      isPartialResult = true;
     }
   }
 
@@ -446,6 +550,24 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
     didYouMean = typoEngine.suggestCorrection(rawQuery);
   }
 
+  // Phase 84 — Generate Verifiable Privacy Receipt from Real Execution Telemetry
+  const clientIp = (req.ip as string) || (req.raw?.socket?.remoteAddress as string) || '127.0.0.1';
+  const hasThumbnails = finalResults.some(r => Boolean(r.thumbnailUrl));
+  const rawIpString = typeof clientIp === 'string' ? clientIp : '127.0.0.1';
+  const firstIp = rawIpString.split(',')[0]?.trim() || '127.0.0.1';
+
+  const privacyReceipt = createPrivacyReceipt({
+    mode: isLocalOnly ? 'local-only' : 'standard',
+    clientIp: firstIp,
+    category: requestedCategory,
+    contactedProviders,
+    skippedProviders,
+    isPartialResult,
+    searchDeadlineExceeded,
+    hasThumbnails,
+    referrerPolicy: 'strict-origin-when-cross-origin',
+  });
+
   const responsePayload: SearchApiResponse = {
     query: {
       raw: rawQuery,
@@ -472,6 +594,7 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
       totalHits,
       totalPages: Math.max(1, Math.ceil(totalHits / pageSize)),
     },
+    privacyReceipt,
     meta: {
       totalHits,
       candidateCount: retrievalResult.candidates.length,
@@ -483,6 +606,7 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
         ? false
         : true,
       localOnly: isLocalOnly,
+      privacyReceipt,
       limitedResultsNotice: isLocalOnly && finalResults.length < pageSize
         ? finalResults.length === 0
           ? 'Local-only mode active: No matching documents found in the local index. External search providers are disabled for privacy.'

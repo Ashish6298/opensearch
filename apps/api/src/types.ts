@@ -23,7 +23,7 @@ import {
   BangResult,
   ProviderRegistry,
 } from '@opensearch/ranking';
-import { AppConfig, Logger, SystemStatus } from '@opensearch/shared';
+import { AppConfig, Logger, SystemStatus, PrivacyReceipt } from '@opensearch/shared';
 import { MemoryRateLimiter } from './rate-limiter.js';
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'OPTIONS' | 'HEAD' | string;
@@ -149,6 +149,7 @@ export interface SearchApiResponse {
   didYouMean?: DidYouMeanResult | null;
   results: Array<SearchResultItem & { explanation?: unknown }>;
   pagination: PaginationMeta;
+  privacyReceipt?: PrivacyReceipt;
   meta: {
     totalHits: number;
     candidateCount: number;
@@ -159,6 +160,7 @@ export interface SearchApiResponse {
     categoryAvailable?: boolean;
     localOnly?: boolean;
     limitedResultsNotice?: string;
+    privacyReceipt?: PrivacyReceipt;
     safeSearch?: {
       level: string;
       filteredCount: number;
