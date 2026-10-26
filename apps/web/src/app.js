@@ -43,6 +43,7 @@
   const resultFiltersBar = document.getElementById('result-filters-bar');
   const onboardingCard = document.getElementById('onboarding-card');
   const onboardingDismissX = document.getElementById('onboarding-dismiss-x');
+  const categoryEmptyStateContainer = document.getElementById('category-empty-state-container');
   const onboardingGotItBtn = document.getElementById('onboarding-got-it-btn');
   const onboardingSettingsLink = document.getElementById('onboarding-settings-link');
   const settingsModal = document.getElementById('settings-modal');
@@ -968,6 +969,10 @@
     if (offlineState) offlineState.style.display = 'none';
     if (providerFailureState) providerFailureState.style.display = 'none';
     if (rateLimitState) rateLimitState.style.display = 'none';
+    if (categoryEmptyStateContainer) {
+      categoryEmptyStateContainer.style.display = 'none';
+      categoryEmptyStateContainer.innerHTML = '';
+    }
     if (instantAnswerCard) {
       instantAnswerCard.style.display = 'none';
       instantAnswerCard.innerHTML = '';
@@ -1067,7 +1072,7 @@
     try {
       let fetchUrl = `${API_ENDPOINT}?q=${encodeURIComponent(query)}&page=${page}&pageSize=${PAGE_SIZE}`;
       if (activeFilter && activeFilter !== 'all') {
-        fetchUrl += `&filter=${encodeURIComponent(activeFilter)}`;
+        fetchUrl += `&filter=${encodeURIComponent(activeFilter)}&category=${encodeURIComponent(activeFilter)}`;
       }
       if (isLocalOnly) {
         fetchUrl += '&localOnly=true';
@@ -1263,11 +1268,19 @@
 
     if (hits.length === 0) {
       if (!instantAnswer) {
-        if (emptyQueryText) {
-          emptyQueryText.textContent = currentQuery;
+        if (activeFilter === 'images' || activeFilter === 'news') {
+          if (categoryEmptyStateContainer) {
+            categoryEmptyStateContainer.innerHTML = renderCategoryEmptyStateHtml(activeFilter, currentQuery, isLocalOnly);
+            categoryEmptyStateContainer.style.display = 'block';
+          }
+          announceA11y(`No ${activeFilter} results found for ${currentQuery}.`);
+        } else {
+          if (emptyQueryText) {
+            emptyQueryText.textContent = currentQuery;
+          }
+          if (emptyState) emptyState.style.display = 'block';
+          announceA11y(`No search results found for ${currentQuery}.`);
         }
-        if (emptyState) emptyState.style.display = 'block';
-        announceA11y(`No search results found for ${currentQuery}.`);
       }
       if (resultsMeta) resultsMeta.textContent = '';
       if (resultsArea) resultsArea.innerHTML = '';
@@ -1306,7 +1319,79 @@
       `${summaryText} for query ${currentQuery}. Showing page ${pagination?.page || 1}.`,
     );
 
-    // Render terminal result cards
+    // Phase 80: Category-Specific Rendering & Enforcement (All, Images, News)
+    if (activeFilter === 'images' || activeFilter === 'multimedia') {
+      const validImageHits = hits.filter(function (it) {
+        return Boolean(validateSafeImageUrl(it.thumbnailUrl));
+      });
+
+      if (validImageHits.length === 0) {
+        if (categoryEmptyStateContainer) {
+          categoryEmptyStateContainer.innerHTML = renderCategoryEmptyStateHtml('images', currentQuery, isLocalOnly);
+          categoryEmptyStateContainer.style.display = 'block';
+        }
+        if (resultsArea) resultsArea.innerHTML = '';
+        if (paginationArea) paginationArea.innerHTML = '';
+        return;
+      }
+
+      let imageCardsHtml = '<div class="image-results-grid" role="region" aria-label="Image search results">';
+      validImageHits.forEach(function (item) {
+        const safeThumb = validateSafeImageUrl(item.thumbnailUrl);
+        const safeUrl = escapeHtml(item.url || '#');
+        const safeTitle = escapeHtml(item.title || 'Untitled Image');
+        const safeAttribution = escapeHtml(item.attribution || (item.source ? 'Source: ' + item.source : 'Wikimedia Commons'));
+        const safeLicense = item.license ? escapeHtml(item.license) : '';
+        const safeDomain = escapeHtml(item.domain || '');
+        const dimensions = (item.imageWidth && item.imageHeight) ? escapeHtml(item.imageWidth + '×' + item.imageHeight) : '';
+
+        imageCardsHtml += `
+          <div class="image-card" data-document-id="${escapeHtml(item.documentId || '')}" role="group" aria-label="${safeTitle}">
+            <a href="${safeUrl}" ${openInNewTab ? 'target="_blank" rel="noopener noreferrer"' : ''} class="image-card-link" aria-label="${safeTitle} (opens in new tab)">
+              <div class="image-card-thumb-container">
+                <img src="${escapeHtml(safeThumb)}" alt="${safeTitle}" loading="lazy" class="image-card-thumb" onerror="this.closest('.image-card')?.remove();" />
+                ${dimensions ? `<span class="image-card-dimensions">${dimensions}</span>` : ''}
+              </div>
+              <div class="image-card-info">
+                <div class="image-card-title" title="${safeTitle}">${safeTitle}</div>
+                <div class="image-card-meta">
+                  ${safeDomain ? `<span class="image-card-domain">${safeDomain}</span>` : ''}
+                  <span class="image-card-attribution" title="${safeAttribution}">[${safeAttribution}]</span>
+                  ${safeLicense ? `<span class="image-card-license">[${safeLicense}]</span>` : ''}
+                </div>
+              </div>
+            </a>
+          </div>
+        `;
+      });
+      imageCardsHtml += '</div>';
+
+      if (resultsArea) {
+        resultsArea.innerHTML = imageCardsHtml;
+      }
+      if (paginationArea && pagination) {
+        paginationArea.innerHTML = renderPaginationBar(pagination);
+      }
+      return;
+    }
+
+    if (activeFilter === 'news') {
+      const validNewsHits = hits.filter(function (it) {
+        return it.source === 'hackernews' || Boolean(it.publishedAt);
+      });
+
+      if (validNewsHits.length === 0) {
+        if (categoryEmptyStateContainer) {
+          categoryEmptyStateContainer.innerHTML = renderCategoryEmptyStateHtml('news', currentQuery, isLocalOnly);
+          categoryEmptyStateContainer.style.display = 'block';
+        }
+        if (resultsArea) resultsArea.innerHTML = '';
+        if (paginationArea) paginationArea.innerHTML = '';
+        return;
+      }
+    }
+
+    // Render terminal result cards (All / General / News)
     let resultsHtml = '';
     const startIdx = pagination ? (pagination.page - 1) * pagination.pageSize : 0;
 
@@ -1348,6 +1433,20 @@
         }
       }
 
+      let recencyBadge = '';
+      if (rawDate) {
+        const recency = evaluateNewsRecency(rawDate);
+        if (recency) {
+          if (recency.isRecent) {
+            recencyBadge = `<span class="news-recency-badge recent" aria-label="Recent news">${escapeHtml(recency.label)}</span>`;
+          } else if (recency.isStale) {
+            recencyBadge = `<span class="news-recency-badge stale" aria-label="Stale news">[stale: ${escapeHtml(recency.label)}]</span>`;
+          } else {
+            recencyBadge = `<span class="news-recency-badge standard">${escapeHtml(recency.label)}</span>`;
+          }
+        }
+      }
+
       const dateBadge = formattedDate
         ? `<time class="result-date-badge" datetime="${escapeHtml(rawDate)}" aria-label="Published date">${formattedDate}</time>`
         : '';
@@ -1369,8 +1468,10 @@
                 <span class="result-prompt-sym">&gt;</span>
                 <cite class="result-destination" title="${safeUrl}">${safeDisplayUrl}</cite>
                 ${provenanceBadge ? ` ${provenanceBadge}` : ''}
+                ${item.license ? ` <span class="result-license-badge" aria-label="License">[${escapeHtml(item.license)}]</span>` : ''}
                 ${contentTypeBadge ? ` ${contentTypeBadge}` : ''}
                 ${dateBadge ? ` ${dateBadge}` : ''}
+                ${recencyBadge ? ` ${recencyBadge}` : ''}
               </div>
               <p class="result-snippet">${displaySnippet}</p>
             </div>
@@ -1461,4 +1562,92 @@
   } else {
     init();
   }
+
+  // Phase 80: Image URL validation, news recency, and category empty state helpers
+  function validateSafeImageUrl(url) {
+    if (typeof url !== 'string') return null;
+    const trimmed = url.trim();
+    if (!trimmed || trimmed.length > 4096) return null;
+    if (/[\x00-\x1f\x7f]/.test(trimmed)) return null;
+    const lower = trimmed.toLowerCase();
+    const disallowed = ['javascript:', 'vbscript:', 'file:', 'ftp:', 'blob:', 'about:'];
+    for (let i = 0; i < disallowed.length; i++) {
+      if (lower.startsWith(disallowed[i])) return null;
+    }
+    try {
+      const parsed = new URL(trimmed);
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null;
+      if (!parsed.hostname) return null;
+      return parsed.href;
+    } catch {
+      return null;
+    }
+  }
+
+  function evaluateNewsRecency(publishedAt, nowMs) {
+    if (!publishedAt || typeof publishedAt !== 'string') return null;
+    const trimmed = publishedAt.trim();
+    if (!trimmed) return null;
+    const parsed = new Date(trimmed);
+    const timeMs = parsed.getTime();
+    if (isNaN(timeMs)) return null;
+    const refNow = typeof nowMs === 'number' ? nowMs : Date.now();
+    const ageMs = Math.max(0, refNow - timeMs);
+    const ageHours = Math.floor(ageMs / (60 * 60 * 1000));
+    const ageDays = Math.floor(ageMs / (24 * 60 * 60 * 1000));
+    const formattedDate = parsed.toISOString().split('T')[0] || '';
+    if (ageHours < 24) {
+      const ageMinutes = Math.floor(ageMs / (60 * 1000));
+      const label = ageHours < 1 ? (ageMinutes <= 1 ? 'Just now' : ageMinutes + 'm ago') : ageHours + 'h ago';
+      return { isRecent: true, isStale: false, label: label, formattedDate: formattedDate };
+    }
+    if (ageDays <= 7) {
+      return { isRecent: true, isStale: false, label: ageDays + 'd ago', formattedDate: formattedDate };
+    }
+    if (ageDays <= 30) {
+      return { isRecent: false, isStale: false, label: Math.floor(ageDays / 7) + 'w ago', formattedDate: formattedDate };
+    }
+    const months = Math.floor(ageDays / 30);
+    const staleLabel = ageDays > 365 ? Math.floor(ageDays / 365) + 'y ago' : months + 'mo ago';
+    return { isRecent: false, isStale: true, label: staleLabel, formattedDate: formattedDate };
+  }
+
+  function renderCategoryEmptyStateHtml(category, query, isLocalOnly) {
+    const cat = (category || '').toLowerCase().trim();
+    const safeQ = escapeHtml(query);
+    if (cat === 'images' || cat === 'multimedia' || cat === 'image') {
+      return `
+        <div class="category-empty-state" role="status" aria-live="polite">
+          <div class="category-empty-title">[0 image results]</div>
+          <p class="category-empty-desc">
+            ${isLocalOnly
+              ? 'Image search is unavailable in Local-only mode because the local index does not contain multimedia assets.'
+              : 'No verified image results found for "' + safeQ + '". Only authenticated sources with verified licenses and safe thumbnails are displayed.'}
+          </p>
+          <div class="category-empty-hint">&gt; Try switching to the "All" tab or searching for broader subjects.</div>
+        </div>
+      `.trim();
+    }
+    if (cat === 'news') {
+      return `
+        <div class="category-empty-state" role="status" aria-live="polite">
+          <div class="category-empty-title">[0 news articles]</div>
+          <p class="category-empty-desc">
+            ${isLocalOnly
+              ? 'News category search is unavailable in Local-only mode. No local documents are classified as news.'
+              : 'No recent news articles found for "' + safeQ + '". Results are restricted strictly to verified news sources with authentic timestamps.'}
+          </p>
+          <div class="category-empty-hint">&gt; General web and encyclopedia results can be viewed on the "All" tab.</div>
+        </div>
+      `.trim();
+    }
+    return `
+      <div class="category-empty-state" role="status" aria-live="polite">
+        <div class="category-empty-title">[0 hits]</div>
+        <p class="category-empty-desc">No results found in "${escapeHtml(category)}" category for "${safeQ}".</p>
+        <div class="category-empty-hint">&gt; Try switching to "All" to view combined general results.</div>
+      </div>
+    `.trim();
+  }
+
 })();

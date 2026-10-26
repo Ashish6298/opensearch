@@ -1,10 +1,11 @@
 /**
- * @opensearch/api — Documented External Provider Integration (Phase 70)
+ * @opensearch/api — Documented External Provider Integration (Phase 70 & Phase 80)
  *
  * Replaces brittle HTML scraping (Google Suggest, DuckDuckGo HTML regex scraping)
  * with the standard, typed SearchProvider interface and permitted APIs:
- * - Wikimedia OpenSearch Action API
- * - Hacker News (Algolia Search API)
+ * - Wikimedia OpenSearch Action API (All / General / Reference)
+ * - Hacker News (Algolia Search API - News / Code / General)
+ * - Wikimedia Commons Action API (Images / Multimedia)
  *
  * All external search calls go strictly through the @opensearch/ranking provider layer.
  * Zero paid API keys, strict failure isolation, and preserved result provenance.
@@ -15,6 +16,7 @@ import {
   createDefaultProviderRegistry,
   convertToSearchResultItem,
   ProviderRegistry,
+  QueryCategory,
 } from '@opensearch/ranking';
 
 let sharedRegistry: ProviderRegistry | null = null;
@@ -37,11 +39,24 @@ export async function fetchExternalWebResults(
   query: string,
   limit = 10,
   registryOverride?: ProviderRegistry,
+  category = 'all',
 ): Promise<SearchResultItem[]> {
   const registry = registryOverride ?? getSharedProviderRegistry();
+
+  let targetCategories: QueryCategory[] = ['general', 'encyclopedia', 'code', 'news'];
+  const catLower = category.toLowerCase().trim();
+
+  if (catLower === 'images' || catLower === 'multimedia' || catLower === 'image') {
+    targetCategories = ['multimedia'];
+  } else if (catLower === 'news') {
+    targetCategories = ['news'];
+  } else if (catLower === 'code') {
+    targetCategories = ['code'];
+  }
+
   const summary = await registry.executeSearch(query, {
     limit,
-    categories: ['general', 'encyclopedia', 'code', 'news'],
+    categories: targetCategories,
     timeoutMs: 3000,
   });
 

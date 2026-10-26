@@ -182,10 +182,11 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
         <!-- Phase 78: Result Filters (Preserves current search query) -->
         <nav class="result-filters-bar" id="result-filters-bar" aria-label="Search result filters" style="display:none;">
           <button type="button" class="result-filter-btn active" data-filter="all" aria-pressed="true">All</button>
+          <button type="button" class="result-filter-btn" data-filter="images" aria-pressed="false">Images</button>
+          <button type="button" class="result-filter-btn" data-filter="news" aria-pressed="false">News</button>
           <button type="button" class="result-filter-btn" data-filter="web" aria-pressed="false">Web</button>
           <button type="button" class="result-filter-btn" data-filter="code" aria-pressed="false">Code</button>
           <button type="button" class="result-filter-btn" data-filter="docs" aria-pressed="false">Documents</button>
-          <button type="button" class="result-filter-btn" data-filter="news" aria-pressed="false">News</button>
         </nav>
 
         <!-- UI State Containers & Results -->
@@ -198,6 +199,9 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
             <div class="cli-empty">[0 hits] no matches found for "<span id="empty-query-text"></span>"</div>
             <div class="cli-empty-hint">&gt; try broader terms or verify spelling</div>
           </div>
+
+          <!-- Phase 80: Category Unavailable Empty State -->
+          <div class="category-empty-state-container" id="category-empty-state-container" role="status" aria-live="polite" style="display:none;"></div>
 
           <div class="error-state" id="error-state" role="alert" aria-live="assertive" style="display:none;">
             <div class="cli-error">[ERROR] search query failed: <span id="error-message">connection refused</span></div>

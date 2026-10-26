@@ -357,12 +357,39 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
   let finalResults = [...searchResultSet.items];
   let totalHits = searchResultSet.pagination.totalHits;
 
+  const requestedCategory = (
+    (req.query['category'] as string) ||
+    (req.query['filter'] as string) ||
+    'all'
+  ).toLowerCase().trim();
+
+  // Phase 80 — Category Filtering & Non-Relabeling Enforcement:
+  // Do not relabel general results as images or news.
+  if (requestedCategory === 'images' || requestedCategory === 'multimedia' || requestedCategory === 'image') {
+    finalResults = finalResults.filter(item => {
+      return (item.contentType === 'image' || item.contentType === 'multimedia') ||
+        Boolean(item.thumbnailUrl && item.thumbnailUrl.startsWith('http'));
+    });
+    totalHits = finalResults.length;
+  } else if (requestedCategory === 'news') {
+    finalResults = finalResults.filter(item => {
+      return item.source === 'hackernews' ||
+        (item.contentType === 'article' && Boolean(item.publishedAt));
+    });
+    totalHits = finalResults.length;
+  }
+
   const isLocalOnly = req.query['localOnly'] === 'true' || req.query['mode'] === 'local';
 
   // Query live web search when local indexed results are insufficient (unless in local-only mode)
   if (!isLocalOnly && page === 1 && process.env.NODE_ENV !== 'test' && finalResults.length < pageSize) {
     try {
-      const liveItems = await fetchExternalWebResults(rawQuery, pageSize - finalResults.length);
+      const liveItems = await fetchExternalWebResults(
+        rawQuery,
+        pageSize - finalResults.length,
+        undefined,
+        requestedCategory,
+      );
       if (liveItems.length > 0) {
         const existingUrls = new Set(finalResults.map(r => r.url.toLowerCase()));
         const uniqueLive = liveItems.filter(item => !existingUrls.has(item.url.toLowerCase()));

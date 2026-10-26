@@ -28,7 +28,9 @@ export type ContentType =
   | 'paper'
   | 'repository'
   | 'encyclopedia'
-  | 'dataset';
+  | 'dataset'
+  | 'image'
+  | 'multimedia';
 
 export type ProviderErrorCode =
   | 'TIMEOUT'
