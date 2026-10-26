@@ -387,12 +387,16 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
   const isLocalOnly = req.query['localOnly'] === 'true' || req.query['mode'] === 'local';
 
   // Query live web search when local indexed results are insufficient (unless in local-only mode)
-  if (!isLocalOnly && page === 1 && process.env.NODE_ENV !== 'test' && finalResults.length < pageSize) {
+  // In Local-Only mode: query planner strictly suppresses external search providers
+  const providerRegistry = context.services.providerRegistry ?? context.providerRegistry;
+  const canFetchExternal = !isLocalOnly && (process.env.NODE_ENV !== 'test' || Boolean(providerRegistry));
+
+  if (canFetchExternal && page === 1 && finalResults.length < pageSize) {
     try {
       const liveItems = await fetchExternalWebResults(
         rawQuery,
         pageSize - finalResults.length,
-        undefined,
+        providerRegistry,
         requestedCategory,
         safeSearchLevel,
       );
@@ -478,6 +482,12 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
       categoryAvailable: isLocalOnly && (requestedCategory === 'images' || requestedCategory === 'news') && finalResults.length === 0
         ? false
         : true,
+      localOnly: isLocalOnly,
+      limitedResultsNotice: isLocalOnly && finalResults.length < pageSize
+        ? finalResults.length === 0
+          ? 'Local-only mode active: No matching documents found in the local index. External search providers are disabled for privacy.'
+          : `Local-only mode active: Displaying ${finalResults.length} local document(s). External search providers are disabled for privacy.`
+        : undefined,
       safeSearch: {
         level: safeSearchLevel,
         filteredCount: safeFilterResult.excludedCount,

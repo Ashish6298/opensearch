@@ -162,6 +162,17 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
               <button type="button" id="search-clear-btn" class="sr-only" aria-label="Clear search input">Clear</button>
               <button type="submit" id="search-submit-btn" class="run-btn" aria-label="Submit search">Search</button>
             </div>
+            <!-- Phase 83: Visible Local-Only Control & Hosted Transparency -->
+            <div class="search-mode-controls" id="search-mode-controls">
+              <label class="local-only-chip" for="local-only-checkbox" title="Toggle Local-only mode: Disables external providers, searches only the local index">
+                <input type="checkbox" id="local-only-checkbox" class="local-only-checkbox" />
+                <span class="local-only-icon" aria-hidden="true">🔒</span>
+                <span class="local-only-label">Local-only</span>
+              </label>
+              <span class="hosted-transparency-note" id="hosted-transparency-note" title="Note: If using a hosted server, the host receives the query at its own endpoint, but contacts zero third-party providers.">
+                (zero external providers)
+              </span>
+            </div>
             <!-- Quick Suggestions for approachable discovery -->
             <div class="quick-topics-row" id="quick-topics" aria-label="Suggested searches">
               <span class="quick-topics-label">Try:</span>
@@ -199,6 +210,10 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
           <div class="empty-state" id="empty-state" role="region" aria-label="No results found" aria-live="polite" style="display:none;">
             <div class="cli-empty">[0 hits] no matches found for "<span id="empty-query-text"></span>"</div>
             <div class="cli-empty-hint">&gt; try broader terms or verify spelling</div>
+            <div class="empty-local-only-action" id="empty-local-only-action" style="display:none; margin-top: 0.75rem;">
+              <p class="empty-local-only-desc" style="font-size: 0.9rem; opacity: 0.85;">No local documents matched your query. External search providers are currently disabled for privacy.</p>
+              <button type="button" class="disable-local-only-btn" id="empty-disable-local-only-btn" style="padding: 0.35rem 0.8rem; cursor: pointer; border-radius: 4px;">Disable Local-Only Mode &amp; Search Web</button>
+            </div>
           </div>
 
           <!-- Phase 80: Category Unavailable Empty State -->
@@ -207,6 +222,13 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
           <div class="error-state" id="error-state" role="alert" aria-live="assertive" style="display:none;">
             <div class="cli-error">[ERROR] search query failed: <span id="error-message">connection refused</span></div>
             <button type="button" class="cli-retry-btn" id="error-retry-btn">[ retry ]</button>
+          </div>
+
+          <!-- Phase 83: Local-Only Limited Results Notice -->
+          <div class="local-only-notice-banner" id="local-only-notice-banner" role="status" aria-live="polite" style="display:none;">
+            <span class="local-only-notice-icon" aria-hidden="true">🔒</span>
+            <span class="local-only-notice-text" id="local-only-notice-text">Local-only mode active: Searching local index only.</span>
+            <button type="button" class="disable-local-only-btn" id="disable-local-only-btn" title="Disable local-only mode and search global web providers">Search Web</button>
           </div>
 
           <!-- Phase 78: Partial Results Banner -->
@@ -346,6 +368,9 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
             </div>
             <p class="settings-hint">
               <strong>What is Local-only mode?</strong> When enabled, OpenSearch disables all outbound network calls to external web providers. Only queries documents indexed locally on your machine or private server. Provides 100% air-gapped search privacy with no external dependencies.
+            </p>
+            <p class="settings-hint hosted-transparency-hint" style="color: var(--color-accent-amber, #f59e0b);">
+              <strong>Hosted service notice:</strong> If you are accessing OpenSearch on a remote hosted server rather than localhost, the host server receives the query submitted to its endpoint over HTTPS. Local-only mode guarantees the host will not contact external search engines (Wikipedia, Hacker News, Wikimedia Commons). For absolute zero-network privacy, run OpenSearch on your local device.
             </p>
           </div>
 

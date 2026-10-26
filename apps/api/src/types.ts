@@ -21,6 +21,7 @@ import {
   InstantAnswerEngine,
   InstantAnswerPayload,
   BangResult,
+  ProviderRegistry,
 } from '@opensearch/ranking';
 import { AppConfig, Logger, SystemStatus } from '@opensearch/shared';
 import { MemoryRateLimiter } from './rate-limiter.js';
@@ -91,6 +92,7 @@ export interface SearchServices {
   rankingEngine: RankingEngine;
   resultGenerator: ResultGenerator;
   queryCache?: LruQueryCache<SearchApiResponse>;
+  providerRegistry?: ProviderRegistry;
 }
 
 export interface ApiAppContext {
@@ -100,6 +102,7 @@ export interface ApiAppContext {
   services?: SearchServices;
   rateLimiter?: MemoryRateLimiter;
   queryCache?: LruQueryCache<SearchApiResponse>;
+  providerRegistry?: ProviderRegistry;
 }
 
 export interface ComponentHealth {
@@ -154,6 +157,8 @@ export interface SearchApiResponse {
     explainPlan?: boolean;
     category?: string;
     categoryAvailable?: boolean;
+    localOnly?: boolean;
+    limitedResultsNotice?: string;
     safeSearch?: {
       level: string;
       filteredCount: number;
@@ -173,6 +178,7 @@ export interface ApiServerOptions {
   corsOrigin?: string;
   services?: SearchServices;
   index?: InvertedIndex;
+  providerRegistry?: ProviderRegistry;
   rateLimitPerMinute?: number;
   searchTimeoutMs?: number;
 }

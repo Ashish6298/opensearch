@@ -1928,3 +1928,81 @@ html[data-theme='light'] .run-btn:hover {
   line-height: 1.4;
   color: var(--text-muted-70);
 }
+
+/* -------------------------------------------------------------------------- */
+/* Phase 83: Enforce Local-Only Mode Controls & Transparency                  */
+/* -------------------------------------------------------------------------- */
+
+.search-mode-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.local-only-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-surface, #1e293b);
+  border: 1px solid var(--border-terminal);
+  border-radius: 14px;
+  padding: 3px 10px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s ease;
+  color: var(--text-color);
+}
+
+.local-only-chip:hover {
+  border-color: var(--color-accent, #38bdf8);
+}
+
+.local-only-checkbox {
+  cursor: pointer;
+  accent-color: var(--color-accent, #38bdf8);
+  margin: 0;
+}
+
+.local-only-label {
+  font-weight: 500;
+  font-size: 12px;
+}
+
+.hosted-transparency-note {
+  font-size: 11px;
+  color: var(--text-muted-70, #94a3b8);
+  font-style: italic;
+}
+
+.local-only-notice-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 14px;
+  margin-bottom: 12px;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: var(--border-radius, 4px);
+  color: var(--color-accent, #38bdf8);
+  font-size: 13px;
+}
+
+.disable-local-only-btn {
+  background: transparent;
+  border: 1px solid var(--color-accent, #38bdf8);
+  color: var(--color-accent, #38bdf8);
+  border-radius: 4px;
+  padding: 3px 8px;
+  font-size: 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.disable-local-only-btn:hover {
+  background: var(--color-accent, #38bdf8);
+  color: #000;
+}

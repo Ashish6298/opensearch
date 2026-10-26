@@ -54,6 +54,12 @@
   const settingLocalOnlyToggle = document.getElementById('setting-local-only-toggle');
   const settingNewTabToggle = document.getElementById('setting-new-tab-toggle');
   const settingSafeSearchSelect = document.getElementById('setting-safe-search-select');
+  const localOnlyCheckbox = document.getElementById('local-only-checkbox');
+  const localOnlyNoticeBanner = document.getElementById('local-only-notice-banner');
+  const localOnlyNoticeText = document.getElementById('local-only-notice-text');
+  const disableLocalOnlyBtn = document.getElementById('disable-local-only-btn');
+  const emptyLocalOnlyAction = document.getElementById('empty-local-only-action');
+  const emptyDisableLocalOnlyBtn = document.getElementById('empty-disable-local-only-btn');
   const resetSettingsBtn = document.getElementById('reset-settings-btn');
   const showOnboardingBtn = document.getElementById('show-onboarding-btn');
   const settingsStatusMsg = document.getElementById('settings-status-msg');
@@ -128,6 +134,9 @@
       isLocalOnly = localStorage.getItem(PREFERENCE_KEYS.LOCAL_ONLY) === 'true';
       if (settingLocalOnlyToggle) {
         settingLocalOnlyToggle.checked = isLocalOnly;
+      }
+      if (localOnlyCheckbox) {
+        localOnlyCheckbox.checked = isLocalOnly;
       }
 
       openInNewTab = localStorage.getItem(PREFERENCE_KEYS.OPEN_NEW_TAB) !== 'false';
@@ -340,9 +349,46 @@
       });
     }
 
+    if (localOnlyCheckbox) {
+      localOnlyCheckbox.addEventListener('change', function () {
+        isLocalOnly = localOnlyCheckbox.checked;
+        if (settingLocalOnlyToggle) settingLocalOnlyToggle.checked = isLocalOnly;
+        try {
+          localStorage.setItem(PREFERENCE_KEYS.LOCAL_ONLY, String(isLocalOnly));
+        } catch {}
+        announceA11y(`Local-only search mode ${isLocalOnly ? 'enabled' : 'disabled'}.`);
+        if (currentQuery) {
+          performSearch(currentQuery, 1);
+        }
+      });
+    }
+
+    function disableLocalOnlyAndSearch() {
+      isLocalOnly = false;
+      try {
+        localStorage.setItem(PREFERENCE_KEYS.LOCAL_ONLY, 'false');
+      } catch {}
+      if (localOnlyCheckbox) localOnlyCheckbox.checked = false;
+      if (settingLocalOnlyToggle) settingLocalOnlyToggle.checked = false;
+      if (localOnlyNoticeBanner) localOnlyNoticeBanner.style.display = 'none';
+      if (emptyLocalOnlyAction) emptyLocalOnlyAction.style.display = 'none';
+      announceA11y('Local-only search mode disabled. Searching web.');
+      if (currentQuery) {
+        performSearch(currentQuery, 1);
+      }
+    }
+
+    if (disableLocalOnlyBtn) {
+      disableLocalOnlyBtn.addEventListener('click', disableLocalOnlyAndSearch);
+    }
+    if (emptyDisableLocalOnlyBtn) {
+      emptyDisableLocalOnlyBtn.addEventListener('click', disableLocalOnlyAndSearch);
+    }
+
     if (settingLocalOnlyToggle) {
       settingLocalOnlyToggle.addEventListener('change', function () {
         isLocalOnly = settingLocalOnlyToggle.checked;
+        if (localOnlyCheckbox) localOnlyCheckbox.checked = isLocalOnly;
         try {
           localStorage.setItem(PREFERENCE_KEYS.LOCAL_ONLY, String(isLocalOnly));
         } catch {}
@@ -969,6 +1015,8 @@
 
   function hideAllStates() {
     if (loadingIndicator) loadingIndicator.style.display = 'none';
+    if (localOnlyNoticeBanner) localOnlyNoticeBanner.style.display = 'none';
+    if (emptyLocalOnlyAction) emptyLocalOnlyAction.style.display = 'none';
     if (emptyState) emptyState.style.display = 'none';
     if (errorState) errorState.style.display = 'none';
     if (partialResultsBanner) partialResultsBanner.style.display = 'none';
@@ -1288,6 +1336,11 @@
             emptyQueryText.textContent = currentQuery;
           }
           if (emptyState) emptyState.style.display = 'block';
+        if (isLocalOnly) {
+          if (emptyLocalOnlyAction) emptyLocalOnlyAction.style.display = 'block';
+        } else {
+          if (emptyLocalOnlyAction) emptyLocalOnlyAction.style.display = 'none';
+        }
           announceA11y(`No search results found for ${currentQuery}.`);
         }
       }
