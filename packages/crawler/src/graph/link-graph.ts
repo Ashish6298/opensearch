@@ -21,6 +21,8 @@ import {
   LinkGraphOptions,
   LinkGraphSummary,
 } from './graph-types.js';
+import { PageRankOptions } from './pagerank-types.js';
+import { computePageRank, PageRankTable } from './pagerank.js';
 
 export const DEFAULT_LINK_GRAPH_OPTIONS: Required<LinkGraphOptions> = {
   maxNodes: 50_000,
@@ -550,6 +552,13 @@ export class LinkGraph {
       graph.addDocument(doc);
     }
     return graph;
+  }
+
+  /**
+   * Computes PageRank across this graph using power iteration (Phase 88).
+   */
+  computePageRank(options?: PageRankOptions): PageRankTable {
+    return computePageRank(this, options);
   }
 
   /**

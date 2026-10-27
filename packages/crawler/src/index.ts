@@ -177,5 +177,5 @@ export {
   createWorkerCrawlerPool,
 } from './worker/worker-pool.js';
 
-// ── Phase 87: Link Graph Extraction (V1.5.0 / Milestone 31) ──
+// ── Phases 87–88: Link Graph & PageRank (V1.5.0 / Milestone 31) ──
 export * from './graph/index.js';
