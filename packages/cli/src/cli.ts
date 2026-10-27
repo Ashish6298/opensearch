@@ -14,7 +14,10 @@ import {
   exportBenchmarkJson,
   exportBenchmarkMarkdown,
   resolveDataset,
+  exportProfilerJson,
+  exportProfilerMarkdown,
   runBenchmark,
+  runSubsystemProfiling,
   runParameterSweep,
 } from '@opensearch/ranking';
 import { PROJECT_NAME, PROJECT_VERSION } from '@opensearch/shared';
@@ -48,6 +51,8 @@ export interface CliOptions {
   warmup?: number;
   iterations?: number;
   docs?: number;
+  // Phase 95: Profiler options
+  profile?: boolean;
 }
 
 export interface CliExecutionResult {
@@ -156,6 +161,8 @@ export function parseCliArgs(args: string[]): CliOptions {
       options.page = parseInt(arg.split('=')[1] ?? '1', 10);
     } else if (arg.startsWith('--api=')) {
       options.apiUrl = arg.split('=')[1];
+    } else if (arg === 'profile' || arg === '--profile') {
+      options.profile = true;
     } else if (arg === 'benchmark' || arg === 'bench' || arg === '--benchmark') {
       options.benchmark = true;
     } else if (arg === '--warmup') {
@@ -182,7 +189,12 @@ export function parseCliArgs(args: string[]): CliOptions {
 
   // Filter out 'experiment' or 'eval' positional keyword from query text
   const filteredPositional = positional.filter(
-    p => p !== 'experiment' && p !== 'eval' && p !== 'benchmark' && p !== 'bench',
+    p =>
+      p !== 'experiment' &&
+      p !== 'eval' &&
+      p !== 'benchmark' &&
+      p !== 'bench' &&
+      p !== 'profile',
   );
   if (filteredPositional.length > 0) {
     options.query = filteredPositional.join(' ');
@@ -361,6 +373,38 @@ export async function runCli(args: string[], injectedStdin?: string): Promise<Cl
         exitCode: 1,
         stdout: '',
         stderr: formatter.red(`[ERROR] Benchmark execution failed: ${err.message}`),
+      };
+    }
+  }
+
+  // 5. Phase 95: Subsystem Profiling Subcommand
+  if (options.profile) {
+    try {
+      const report = await runSubsystemProfiling({
+        documentCount: options.docs,
+        iterations: options.iterations,
+      });
+
+      const jsonOutput = exportProfilerJson(report);
+      const markdownOutput = exportProfilerMarkdown(report);
+
+      if (options.outJson) {
+        fs.writeFileSync(options.outJson, jsonOutput, 'utf-8');
+      }
+      if (options.outMd) {
+        fs.writeFileSync(options.outMd, markdownOutput, 'utf-8');
+      }
+
+      return {
+        exitCode: 0,
+        stdout: options.json ? jsonOutput : markdownOutput,
+        stderr: '',
+      };
+    } catch (err: any) {
+      return {
+        exitCode: 1,
+        stdout: '',
+        stderr: formatter.red(`[ERROR] Profiling execution failed: ${err.message}`),
       };
     }
   }

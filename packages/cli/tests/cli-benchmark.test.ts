@@ -135,4 +135,31 @@ describe('Phase 94 — CLI Performance Benchmark Command Suite', () => {
       expect(mdContent).toContain('OpenSearch Performance Benchmark Report');
     });
   });
+
+  describe('3. CLI Subsystem Profiler Execution', () => {
+    it('executes profile command and outputs formatted Markdown breakdown', async () => {
+      const result = await runCli(['profile', '--docs', '3', '--iterations', '1']);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).toBe('');
+      expect(result.stdout).toContain('# OpenSearch Subsystem Profiling & Optimization Report');
+      expect(result.stdout).toContain('## 1. Query Pipeline Subsystem Breakdown');
+      expect(result.stdout).toContain('## 2. Storage & Persistence Breakdown');
+      expect(result.stdout).toContain('## 3. Dominant Cost Bottlenecks (Evidence-Based)');
+      expect(result.stdout).toContain('## 4. Optimization Recommendations & Decision Ledger');
+    });
+
+    it('executes profile command with --json and outputs valid JSON report', async () => {
+      const result = await runCli(['profile', '--docs', '3', '--iterations', '1', '--json']);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).toBe('');
+
+      const parsed = JSON.parse(result.stdout);
+      expect(parsed.profileId).toMatch(/^prof-\d+-[a-z0-9]+$/);
+      expect(parsed.queryPipelineStages.length).toBeGreaterThan(0);
+      expect(parsed.dominantCosts.length).toBeGreaterThan(0);
+      expect(parsed.optimizationRecommendations.length).toBeGreaterThan(0);
+    });
+  });
 });

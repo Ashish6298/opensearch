@@ -290,6 +290,7 @@ ${this.yellow(this.bold('COMMANDS & OPTIONS:'))}
   ${this.cyan('--health')}                 Probe cluster diagnostic health and document statistics
   ${this.cyan('experiment [options]')}     Run offline IR ranking experiment (Phase 92)
   ${this.cyan('benchmark [options]')}      Run performance benchmark harness (Phase 94)
+  ${this.cyan('profile [options]')}        Run subsystem performance profiler (Phase 95)
   ${this.cyan('--sweep')}                  Run controlled BM25 & PageRank parameter grid sweep
   ${this.cyan('--dataset <ci|full>')}      Evaluation dataset (default: ci)
   ${this.cyan('--split <tuning|held_out>')} Dataset split partition (default: tuning)

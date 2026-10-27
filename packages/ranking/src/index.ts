@@ -359,3 +359,22 @@ export {
   exportBenchmarkJson,
   exportBenchmarkMarkdown,
 } from './benchmark/benchmark-harness.js';
+
+// ── Phase 95: Profile Before Optimizing (Milestone 33) ───────────────────
+export type {
+  SearchSubsystemStage,
+  StageExecutionStats,
+  DominantCostFinding,
+  OptimizationRecommendation,
+  ProfilerReport,
+  CorrectnessComparisonResult,
+} from './benchmark/profiler-types.js';
+
+export type { ProfilerOptions } from './benchmark/subsystem-profiler.js';
+
+export {
+  runSubsystemProfiling,
+  compareOptimizedCorrectness,
+  exportProfilerJson,
+  exportProfilerMarkdown,
+} from './benchmark/subsystem-profiler.js';
