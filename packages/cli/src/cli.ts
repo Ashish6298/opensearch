@@ -22,6 +22,9 @@ import {
   runTopKMultiCorpusBenchmark,
   exportSegmentBenchmarkMarkdown,
   runSegmentJustificationBenchmark,
+  runPublishBenchmark,
+  exportPublishBenchmarkJson,
+  exportPublishBenchmarkMarkdown,
   runParameterSweep,
 } from '@opensearch/ranking';
 import { PROJECT_NAME, PROJECT_VERSION } from '@opensearch/shared';
@@ -62,6 +65,10 @@ export interface CliOptions {
   algorithm?: 'exhaustive' | 'maxscore' | 'wand' | 'adaptive';
   // Phase 97: Segment options
   segment?: boolean;
+  // Phase 98: Publish benchmark options
+  publishBenchmark?: boolean;
+  maxDocs?: number;
+  skipHardwareGuard?: boolean;
 }
 
 export interface CliExecutionResult {
@@ -172,6 +179,15 @@ export function parseCliArgs(args: string[]): CliOptions {
       options.apiUrl = arg.split('=')[1];
     } else if (arg === 'segment' || arg === '--segment') {
       options.segment = true;
+    } else if (arg === 'publish' || arg === 'publish-benchmark' || arg === '--publish') {
+      options.publishBenchmark = true;
+    } else if (arg === '--max-docs') {
+      const next = args[++i];
+      if (next && !next.startsWith('-')) options.maxDocs = parseInt(next, 10);
+    } else if (arg.startsWith('--max-docs=')) {
+      options.maxDocs = parseInt(arg.split('=')[1] ?? '100000', 10);
+    } else if (arg === '--skip-hardware-guard') {
+      options.skipHardwareGuard = true;
     } else if (arg === 'topk' || arg === '--topk') {
       options.topk = true;
     } else if (arg === '--algo' || arg === '--algorithm') {
@@ -214,7 +230,9 @@ export function parseCliArgs(args: string[]): CliOptions {
       p !== 'bench' &&
       p !== 'profile' &&
       p !== 'topk' &&
-      p !== 'segment',
+      p !== 'segment' &&
+      p !== 'publish' &&
+      p !== 'publish-benchmark',
   );
   if (filteredPositional.length > 0) {
     options.query = filteredPositional.join(' ');
@@ -489,6 +507,42 @@ export async function runCli(args: string[], injectedStdin?: string): Promise<Cl
         exitCode: 1,
         stdout: '',
         stderr: formatter.red(`[ERROR] Segment benchmark execution failed: ${err.message}`),
+      };
+    }
+  }
+
+  // 8. Phase 98: Publish Benchmark Subcommand
+  if (options.publishBenchmark) {
+    try {
+      const report = await runPublishBenchmark({
+        maxTargetDocs: options.maxDocs ?? options.docs,
+        skipHardwareGuard: options.skipHardwareGuard,
+        warmupIterations: options.warmup,
+        measuredIterations: options.iterations,
+      });
+
+      const jsonOutput = exportPublishBenchmarkJson(report);
+      const markdownOutput = exportPublishBenchmarkMarkdown(report);
+
+      if (options.outJson) {
+        fs.writeFileSync(options.outJson, jsonOutput, 'utf-8');
+      }
+      if (options.outMd) {
+        fs.writeFileSync(options.outMd, markdownOutput, 'utf-8');
+      }
+
+      return {
+        exitCode: 0,
+        stdout: options.json
+          ? jsonOutput
+          : formatter.formatPublishBenchmarkReport(report),
+        stderr: '',
+      };
+    } catch (err: any) {
+      return {
+        exitCode: 1,
+        stdout: '',
+        stderr: formatter.red(`[ERROR] Publish benchmark execution failed: ${err.message}`),
       };
     }
   }

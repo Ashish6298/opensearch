@@ -211,4 +211,39 @@ describe('Phase 94 — CLI Performance Benchmark Command Suite', () => {
       expect(parsed.crashRecoveryVerified).toBe(true);
     });
   });
+
+  describe('6. CLI Scale Benchmark & Publish Execution (Phase 98)', () => {
+    it('parses publish command and scale options', () => {
+      const opts = parseCliArgs(['publish', '--max-docs', '1000', '--skip-hardware-guard']);
+      expect(opts.publishBenchmark).toBe(true);
+      expect(opts.maxDocs).toBe(1000);
+      expect(opts.skipHardwareGuard).toBe(true);
+      expect(opts.query).toBeUndefined();
+    });
+
+    it('executes publish command with --json and outputs valid scale report', async () => {
+      const result = await runCli(['publish', '--max-docs', '20', '--warmup', '1', '--iterations', '1', '--json']);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).toBe('');
+
+      const parsed = JSON.parse(result.stdout);
+      expect(parsed.reportId).toBeDefined();
+      expect(parsed.productionDisclaimer).toContain('DISCLAIMER & NON-MISREPRESENTATION NOTICE');
+      expect(parsed.environment.platform).toBeDefined();
+      expect(parsed.charts.buildTimeChart).toBeDefined();
+      expect(parsed.charts.mermaidChart).toContain('xychart-beta');
+    });
+
+    it('executes publish command and outputs terminal summary with visual charts', async () => {
+      const result = await runCli(['publish', '--max-docs', '20', '--warmup', '1', '--iterations', '1']);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).toBe('');
+      expect(result.stdout).toContain('OPENSEARCH SCALE BENCHMARK REPORT (PHASE 98)');
+      expect(result.stdout).toContain('DISCLAIMER & NON-MISREPRESENTATION NOTICE');
+      expect(result.stdout).toContain('Visual Scaling Charts');
+      expect(result.stdout).toContain('Build Time Scaling');
+    });
+  });
 });

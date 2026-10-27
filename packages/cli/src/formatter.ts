@@ -264,6 +264,45 @@ export class CliFormatter {
     return out;
   }
 
+  formatPublishBenchmarkReport(report: any): string {
+    const lines: string[] = [
+      this.bold(this.brightGreen('OPENSEARCH SCALE BENCHMARK REPORT (PHASE 98)')),
+      this.dim(`Report ID: ${report.reportId} | Host: ${report.environment.platform} ${report.environment.arch}`),
+      '',
+      this.yellow(this.bold('⚠️  DISCLAIMER & NON-MISREPRESENTATION NOTICE:')),
+      this.dim(report.productionDisclaimer),
+      '',
+      this.bold('1. Progressive Corpus Scaling Results:'),
+    ];
+
+    for (const t of report.tiers) {
+      if (t.status === 'completed') {
+        lines.push(
+          `  • ${this.cyan(t.tierName.padEnd(10))} : ${String(t.actualDocs.toLocaleString()).padStart(7)} docs | Build: ${String(t.buildDurationMs.toFixed(0) + 'ms').padStart(8)} | Disk: ${String(t.indexSizeMb.toFixed(2) + 'MB').padStart(8)} | QPS: ${this.green(t.queryThroughputQps.toFixed(1))} | p50: ${t.warmLatency.p50Ms.toFixed(2)}ms | p95: ${t.warmLatency.p95Ms.toFixed(2)}ms`
+        );
+      } else {
+        lines.push(
+          `  • ${this.magenta(t.tierName.padEnd(10))} : ${this.dim('[SKIPPED - HARDWARE GUARD]')} ${t.hardwareConstraintReason || ''}`
+        );
+      }
+    }
+
+    lines.push(
+      '',
+      this.bold('2. Visual Scaling Charts:'),
+      '',
+      report.charts.buildTimeChart,
+      '',
+      report.charts.throughputChart,
+      '',
+      report.charts.latencyChart,
+      '',
+      report.charts.indexSizeChart,
+    );
+
+    return lines.join('\n');
+  }
+
   formatHelp(): string {
     const logo = `
   ___                    ____                      _     
@@ -293,6 +332,7 @@ ${this.yellow(this.bold('COMMANDS & OPTIONS:'))}
   ${this.cyan('profile [options]')}        Run subsystem performance profiler (Phase 95)
   ${this.cyan('topk [options]')}           Run top-k pruning & retrieval benchmark (Phase 96)
   ${this.cyan('segment [options]')}        Run segment indexing & I/O benchmark (Phase 97)
+  ${this.cyan('publish [options]')}        Run multi-tier scale benchmark & publish charts (Phase 98)
   ${this.cyan('--sweep')}                  Run controlled BM25 & PageRank parameter grid sweep
   ${this.cyan('--dataset <ci|full>')}      Evaluation dataset (default: ci)
   ${this.cyan('--split <tuning|held_out>')} Dataset split partition (default: tuning)

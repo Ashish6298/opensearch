@@ -30,6 +30,7 @@ export class BM25Scorer {
   private readonly index: InvertedIndex;
   private readonly params: BM25Params;
   private readonly fieldBoosts: FieldWeightBoosts;
+  private cachedStats?: ReturnType<InvertedIndex['getStats']>;
 
   constructor(
     index: InvertedIndex,
@@ -76,7 +77,10 @@ export class BM25Scorer {
     termBreakdowns: TermScoreBreakdown[];
     fieldScoreSums: Record<string, number>;
   } {
-    const stats = this.index.getStats();
+    if (!this.cachedStats) {
+      this.cachedStats = this.index.getStats();
+    }
+    const stats = this.cachedStats;
     const totalDocs = Math.max(1, stats.totalDocuments);
     const avgFieldLengths = stats.avgFieldLengths ?? {
       title: 10,

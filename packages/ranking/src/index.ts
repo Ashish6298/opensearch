@@ -439,3 +439,26 @@ export {
   runSegmentJustificationBenchmark,
   exportSegmentBenchmarkMarkdown,
 } from '@opensearch/indexer';
+
+// ── Phase 98: Publish Benchmark Results (Milestone 33) ───────────────────
+export type {
+  ProgressiveScaleTierConfig,
+  TierBenchmarkResult,
+  BenchmarkChartSet,
+  HardwareLimitGuard,
+  PublishBenchmarkReport,
+  PublishBenchmarkOptions,
+} from './benchmark/publish-benchmark-types.js';
+
+export {
+  DEFAULT_SCALE_TIERS,
+  PRODUCTION_DISCLAIMER,
+  BENCHMARK_LIMITATIONS,
+  evaluateHardwareGuard,
+  generateAsciiBarChart,
+  generateBenchmarkCharts,
+  runPublishBenchmark,
+  exportPublishBenchmarkJson,
+  exportPublishBenchmarkMarkdown,
+} from './benchmark/publish-benchmark.js';
+
