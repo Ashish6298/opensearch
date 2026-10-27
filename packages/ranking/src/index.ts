@@ -259,3 +259,31 @@ export {
   filterJudgedDataset,
   getIdealQrels,
 } from './evaluation/judged-dataset-loader.js';
+
+// ── Phase 91: Evaluation Metrics (Milestone 32) ──────────────────────────
+export type {
+  GainMethod,
+  UnjudgedDocPolicy,
+  NoRelevantDocsPolicy,
+  TieBreakingRule,
+  EvaluationMetricOptions,
+  QueryMetricsResult,
+  CategoryMetricSummary,
+  AggregateMetricsResult,
+  HandCalculatedFixture,
+} from './evaluation/metrics-types.js';
+
+export type { EvaluableQuery } from './evaluation/evaluation-metrics.js';
+
+export {
+  computeDCG,
+  computeIDCG,
+  computeNDCG,
+  computePrecisionAtK,
+  computeRecallAtK,
+  computeReciprocalRank,
+  computeAveragePrecision,
+  evaluateRankedList,
+  evaluateQuerySet,
+} from './evaluation/evaluation-metrics.js';
+

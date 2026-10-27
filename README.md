@@ -934,7 +934,7 @@ $ audit --privacy-boundaries
 | **Milestone 29** | **Everyday-User Interface**             | Phases 77 – 81 | Search-first responsive home, result cards & states, themes & preferences, categories, safe search controls | `[MILESTONE 29 PASSED]` |
 | **Milestone 30** | **Privacy Receipt & Local-Only Mode**   | Phases 82 – 86 | Network & data-flow audit, local-only enforcement, privacy receipt schema, leak tests | `[MILESTONE 30 PASSED]`
 | **Milestone 31** | **Real PageRank & Ranking Explainability**| Phases 87 – 89 | Link graph extraction, power-iteration PageRank, multi-tier ranking, explainability | `[MILESTONE 31 PASSED]` |
-| **Milestone 32** | **Search Quality Lab**                  | Phases 90 – 94 | Graded judged dataset, evaluation metrics (NDCG/MAP), score ablation, regressions | `[PHASE 90 PASSED]` |
+| **Milestone 32** | **Search Quality Lab**                  | Phases 90 – 94 | Graded judged dataset, evaluation metrics (NDCG/MAP), score ablation, regressions | `[PHASE 91 PASSED]` |
 
 <br/>
 
@@ -948,11 +948,11 @@ $ npm test
 ✓ packages/cli/tests/cli.test.ts (11 tests)
 ✓ packages/ranking/tests/instant-answers.test.ts (26 tests)
 ...
-Test Files  75 passed (75)
-     Tests  803 passed (803)
+Test Files  76 passed (76)
+     Tests  822 passed (822)
   Duration  9.64s -- 100% Passing Pass Rate
 ────────────────────────────────────────────────────────────
-TOTAL RESULT: 803 / 803 TESTS PASSED (100.0%) -- V1.5.0 PHASE 90 VERIFIED
+TOTAL RESULT: 822 / 822 TESTS PASSED (100.0%) -- V1.5.0 PHASE 91 VERIFIED
 ```
 
 ---
