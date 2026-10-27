@@ -179,3 +179,6 @@ export {
 
 // ── Phases 87–88: Link Graph & PageRank (V1.5.0 / Milestone 31) ──
 export * from './graph/index.js';
+
+// ── Phase 99: Tracker & Subresource Metadata (Milestone 34) ──
+export * from './tracker/index.js';
