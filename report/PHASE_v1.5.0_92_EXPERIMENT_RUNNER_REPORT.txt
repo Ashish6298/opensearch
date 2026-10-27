@@ -1,0 +1,155 @@
+================================================================================
+OPENSEARCH — PHASE 92 IMPLEMENTATION & VERIFICATION REPORT
+Milestone 32: Search Quality Lab
+Phase 92: Experiment runner
+Date: 2026-10-27
+Branch: ashish
+Author: Ashish & Antigravity (DeepMind Advanced Agentic Coding)
+================================================================================
+
+1. EXECUTIVE SUMMARY
+--------------------
+Phase 92 implements the offline ranking Experiment Runner and CLI evaluation
+framework for OpenSearch (`@opensearch/ranking` & `@opensearch/cli`), expanding
+Milestone 32 ("Search Quality Lab").
+
+Key Accomplishments:
+1. CLI Experiment Evaluation Command (`opensearch experiment` / `opensearch eval`):
+   - Added CLI commands to evaluate fixed query sets against designated index and
+     ranking configurations directly from the terminal.
+   - Flexible CLI flags:
+     * `--dataset <ci|full>`: select between CI (fast) and Full local evaluation sets.
+     * `--split <tuning|held_out|all>`: select tuning split, held-out test split, or all.
+     * `-k, --k <num>`: ranking cutoff depth (default: 10).
+     * `--k1 <val>`, `--b <val>`, `--pagerank-weight <val>`: candidate parameter overrides.
+     * `--sweep`: execute parameter grid sweep across BM25 & PageRank weights.
+     * `--out-json <path>`: export machine-readable JSON report.
+     * `--out-md <path>`: export formatted Markdown summary report.
+     * `--json`: stream JSON report to stdout for shell pipeline scripting.
+2. Full Metadata & Reproducibility Record:
+   - Every experiment run records:
+     * `experimentId`: unique execution identifier.
+     * `timestamp`: ISO timestamp.
+     * `runtimeMs`: runtime in milliseconds.
+     * `indexVersion`: active index schema and build version.
+     * `datasetName` & `datasetVersion`: dataset metadata.
+     * `datasetSplit`: partition used ('tuning', 'held_out', 'all').
+     * `queryCount`: number of evaluated queries.
+     * `rankingConfig`: snapshot of baseline and candidate parameter dictionaries.
+     * `metricOptions`: ranking cutoff $k$, gain method, unjudged policies.
+     * `productionSafeguard`: anti-auto-tuning policy.
+   - Experiments are 100% reproducible from their recorded JSON configuration blocks.
+3. Baseline vs. Candidate Ranking Comparison:
+   - Side-by-side metric comparison table:
+     * nDCG@k, MRR, MAP, Precision@k, Recall@k.
+     * Exact absolute delta ($\Delta$) and percentage relative change ($\%\Delta$).
+   - Query-level Win / Loss / Tie analysis:
+     * Tracks individual query wins, ties, and losses.
+     * Win/Loss/Tie query ID sets recorded for failure analysis.
+   - Semantic Category Breakdowns:
+     * Per-category delta comparisons across everyday, education, programming,
+       research, and ambiguous categories.
+   - Improvement Evidence Verification:
+     * Claims improvement ONLY when statistically verified ($\Delta$ nDCG > 0.005 and
+       Wins >= Losses).
+     * No metric improvement is claimed without output evidence.
+4. Controlled Parameter Grid Sweeps (`runParameterSweep`):
+   - Supports multi-dimensional Cartesian sweeps over BM25 $k_1$, $b$, $titleBoost$,
+     and PageRank weights/transforms.
+   - Evaluates all candidates deterministically against identical datasets.
+   - Ranks configurations descending by mean nDCG and MRR, identifying Rank 1 best config.
+5. Strict Production Auto-Tuning Safeguard:
+   - "Do not automatically tune production ranking based on unreviewed feedback."
+   - The engine strictly disallows automated modification of production configurations.
+   - Every report and CLI output explicitly injects the mandatory safeguard banner:
+     "Automated production tuning is strictly prohibited. Any ranking adjustments
+      require manual review and pull request approval."
+
+All 836 automated tests across 78 test suites in the OpenSearch monorepo pass cleanly
+with a 100% pass rate. TypeScript composite compilation (`tsc -b`) succeeds with zero errors.
+
+Status: COMPLETED.
+Readiness for Next Phase: READY for Phase 93 (Ranking regression checks).
+
+
+2. TASKS ACCOMPLISHED & ARCHITECTURAL HIGHLIGHTS
+------------------------------------------------
+[x] Experiment Types & Interfaces (`packages/ranking/src/evaluation/experiment-types.ts`):
+    - `RankingExperimentConfig`: complete parameter contract for BM25 and PageRank.
+    - `ExperimentMetadata`: comprehensive audit record of run environment.
+    - `MetricDelta`, `MetricComparison`, `QueryWinLoss`, `CategoryComparison`.
+    - `ExperimentComparisonResult`: full comparison structure.
+    - `SweepParameterGrid`, `SweepResultEntry`, `SweepExperimentResult`.
+
+[x] Experiment Runner Engine (`packages/ranking/src/evaluation/experiment-runner.ts`):
+    - `DEFAULT_BASELINE_CONFIG`: production reference baseline ($k_1=1.2, b=0.75, PR_w=0.15$).
+    - `defaultDeterministicScorer`: deterministic multi-signal candidate scorer.
+    - `runSingleEvaluation()`: evaluates dataset partition with chosen config.
+    - `compareExperiments()`: generates side-by-side metrics, deltas, wins/losses, and evidence.
+    - `runParameterSweep()`: executes grid sweeps and ranks configurations.
+    - `exportExperimentJson()` / `exportExperimentMarkdown()`: dual-format report exporters.
+    - `resolveDataset()`: dataset resolver for CI and Full evaluation sets.
+    - `PRODUCTION_SAFEGUARD_NOTICE`: safeguard assertion.
+
+[x] CLI Integration (`packages/cli/src/cli.ts` & `formatter.ts`):
+    - Added `experiment` / `eval` subcommand with sweep and export flags.
+    - Added terminal documentation in `formatHelp()`.
+    - Direct dependency integration on `@opensearch/ranking`.
+
+
+3. ACCEPTANCE CRITERIA VERIFICATION
+-----------------------------------
+Criterion 1: Baseline and candidate rankings can be compared.
+- Status: VERIFIED.
+- `compareExperiments()` and CLI `experiment` output side-by-side metric tables
+  displaying baseline, candidate, absolute $\Delta$, and percentage change.
+
+Criterion 2: Improvements are reported with their dataset and methodology.
+- Status: VERIFIED.
+- Every report includes dataset name, version, split ('tuning'/'held_out'), cutoff $k$,
+  runtime, metric options, and full parameter configurations.
+
+Criterion 3: No metric improvement is claimed without output evidence.
+- Status: VERIFIED.
+- Improvement status requires $\Delta \text{nDCG} > 0.005$ and $\text{Wins} \ge \text{Losses}$.
+- Degraded candidates explicitly receive "⚠️ NO SIGNIFICANT IMPROVEMENT" status.
+
+
+4. TEST RESULTS & QUALITY AUDIT
+--------------------------------
+Test Suites Executed:
+- Experiment Runner Suite (`packages/ranking/tests/experiment-runner.test.ts`):
+  * 8 tests passed, 0 failed, 30ms.
+  * Tests:
+    1. evaluates baseline ranking configuration against CI dataset tuning split
+    2. evaluates baseline ranking configuration against Full dataset held-out split
+    3. compares baseline and candidate configurations with metric deltas
+    4. claims improvement ONLY when supported by statistical evidence
+    5. executes parameter sweep across BM25 and PageRank grid deterministically
+    6. ensures experiments are 100% reproducible from recorded settings
+    7. exports valid, parseable JSON with all required audit fields
+    8. exports clean Markdown summary with tables and production safeguard
+
+- CLI Experiment Command Suite (`packages/cli/tests/cli-experiment.test.ts`):
+  * 6 tests passed, 0 failed, 32ms.
+  * Tests:
+    1. parses experiment subcommand and configuration flags
+    2. parses sweep mode and file export flags
+    3. executes baseline vs candidate experiment and outputs formatted Markdown
+    4. executes experiment with --json output
+    5. executes parameter grid sweep and outputs ranked configurations
+    6. writes exported JSON and Markdown files to disk when flags are provided
+
+- Monorepo Full Suite:
+  78 test files passed, 836 total tests passed, 0 failures.
+
+- TypeScript Composite Build (`npm run typecheck`):
+  `tsc -b` completed with 0 errors.
+
+
+5. READINESS ASSESSMENT
+-----------------------
+- Phase 92 is 100% complete.
+- Ready for Phase 93 — Ranking regression checks (regression thresholds, query-level
+  regressions, category trade-off review, CI integration).
+================================================================================

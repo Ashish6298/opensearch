@@ -43,7 +43,8 @@ Thumbs.db
 *.sublime-workspace
 
 # Temporary Storage and Data Directories
-data/
+data/*
+!data/quality/
 data/corpus/
 *.corpus
 *.dump

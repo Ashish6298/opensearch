@@ -217,3 +217,119 @@ export * from './providers/index.js';
 
 // ── Phase 81: Safe Search & Content Controls (V1.5.0) ───────────────────
 export * from './safety/safe-search.js';
+// ── Phase 89: PageRank Integration & Explainability (V1.5.0) ────────────
+export type {
+  PageRankLookupProvider,
+  PageRankSignalOptions,
+  PageRankScoreExplanation,
+  PageRankTransformType,
+} from './scorer/pagerank-scorer.js';
+export {
+  evaluatePageRankSignal,
+  transformPageRankScore,
+  DEFAULT_PAGERANK_SIGNAL_OPTIONS,
+} from './scorer/pagerank-scorer.js';
+// ── Phase 90: Judged Query Dataset & Quality Lab (Milestone 32) ──────────
+export type {
+  JudgedQueryCategory,
+  DatasetSplit,
+  RelevanceGrade,
+  RelevanceLabel,
+  JudgedDocument,
+  JudgedQuery,
+  JudgedDatasetProvenance,
+  JudgedDataset,
+  JudgedDatasetFilterOptions,
+} from './evaluation/judged-dataset-types.js';
+
+export {
+  CI_JUDGED_DATASET,
+} from './evaluation/datasets/ci-judged-dataset.js';
+
+export {
+  FULL_JUDGED_DATASET,
+} from './evaluation/datasets/full-judged-dataset.js';
+
+export {
+  validateJudgedDataset,
+  scanDatasetForPrivacyViolations,
+  getTuningQueries,
+  getHeldOutQueries,
+  getQueriesByCategory,
+  filterJudgedDataset,
+  getIdealQrels,
+} from './evaluation/judged-dataset-loader.js';
+
+// ── Phase 91: Evaluation Metrics (Milestone 32) ──────────────────────────
+export type {
+  GainMethod,
+  UnjudgedDocPolicy,
+  NoRelevantDocsPolicy,
+  TieBreakingRule,
+  EvaluationMetricOptions,
+  QueryMetricsResult,
+  CategoryMetricSummary,
+  AggregateMetricsResult,
+  HandCalculatedFixture,
+} from './evaluation/metrics-types.js';
+
+export type { EvaluableQuery } from './evaluation/evaluation-metrics.js';
+
+export {
+  computeDCG,
+  computeIDCG,
+  computeNDCG,
+  computePrecisionAtK,
+  computeRecallAtK,
+  computeReciprocalRank,
+  computeAveragePrecision,
+  evaluateRankedList,
+  evaluateQuerySet,
+} from './evaluation/evaluation-metrics.js';
+
+// ── Phase 92: Experiment Runner (Milestone 32) ───────────────────────────
+export type {
+  RankingExperimentConfig,
+  ExperimentMetadata,
+  MetricDelta,
+  MetricComparison,
+  QueryWinLoss,
+  CategoryComparison,
+  ExperimentComparisonResult,
+  SweepParameterGrid,
+  SweepResultEntry,
+  SweepExperimentResult,
+  ScorerFunction,
+} from './evaluation/experiment-types.js';
+
+export {
+  PRODUCTION_SAFEGUARD_NOTICE,
+  DEFAULT_BASELINE_CONFIG,
+  defaultDeterministicScorer,
+  runSingleEvaluation,
+  compareExperiments,
+  runParameterSweep,
+  exportExperimentJson,
+  exportExperimentMarkdown,
+  resolveDataset,
+} from './evaluation/experiment-runner.js';
+
+// ── Phase 93: Ranking Regression Checks (Milestone 32) ───────────────────
+export type {
+  RegressionThresholds,
+  RegressionSeverity,
+  QueryRegressionRecord,
+  CategoryTradeOff,
+  CategoryRegressionSummary,
+  RankingRegressionResult,
+} from './evaluation/regression-types.js';
+
+export {
+  DEFAULT_REGRESSION_THRESHOLDS,
+  checkRankingRegression,
+  runCiRegressionGate,
+  formatRegressionReport,
+} from './evaluation/regression-checker.js';
+
+
+

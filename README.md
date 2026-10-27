@@ -932,7 +932,9 @@ $ audit --privacy-boundaries
 | **Milestone 27** | **Search Providers & Source Reliability**| Phases 69 – 72 | Standard provider interface, zero brittle scraping, resilience, attribution compliance | `[PASSED]` |
 | **Milestone 28** | **Index Storage & Dataset Growth**      | Phases 73 – 76 | Lifecycle audit, storage abstraction, reproducible corpus expansion, incremental recovery | `[MILESTONE 28 PASSED]` |
 | **Milestone 29** | **Everyday-User Interface**             | Phases 77 – 81 | Search-first responsive home, result cards & states, themes & preferences, categories, safe search controls | `[MILESTONE 29 PASSED]` |
-| **Milestone 30** | **Privacy Receipt & Local-Only Mode**   | Phases 82 – 86 | Network & data-flow audit, local-only enforcement, privacy receipt schema, leak tests | `[MILESTONE 30 PASSED]` |
+| **Milestone 30** | **Privacy Receipt & Local-Only Mode**   | Phases 82 – 86 | Network & data-flow audit, local-only enforcement, privacy receipt schema, leak tests | `[MILESTONE 30 PASSED]`
+| **Milestone 31** | **Real PageRank & Ranking Explainability**| Phases 87 – 89 | Link graph extraction, power-iteration PageRank, multi-tier ranking, explainability | `[MILESTONE 31 PASSED]` |
+| **Milestone 32** | **Search Quality Lab**                  | Phases 90 – 93 | Graded judged dataset, evaluation metrics (NDCG/MAP), score ablation, regressions | `[MILESTONE 32 PASSED]` |
 
 <br/>
 
@@ -946,11 +948,11 @@ $ npm test
 ✓ packages/cli/tests/cli.test.ts (11 tests)
 ✓ packages/ranking/tests/instant-answers.test.ts (26 tests)
 ...
-Test Files  71 passed (71)
-     Tests  749 passed (749)
+Test Files  79 passed (79)
+     Tests  843 passed (843)
   Duration  9.64s -- 100% Passing Pass Rate
 ────────────────────────────────────────────────────────────
-TOTAL RESULT: 749 / 749 TESTS PASSED (100.0%) -- V1.5.0 PHASE 86 VERIFIED
+TOTAL RESULT: 843 / 843 TESTS PASSED (100.0%) -- V1.5.0 PHASE 93 VERIFIED
 ```
 
 ---

@@ -86,8 +86,7 @@ describe('Phase 80 — All, Images, and News Categories Web Suite', () => {
 
   describe('3. News Results & Publication Timestamp Authenticity', () => {
     it('renders recent news cards with authentic timestamp and recent badge (< 24 hours)', () => {
-      const now = new Date('2026-10-26T12:00:00Z').getTime();
-      const recentDate = new Date('2026-10-26T09:00:00Z').toISOString();
+      const recentDate = new Date(Date.now() - 2 * 3600 * 1000).toISOString();
 
       const cardHtml = renderResultCard({
         documentId: 'news-1',
@@ -100,7 +99,7 @@ describe('Phase 80 — All, Images, and News Categories Web Suite', () => {
       });
 
       expect(cardHtml).toContain('class="result-date-badge"');
-      expect(cardHtml).toContain('2026-10-26');
+      expect(cardHtml).toContain(recentDate.slice(0, 10));
       expect(cardHtml).toContain('class="news-recency-badge recent"');
       expect(cardHtml).toMatch(/\d+h ago/);
       expect(cardHtml).toContain('[source: hackernews]');

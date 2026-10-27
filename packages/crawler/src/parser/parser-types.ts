@@ -21,6 +21,10 @@ export interface ExtractedLink {
   anchorText: string;
   /** Whether the link is internal to the document's origin */
   isInternal: boolean;
+  /** Whether the link or page specifies rel="nofollow" */
+  isNofollow?: boolean;
+  /** Extracted rel attribute tokens (e.g., 'nofollow', 'ugc', 'sponsored') */
+  relAttributes?: string[];
 }
 
 export interface ExtractedDocument {

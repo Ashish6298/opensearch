@@ -58,7 +58,13 @@ export class DefaultHtmlParser implements HtmlParser {
     const headings = headingItems.map(h => h.text).join(' ');
 
     // 6. Extract Outbound Links
-    const outboundLinks = extractOutboundLinks(html, documentUrl, this.options.maxLinks);
+    const pageNofollow = this.extractRobotsNofollow(html);
+    const outboundLinks = extractOutboundLinks(
+      html,
+      documentUrl,
+      this.options.maxLinks,
+      pageNofollow,
+    );
     const discoveredUrls = outboundLinks.map(l => l.normalizedUrl);
 
     // 7. Clean Body Text (strip script/style/nav noise, decode entities, collapse whitespace)
@@ -229,6 +235,17 @@ export class DefaultHtmlParser implements HtmlParser {
     }
 
     return items;
+  }
+
+  private extractRobotsNofollow(html: string): boolean {
+    const robotsMatch =
+      html.match(/<meta\b[^>]*\bname=["'](?:robots|googlebot)["'][^>]*\bcontent=["']([^"']*)["']/i) ??
+      html.match(/<meta\b[^>]*\bcontent=["']([^"']*)["'][^>]*\bname=["'](?:robots|googlebot)["']/i);
+    if (!robotsMatch || !robotsMatch[1]) {
+      return false;
+    }
+    const directives = robotsMatch[1].toLowerCase().split(/[,\s]+/);
+    return directives.includes('nofollow') || directives.includes('none');
   }
 
   private createEmptyDocument(documentUrl: string): ExtractedDocument {
