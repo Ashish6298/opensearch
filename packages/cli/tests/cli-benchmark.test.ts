@@ -162,4 +162,28 @@ describe('Phase 94 — CLI Performance Benchmark Command Suite', () => {
       expect(parsed.optimizationRecommendations.length).toBeGreaterThan(0);
     });
   });
+
+  describe('4. CLI Top-k Retrieval Benchmark Execution', () => {
+    it('executes topk command and outputs Markdown matrix', async () => {
+      const result = await runCli(['topk', '--k', '3', '--algo', 'wand']);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).toBe('');
+      expect(result.stdout).toContain('# OpenSearch Top-k Retrieval & Pruning Benchmark Report');
+      expect(result.stdout).toContain('Multi-Corpus Scale Performance Matrix');
+      expect(result.stdout).toContain('**Oracle Equivalence Rate:** **100%**');
+    });
+
+    it('executes topk command with --json and outputs valid JSON report', async () => {
+      const result = await runCli(['topk', '--k', '3', '--algo', 'maxscore', '--json']);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).toBe('');
+
+      const parsed = JSON.parse(result.stdout);
+      expect(parsed.timestamp).toBeDefined();
+      expect(parsed.overallEquivalenceRate).toBe(100);
+      expect(parsed.evaluations.length).toBeGreaterThan(0);
+    });
+  });
 });

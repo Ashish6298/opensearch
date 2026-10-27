@@ -18,6 +18,8 @@ import {
   exportProfilerMarkdown,
   runBenchmark,
   runSubsystemProfiling,
+  exportTopKBenchmarkMarkdown,
+  runTopKMultiCorpusBenchmark,
   runParameterSweep,
 } from '@opensearch/ranking';
 import { PROJECT_NAME, PROJECT_VERSION } from '@opensearch/shared';
@@ -53,6 +55,9 @@ export interface CliOptions {
   docs?: number;
   // Phase 95: Profiler options
   profile?: boolean;
+  // Phase 96: Top-k options
+  topk?: boolean;
+  algorithm?: 'exhaustive' | 'maxscore' | 'wand' | 'adaptive';
 }
 
 export interface CliExecutionResult {
@@ -161,6 +166,13 @@ export function parseCliArgs(args: string[]): CliOptions {
       options.page = parseInt(arg.split('=')[1] ?? '1', 10);
     } else if (arg.startsWith('--api=')) {
       options.apiUrl = arg.split('=')[1];
+    } else if (arg === 'topk' || arg === '--topk') {
+      options.topk = true;
+    } else if (arg === '--algo' || arg === '--algorithm') {
+      const next = args[++i];
+      if (next && (next === 'exhaustive' || next === 'maxscore' || next === 'wand' || next === 'adaptive')) {
+        options.algorithm = next;
+      }
     } else if (arg === 'profile' || arg === '--profile') {
       options.profile = true;
     } else if (arg === 'benchmark' || arg === 'bench' || arg === '--benchmark') {
@@ -194,7 +206,8 @@ export function parseCliArgs(args: string[]): CliOptions {
       p !== 'eval' &&
       p !== 'benchmark' &&
       p !== 'bench' &&
-      p !== 'profile',
+      p !== 'profile' &&
+      p !== 'topk',
   );
   if (filteredPositional.length > 0) {
     options.query = filteredPositional.join(' ');
@@ -405,6 +418,38 @@ export async function runCli(args: string[], injectedStdin?: string): Promise<Cl
         exitCode: 1,
         stdout: '',
         stderr: formatter.red(`[ERROR] Profiling execution failed: ${err.message}`),
+      };
+    }
+  }
+
+  // 6. Phase 96: Top-k Multi-Corpus Retrieval Benchmark Subcommand
+  if (options.topk) {
+    try {
+      const report = await runTopKMultiCorpusBenchmark({
+        algorithm: options.algorithm,
+        k: options.k,
+      });
+
+      const jsonOutput = JSON.stringify(report, null, 2);
+      const markdownOutput = exportTopKBenchmarkMarkdown(report);
+
+      if (options.outJson) {
+        fs.writeFileSync(options.outJson, jsonOutput, 'utf-8');
+      }
+      if (options.outMd) {
+        fs.writeFileSync(options.outMd, markdownOutput, 'utf-8');
+      }
+
+      return {
+        exitCode: 0,
+        stdout: options.json ? jsonOutput : markdownOutput,
+        stderr: '',
+      };
+    } catch (err: any) {
+      return {
+        exitCode: 1,
+        stdout: '',
+        stderr: formatter.red(`[ERROR] Top-k benchmark execution failed: ${err.message}`),
       };
     }
   }

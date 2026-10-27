@@ -378,3 +378,31 @@ export {
   exportProfilerJson,
   exportProfilerMarkdown,
 } from './benchmark/subsystem-profiler.js';
+
+// ── Phase 96: Top-k Retrieval Optimization (Milestone 33) ────────────────
+export type {
+  TopKAlgorithm,
+  TermUpperScoreBound,
+  PostingSkipBlock,
+  TopKRetrievalOptions,
+  TopKPruningStats,
+  TopKResult,
+  TopKVerificationResult,
+} from './retrieval/topk-types.js';
+
+export { TermBoundComputer } from './retrieval/term-bound-computer.js';
+export { PostingSkipList } from './retrieval/posting-skip-list.js';
+export {
+  TopKRankingEngine,
+  verifyTopKEquivalence,
+} from './retrieval/topk-retriever.js';
+
+export type {
+  CorpusScaleEvaluation,
+  TopKBenchmarkReport,
+} from './retrieval/topk-benchmark.js';
+
+export {
+  runTopKMultiCorpusBenchmark,
+  exportTopKBenchmarkMarkdown,
+} from './retrieval/topk-benchmark.js';
