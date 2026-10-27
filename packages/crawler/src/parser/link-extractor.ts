@@ -12,6 +12,7 @@
 
 import { validateUrl } from '../url/url-validator.js';
 import { normalizeUrl } from '../url/url-normalizer.js';
+import { validateTargetHostSync } from '../fetcher/ssrf-guard.js';
 import { decodeHtmlEntities } from './text-cleaner.js';
 import { ExtractedLink } from './parser-types.js';
 
@@ -39,6 +40,7 @@ export function extractOutboundLinks(
   html: string,
   documentUrl: string,
   maxLinks = 500,
+  pageNofollow = false,
 ): ExtractedLink[] {
   const effectiveBaseUrl = extractBaseHref(html, documentUrl);
   let docOrigin = '';
@@ -70,8 +72,23 @@ export function extractOutboundLinks(
       continue;
     }
 
-    const rawHref = decodeHtmlEntities((hrefMatch[1] ?? hrefMatch[2] ?? '').trim());
-    if (!rawHref || rawHref.startsWith('#') || rawHref.toLowerCase().startsWith('javascript:')) {
+    let rawHref = decodeHtmlEntities((hrefMatch[1] ?? hrefMatch[2] ?? '').trim());
+    rawHref = rawHref.replace(/^['"]+|['"]+$/g, '');
+    const lowerHref = rawHref.toLowerCase();
+    if (
+      !rawHref ||
+      rawHref.includes('<') ||
+      rawHref.includes('>') ||
+      rawHref.startsWith('#') ||
+      lowerHref.startsWith('javascript:') ||
+      lowerHref.startsWith('data:') ||
+      lowerHref.startsWith('mailto:') ||
+      lowerHref.startsWith('tel:') ||
+      lowerHref.startsWith('file:') ||
+      lowerHref.startsWith('ftp:') ||
+      lowerHref.startsWith('about:') ||
+      lowerHref.startsWith('chrome:')
+    ) {
       continue;
     }
 
@@ -89,6 +106,17 @@ export function extractOutboundLinks(
       continue;
     }
 
+    // SSRF syntactic check
+    try {
+      const parsedResolved = new URL(resolvedUrl);
+      const hostCheck = validateTargetHostSync(parsedResolved.hostname);
+      if (!hostCheck.allowed) {
+        continue;
+      }
+    } catch {
+      continue;
+    }
+
     // Normalize canonical URL
     const normResult = normalizeUrl(resolvedUrl);
     if (!normResult.ok) {
@@ -101,6 +129,12 @@ export function extractOutboundLinks(
       continue;
     }
     seenUrls.add(canonicalUrl);
+
+    // Parse rel attributes (nofollow, ugc, sponsored)
+    const relMatch = attrs.match(/\brel=["']([^"']*)["']|\brel=([^\s>]+)/i);
+    const rawRel = (relMatch ? (relMatch[1] ?? relMatch[2] ?? '') : '').toLowerCase();
+    const relTokens = rawRel ? rawRel.split(/\s+/).filter(Boolean) : [];
+    const isNofollow = pageNofollow || relTokens.includes('nofollow');
 
     // Clean anchor text
     const anchorText = decodeHtmlEntities(rawAnchor.replace(/<[^>]+>/g, ' '))
@@ -119,6 +153,8 @@ export function extractOutboundLinks(
       normalizedUrl: canonicalUrl,
       anchorText,
       isInternal,
+      isNofollow,
+      relAttributes: relTokens.length > 0 ? relTokens : undefined,
     });
   }
 
