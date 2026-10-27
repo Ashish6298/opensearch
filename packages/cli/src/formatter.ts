@@ -184,6 +184,12 @@ export class CliFormatter {
       domain?: string;
       category?: string;
       score?: number;
+      trackerIndicator?: {
+        badgeText: string;
+        severity: 'clean' | 'warning' | 'alert' | 'neutral';
+        trackerCount: number;
+        tooltip?: string;
+      } | null;
       explanation?: Record<string, unknown> | null;
     },
     index: number,
@@ -205,14 +211,32 @@ export class CliFormatter {
     }
 
     const domainTag = item.domain ? this.magenta(`[${item.domain}]`) : '';
-    let out = `${num} ${title} ${domainTag}\n    ${url}\n    ${snippet}`;
+    let trackerBadge = '';
+    if (item.trackerIndicator) {
+      const ind = item.trackerIndicator;
+      if (ind.severity === 'clean') {
+        trackerBadge = this.brightGreen(`[🛡️ ${ind.badgeText}]`);
+      } else if (ind.severity === 'alert') {
+        trackerBadge = this.red(`[⚠️ ${ind.badgeText}]`);
+      } else if (ind.severity === 'warning') {
+        trackerBadge = this.yellow(`[⚠️ ${ind.badgeText}]`);
+      } else {
+        trackerBadge = this.dim(`[ℹ️ ${ind.badgeText}]`);
+      }
+    }
+    let out = `${num} ${title} ${domainTag} ${trackerBadge}`.trim() + `\n    ${url}\n    ${snippet}`;
 
     if (item.explanation && typeof item.explanation === 'object') {
       const exp = item.explanation as any;
       const explainHeader = this.yellow(`    [Explain Plan // Final Score: ${exp.finalScore ?? item.score ?? 'N/A'}]`);
       const bm25Line = this.dim(`      • BM25: ${exp.bm25Score ?? '0'} | FullMatch: x${exp.fullMatchMultiplier ?? '1'} | PhraseMatch: x${exp.phraseMultiplier ?? '1'}`);
       const signalsLine = this.dim(`      • Freshness Bonus: +${exp.freshnessBonus ?? '0'} | Domain Authority: +${exp.authorityBonus ?? '0'} | URL Bonus: +${exp.urlBonus ?? '0'}`);
-      out += `\n${explainHeader}\n${bm25Line}\n${signalsLine}`;
+      let trackerLine = '';
+      if (exp.trackerExplain) {
+        const trk = exp.trackerExplain;
+        trackerLine = '\n' + this.dim(`      • Tracker Multiplier: x${exp.trackerMultiplier ?? trk.multiplier ?? '1.0'} (${trk.status}) | ${trk.explanation}`);
+      }
+      out += `\n${explainHeader}\n${bm25Line}\n${signalsLine}${trackerLine}`;
     }
 
     return out;
@@ -333,6 +357,10 @@ ${this.yellow(this.bold('COMMANDS & OPTIONS:'))}
   ${this.cyan('topk [options]')}           Run top-k pruning & retrieval benchmark (Phase 96)
   ${this.cyan('segment [options]')}        Run segment indexing & I/O benchmark (Phase 97)
   ${this.cyan('publish [options]')}        Run multi-tier scale benchmark & publish charts (Phase 98)
+  ${this.cyan('tracker-eval [options]')}   Run tracker-aware ranking evaluation & tradeoff analysis (Phase 100)
+  ${this.cyan('--tracker-signal')}         Enable tracker classification ranking adjustments
+  ${this.cyan('--no-tracker-signal')}      Disable tracker classification ranking adjustments (lexical only)
+  ${this.cyan('--tracker-weight <val>')}   Blending weight for tracker signal [0.0 - 1.0] (default: 0.15)
   ${this.cyan('--sweep')}                  Run controlled BM25 & PageRank parameter grid sweep
   ${this.cyan('--dataset <ci|full>')}      Evaluation dataset (default: ci)
   ${this.cyan('--split <tuning|held_out>')} Dataset split partition (default: tuning)

@@ -18,6 +18,12 @@ import { CandidateDocument } from '../retrieval/retrieval-types.js';
 import { BM25Scorer, DEFAULT_BM25_PARAMS, DEFAULT_FIELD_BOOSTS } from './bm25-scorer.js';
 import { AuthorityScorer, createAuthorityScorer } from './authority-scorer.js';
 import {
+  evaluateTrackerSignal,
+  resolveClassificationFromSource,
+  TrackerClassificationSource,
+  TrackerScoreExplanation,
+} from '../tracker/index.js';
+import {
   evaluatePageRankSignal,
   PageRankLookupProvider,
 } from './pagerank-scorer.js';
@@ -52,6 +58,8 @@ export interface DefaultRankingEngineOptions {
   defaultOptions?: RankingOptions;
   /** Optional PageRank lookup provider / table */
   pageRankTable?: PageRankLookupProvider;
+  /** Optional Tracker classification data source (Phase 100) */
+  trackerClassificationSource?: TrackerClassificationSource;
 }
 
 export class DefaultRankingEngine implements RankingEngine {
@@ -59,12 +67,25 @@ export class DefaultRankingEngine implements RankingEngine {
   private readonly globalOptions: RankingOptions;
   private readonly authorityScorer: AuthorityScorer;
   private pageRankTable: PageRankLookupProvider | null = null;
+  private trackerClassificationSource: TrackerClassificationSource | null = null;
 
   constructor(options: DefaultRankingEngineOptions) {
     this.index = options.index;
     this.globalOptions = options.defaultOptions ?? {};
     this.authorityScorer = createAuthorityScorer();
     this.pageRankTable = options.pageRankTable ?? this.globalOptions.pageRankTable ?? null;
+    this.trackerClassificationSource =
+      options.trackerClassificationSource ??
+      this.globalOptions.trackerClassificationSource ??
+      null;
+  }
+
+  setTrackerClassificationSource(source: TrackerClassificationSource | null): void {
+    this.trackerClassificationSource = source;
+  }
+
+  getTrackerClassificationSource(): TrackerClassificationSource | null {
+    return this.trackerClassificationSource;
   }
 
   setPageRankTable(table: PageRankLookupProvider | null): void {
@@ -120,6 +141,10 @@ export class DefaultRankingEngine implements RankingEngine {
     const bm25Scorer = new BM25Scorer(this.index, bm25Params, fieldBoosts);
     const pageRankTable = mergedOptions.pageRankTable ?? this.pageRankTable ?? undefined;
     const enablePageRank = mergedOptions.enablePageRank ?? true;
+    const enableTrackerSignal = mergedOptions.enableTrackerSignal ?? false;
+    const trackerOptions = mergedOptions.trackerOptions;
+    const trackerSource =
+      mergedOptions.trackerClassificationSource ?? this.trackerClassificationSource ?? undefined;
 
     // 1. Compute individual candidate scores and preliminary explanations
     const intermediateList: Array<{
@@ -189,6 +214,29 @@ export class DefaultRankingEngine implements RankingEngine {
         pageRankBonus;
       combinedScore = Math.max(0, combinedScore);
 
+      let trackerMultiplier: number | undefined;
+      let trackerExplain: TrackerScoreExplanation | undefined;
+
+      if (enableTrackerSignal) {
+        const classification =
+          resolveClassificationFromSource(trackerSource, candidate.documentId) ??
+          resolveClassificationFromSource(trackerSource, candidate.documentMeta.url);
+
+        const trackerEval = evaluateTrackerSignal(
+          candidate.documentMeta.url,
+          classification,
+          {
+            ...trackerOptions,
+            enabled: enableTrackerSignal && (trackerOptions?.enabled ?? true),
+          },
+        );
+
+        trackerMultiplier = trackerEval.multiplier;
+        trackerExplain = trackerEval.explanation;
+        combinedScore = combinedScore * trackerMultiplier;
+        combinedScore = Math.max(0, combinedScore);
+      }
+
       const parsedUrl = this.safeParseHostname(candidate.documentMeta.url);
       const titlePrefix = candidate.documentMeta.title.toLowerCase().trim().slice(0, 30);
 
@@ -203,6 +251,8 @@ export class DefaultRankingEngine implements RankingEngine {
         authorityBonus: Math.round(authorityBonus * 10000) / 10000,
         pageRankBonus: Math.round(pageRankBonus * 10000) / 10000,
         pageRankExplain: prEvaluation.explanation,
+        trackerMultiplier,
+        trackerExplain,
         duplicatePenalty: 1.0, // May be updated below
         finalScore: Math.round(combinedScore * 10000) / 10000,
       };

@@ -462,3 +462,28 @@ export {
   exportPublishBenchmarkMarkdown,
 } from './benchmark/publish-benchmark.js';
 
+// ── Phase 100: Tracker-Aware Ranking & Privacy Indicators ────────────────
+export type {
+  TrackerRankingOptions,
+  TrackerScoreExplanation,
+  TrackerIndicator,
+  QueryLevelRankShift,
+  TrackerQualityComparisonReport,
+  TrackerClassificationSource,
+  EvaluatedTrackerSignal,
+  TrackerQualityComparisonOptions,
+  PreparedQueryTestItem,
+  TrackerBenchmarkCliOptions,
+} from './tracker/index.js';
+
+export {
+  TRACKER_DETECTION_DISCLAIMER,
+  DEFAULT_TRACKER_RANKING_OPTIONS,
+  resolveClassificationFromSource,
+  evaluateTrackerSignal,
+  createTrackerIndicator,
+  TrackerQualityEvaluator,
+  runTrackerQualityBenchmark,
+} from './tracker/index.js';
+
+

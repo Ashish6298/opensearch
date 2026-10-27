@@ -26,6 +26,8 @@ import {
   exportPublishBenchmarkJson,
   exportPublishBenchmarkMarkdown,
   runParameterSweep,
+  TrackerQualityEvaluator,
+  runTrackerQualityBenchmark,
 } from '@opensearch/ranking';
 import { PROJECT_NAME, PROJECT_VERSION } from '@opensearch/shared';
 import { CliFormatter } from './formatter.js';
@@ -69,6 +71,11 @@ export interface CliOptions {
   publishBenchmark?: boolean;
   maxDocs?: number;
   skipHardwareGuard?: boolean;
+  // Phase 100: Tracker-aware ranking options
+  trackerEval?: boolean;
+  trackerSignal?: boolean;
+  noTrackerSignal?: boolean;
+  trackerWeight?: number;
 }
 
 export interface CliExecutionResult {
@@ -214,6 +221,17 @@ export function parseCliArgs(args: string[]): CliOptions {
       if (next && !next.startsWith('-')) options.docs = parseInt(next, 10);
     } else if (arg.startsWith('--docs=')) {
       options.docs = parseInt(arg.split('=')[1] ?? '0', 10);
+    } else if (arg === 'tracker-eval' || arg === '--tracker-eval') {
+      options.trackerEval = true;
+    } else if (arg === '--tracker-signal') {
+      options.trackerSignal = true;
+    } else if (arg === '--no-tracker-signal') {
+      options.noTrackerSignal = true;
+    } else if (arg === '--tracker-weight') {
+      const next = args[++i];
+      if (next && !next.startsWith('-')) options.trackerWeight = parseFloat(next);
+    } else if (arg.startsWith('--tracker-weight=')) {
+      options.trackerWeight = parseFloat(arg.split('=')[1] ?? '0.15');
     } else if (arg.startsWith('--suggest=')) {
       options.suggest = arg.split('=')[1];
     } else if (!arg.startsWith('-')) {
@@ -232,7 +250,8 @@ export function parseCliArgs(args: string[]): CliOptions {
       p !== 'topk' &&
       p !== 'segment' &&
       p !== 'publish' &&
-      p !== 'publish-benchmark',
+      p !== 'publish-benchmark' &&
+      p !== 'tracker-eval',
   );
   if (filteredPositional.length > 0) {
     options.query = filteredPositional.join(' ');
@@ -543,6 +562,38 @@ export async function runCli(args: string[], injectedStdin?: string): Promise<Cl
         exitCode: 1,
         stdout: '',
         stderr: formatter.red(`[ERROR] Publish benchmark execution failed: ${err.message}`),
+      };
+    }
+  }
+
+  // 9. Phase 100: Tracker-Aware Ranking Quality Evaluation Subcommand
+  if (options.trackerEval) {
+    try {
+      const report = await runTrackerQualityBenchmark({
+        trackerWeight: options.trackerWeight,
+        k: options.k,
+      });
+
+      const jsonOutput = JSON.stringify(report, null, 2);
+      const markdownOutput = TrackerQualityEvaluator.formatMarkdown(report);
+
+      if (options.outJson) {
+        fs.writeFileSync(options.outJson, jsonOutput, 'utf-8');
+      }
+      if (options.outMd) {
+        fs.writeFileSync(options.outMd, markdownOutput, 'utf-8');
+      }
+
+      return {
+        exitCode: 0,
+        stdout: options.json ? jsonOutput : markdownOutput,
+        stderr: '',
+      };
+    } catch (err: any) {
+      return {
+        exitCode: 1,
+        stdout: '',
+        stderr: formatter.red(`[ERROR] Tracker quality evaluation failed: ${err.message}`),
       };
     }
   }

@@ -23,6 +23,10 @@ import {
   SnippetOptions,
 } from './result-types.js';
 import { SnippetGenerator } from './snippet-generator.js';
+import {
+  createTrackerIndicator,
+  resolveClassificationFromSource,
+} from '../tracker/index.js';
 
 export const DEFAULT_PAGINATION: Required<PaginationOptions> = {
   page: 1,
@@ -92,6 +96,22 @@ export class DefaultResultGenerator implements ResultGenerator {
 
       // Snippet source resolution: prefer candidate/stored text or description
       const snippetSource = this.resolveSnippetSource(scoredDoc);
+      let trackerIndicator;
+      if (mergedOptions.includeTrackerIndicators ?? true) {
+        const trackerSource =
+          mergedOptions.trackerClassificationSource ??
+          this.defaultOptions.trackerClassificationSource;
+        const classification =
+          resolveClassificationFromSource(trackerSource, scoredDoc.documentId) ??
+          resolveClassificationFromSource(trackerSource, rawUrl);
+
+        if (classification || scoredDoc.explanation?.trackerExplain) {
+          trackerIndicator = createTrackerIndicator(
+            classification,
+            scoredDoc.explanation?.trackerExplain,
+          );
+        }
+      }
       const { snippet, highlightedSnippet } = this.snippetGenerator.generateSnippet(
         snippetSource,
         queryTerms,
@@ -113,6 +133,7 @@ export class DefaultResultGenerator implements ResultGenerator {
         indexedAt: docMeta.indexedAt || new Date().toISOString(),
         source: 'local-index',
         contentType: 'webpage',
+        trackerIndicator,
       };
     });
 

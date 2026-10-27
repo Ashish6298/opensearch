@@ -11,6 +11,7 @@
 
 import { ParsedQuery } from '../query/query-types.js';
 import { ScoredDocument } from '../scorer/scorer-types.js';
+import type { TrackerIndicator, TrackerClassificationSource } from '../tracker/tracker-signal-types.js';
 
 export interface HighlightTagOptions {
   /** Opening highlight tag (default: '<mark>') */
@@ -107,6 +108,8 @@ export interface SearchResultItem {
   isStale?: boolean;
   /** Formatted recency badge */
   recencyLabel?: string;
+  /** Evidence-based tracker classification and privacy indicator (Phase 100) */
+  trackerIndicator?: TrackerIndicator;
 }
 
 export interface SearchResultSet {
@@ -125,6 +128,10 @@ export interface ResultGeneratorOptions {
   snippet?: SnippetOptions;
   /** Default pagination options */
   pagination?: PaginationOptions;
+  /** Optional tracker classification data source for attaching indicators (Phase 100) */
+  trackerClassificationSource?: TrackerClassificationSource;
+  /** Whether to attach tracker indicators to result items (Phase 100, default: true when source or tracker explanation present) */
+  includeTrackerIndicators?: boolean;
 }
 
 export interface ResultGenerator {

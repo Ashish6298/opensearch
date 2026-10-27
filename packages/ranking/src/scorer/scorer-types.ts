@@ -1,4 +1,9 @@
 import { PageRankLookupProvider, PageRankScoreExplanation, PageRankTransformType } from './pagerank-scorer.js';
+import type {
+  TrackerRankingOptions,
+  TrackerScoreExplanation,
+  TrackerClassificationSource,
+} from '../tracker/tracker-signal-types.js';
 /**
  * @opensearch/ranking — Ranking & Scorer Types (Phase 14)
  *
@@ -73,6 +78,12 @@ export interface RankingOptions {
   pageRankTable?: PageRankLookupProvider;
   /** Whether to enable PageRank blending (Phase 89, default: true when table available) */
   enablePageRank?: boolean;
+  /** Whether to enable Tracker-aware ranking signal (Phase 100, default: false) */
+  enableTrackerSignal?: boolean;
+  /** Configuration options for Tracker-aware ranking signal (Phase 100) */
+  trackerOptions?: Partial<TrackerRankingOptions>;
+  /** Tracker classification data source or lookup provider (Phase 100) */
+  trackerClassificationSource?: TrackerClassificationSource;
 }
 
 export interface TermScoreBreakdown {
@@ -107,6 +118,10 @@ export interface ScoreExplanation {
   pageRankBonus?: number;
   /** Detailed breakdown and diagnostics of PageRank signal (Phase 89) */
   pageRankExplain?: PageRankScoreExplanation;
+  /** Tracker-aware multiplier adjustment factor (Phase 100) */
+  trackerMultiplier?: number;
+  /** Detailed breakdown and diagnostics of Tracker classification signal (Phase 100) */
+  trackerExplain?: TrackerScoreExplanation;
   /** Near-duplicate / domain clustering penalty factor (<= 1.0) */
   duplicatePenalty: number;
   /** Final calculated total relevance score */
