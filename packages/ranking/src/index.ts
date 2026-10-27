@@ -331,5 +331,31 @@ export {
   formatRegressionReport,
 } from './evaluation/regression-checker.js';
 
+// ── Phase 94: Benchmark Harness (Milestone 33) ───────────────────────────
+export type {
+  HardwareEnvironment,
+  MemorySnapshot,
+  IndexingBenchmarkResult,
+  LatencyDistribution,
+  QueryPhaseBenchmarkResult,
+  QueryLevelBenchmarkItem,
+  BenchmarkReport,
+  BenchmarkHarnessOptions,
+} from './benchmark/benchmark-types.js';
 
+export {
+  BENCHMARK_QUERY_SET_VERSION,
+  REPEATABLE_BENCHMARK_QUERIES,
+} from './benchmark/benchmark-queries.js';
 
+export {
+  FIXED_BENCHMARK_CORPUS_VERSION,
+  getMemorySnapshot,
+  captureEnvironment,
+  calculateDistribution,
+  benchmarkIndexingPhase,
+  benchmarkQueryPhases,
+  runBenchmark,
+  exportBenchmarkJson,
+  exportBenchmarkMarkdown,
+} from './benchmark/benchmark-harness.js';
