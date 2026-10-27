@@ -287,3 +287,31 @@ export {
   evaluateQuerySet,
 } from './evaluation/evaluation-metrics.js';
 
+// ── Phase 92: Experiment Runner (Milestone 32) ───────────────────────────
+export type {
+  RankingExperimentConfig,
+  ExperimentMetadata,
+  MetricDelta,
+  MetricComparison,
+  QueryWinLoss,
+  CategoryComparison,
+  ExperimentComparisonResult,
+  SweepParameterGrid,
+  SweepResultEntry,
+  SweepExperimentResult,
+  ScorerFunction,
+} from './evaluation/experiment-types.js';
+
+export {
+  PRODUCTION_SAFEGUARD_NOTICE,
+  DEFAULT_BASELINE_CONFIG,
+  defaultDeterministicScorer,
+  runSingleEvaluation,
+  compareExperiments,
+  runParameterSweep,
+  exportExperimentJson,
+  exportExperimentMarkdown,
+  resolveDataset,
+} from './evaluation/experiment-runner.js';
+
+

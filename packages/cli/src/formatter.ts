@@ -288,6 +288,12 @@ ${this.yellow(this.bold('COMMANDS & OPTIONS:'))}
   ${this.cyan('--api <url>')}              Target OpenSearch API URL (default: http://localhost:3001)
   ${this.cyan('-s, --suggest <prefix>')}   Fetch prefix autocompletions for a term
   ${this.cyan('--health')}                 Probe cluster diagnostic health and document statistics
+  ${this.cyan('experiment [options]')}     Run offline IR ranking experiment (Phase 92)
+  ${this.cyan('--sweep')}                  Run controlled BM25 & PageRank parameter grid sweep
+  ${this.cyan('--dataset <ci|full>')}      Evaluation dataset (default: ci)
+  ${this.cyan('--split <tuning|held_out>')} Dataset split partition (default: tuning)
+  ${this.cyan('--out-json <path>')}        Export machine-readable JSON report
+  ${this.cyan('--out-md <path>')}          Export formatted Markdown summary
   ${this.cyan('--no-color')}               Disable ANSI color formatting
   ${this.cyan('-h, --help')}               Show this help information
   ${this.cyan('-v, --version')}            Show CLI and engine version

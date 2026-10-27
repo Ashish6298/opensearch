@@ -1,10 +1,19 @@
 /**
- * @opensearch/cli — Command-Line Interface Engine (Phase 44)
+ * @opensearch/cli — Command-Line Interface Engine (Phase 44 & Phase 92)
  *
- * Implements argument parsing, stdin piping, API querying, and terminal
- * result presentation with zero external dependencies.
+ * Implements argument parsing, stdin piping, API querying, offline IR ranking
+ * experimentation, parameter sweeps, and terminal result presentation.
  */
 
+import * as fs from 'node:fs';
+import {
+  DEFAULT_BASELINE_CONFIG,
+  compareExperiments,
+  exportExperimentJson,
+  exportExperimentMarkdown,
+  resolveDataset,
+  runParameterSweep,
+} from '@opensearch/ranking';
 import { PROJECT_NAME, PROJECT_VERSION } from '@opensearch/shared';
 import { CliFormatter } from './formatter.js';
 
@@ -20,6 +29,17 @@ export interface CliOptions {
   noColor?: boolean;
   help?: boolean;
   version?: boolean;
+  // Phase 92: Experiment runner options
+  experiment?: boolean;
+  dataset?: string;
+  split?: 'tuning' | 'held_out' | 'all';
+  k?: number;
+  sweep?: boolean;
+  outJson?: string;
+  outMd?: string;
+  k1?: number;
+  b?: number;
+  pageRankWeight?: number;
 }
 
 export interface CliExecutionResult {
@@ -50,6 +70,55 @@ export function parseCliArgs(args: string[]): CliOptions {
       options.noColor = true;
     } else if (arg === '--health') {
       options.health = true;
+    } else if (arg === 'experiment' || arg === 'eval' || arg === '--experiment') {
+      options.experiment = true;
+    } else if (arg === '--sweep') {
+      options.sweep = true;
+    } else if (arg === '--dataset') {
+      const next = args[++i];
+      if (next && !next.startsWith('-')) options.dataset = next;
+    } else if (arg.startsWith('--dataset=')) {
+      options.dataset = arg.split('=')[1];
+    } else if (arg === '--split') {
+      const next = args[++i];
+      if (next && (next === 'tuning' || next === 'held_out' || next === 'all')) {
+        options.split = next as 'tuning' | 'held_out' | 'all';
+      }
+    } else if (arg.startsWith('--split=')) {
+      const val = arg.split('=')[1];
+      if (val === 'tuning' || val === 'held_out' || val === 'all') {
+        options.split = val as 'tuning' | 'held_out' | 'all';
+      }
+    } else if (arg === '-k' || arg === '--k') {
+      const next = args[++i];
+      if (next && !next.startsWith('-')) options.k = parseInt(next, 10);
+    } else if (arg.startsWith('--k=')) {
+      options.k = parseInt(arg.split('=')[1] ?? '10', 10);
+    } else if (arg === '--out-json') {
+      const next = args[++i];
+      if (next && !next.startsWith('-')) options.outJson = next;
+    } else if (arg.startsWith('--out-json=')) {
+      options.outJson = arg.split('=')[1];
+    } else if (arg === '--out-md') {
+      const next = args[++i];
+      if (next && !next.startsWith('-')) options.outMd = next;
+    } else if (arg.startsWith('--out-md=')) {
+      options.outMd = arg.split('=')[1];
+    } else if (arg === '--k1') {
+      const next = args[++i];
+      if (next && !next.startsWith('-')) options.k1 = parseFloat(next);
+    } else if (arg.startsWith('--k1=')) {
+      options.k1 = parseFloat(arg.split('=')[1] ?? '1.2');
+    } else if (arg === '--b') {
+      const next = args[++i];
+      if (next && !next.startsWith('-')) options.b = parseFloat(next);
+    } else if (arg.startsWith('--b=')) {
+      options.b = parseFloat(arg.split('=')[1] ?? '0.75');
+    } else if (arg === '--pagerank-weight') {
+      const next = args[++i];
+      if (next && !next.startsWith('-')) options.pageRankWeight = parseFloat(next);
+    } else if (arg.startsWith('--pagerank-weight=')) {
+      options.pageRankWeight = parseFloat(arg.split('=')[1] ?? '0.15');
     } else if (arg === '--limit' || arg === '-l') {
       const next = args[++i];
       if (next && !next.startsWith('-')) {
@@ -86,8 +155,10 @@ export function parseCliArgs(args: string[]): CliOptions {
     }
   }
 
-  if (positional.length > 0) {
-    options.query = positional.join(' ');
+  // Filter out 'experiment' or 'eval' positional keyword from query text
+  const filteredPositional = positional.filter(p => p !== 'experiment' && p !== 'eval');
+  if (filteredPositional.length > 0) {
+    options.query = filteredPositional.join(' ');
   }
 
   return options;
@@ -149,9 +220,93 @@ export async function runCli(args: string[], injectedStdin?: string): Promise<Cl
     };
   }
 
+  // 3. Phase 92: Experiment Runner Subcommand
+  if (options.experiment) {
+    try {
+      const dataset = resolveDataset(options.dataset);
+      const split = options.split ?? 'tuning';
+      const k = options.k ?? 10;
+
+      let markdownOutput = '';
+      let jsonOutput = '';
+
+      if (options.sweep) {
+        const sweepResult = runParameterSweep(
+          dataset,
+          DEFAULT_BASELINE_CONFIG,
+          {
+            k1: [0.8, 1.2, 1.6],
+            b: [0.5, 0.75, 0.9],
+            pageRankWeight: [0.0, 0.15, 0.3],
+          },
+          { split, metricOptions: { k } },
+        );
+
+        jsonOutput = exportExperimentJson(sweepResult);
+        markdownOutput = exportExperimentMarkdown(sweepResult);
+
+        if (options.outJson) {
+          fs.writeFileSync(options.outJson, jsonOutput, 'utf-8');
+        }
+        if (options.outMd) {
+          fs.writeFileSync(options.outMd, markdownOutput, 'utf-8');
+        }
+
+        return {
+          exitCode: 0,
+          stdout: options.json ? jsonOutput : markdownOutput,
+          stderr: '',
+        };
+      } else {
+        const candidateConfig = {
+          ...DEFAULT_BASELINE_CONFIG,
+          name: 'candidate-experiment',
+          bm25: {
+            ...DEFAULT_BASELINE_CONFIG.bm25,
+            ...(options.k1 !== undefined ? { k1: options.k1 } : {}),
+            ...(options.b !== undefined ? { b: options.b } : {}),
+          },
+          pageRank: {
+            ...DEFAULT_BASELINE_CONFIG.pageRank,
+            ...(options.pageRankWeight !== undefined ? { weight: options.pageRankWeight } : {}),
+          },
+        };
+
+        const comparisonResult = compareExperiments(
+          dataset,
+          DEFAULT_BASELINE_CONFIG,
+          candidateConfig,
+          { split, metricOptions: { k } },
+        );
+
+        jsonOutput = exportExperimentJson(comparisonResult);
+        markdownOutput = exportExperimentMarkdown(comparisonResult);
+
+        if (options.outJson) {
+          fs.writeFileSync(options.outJson, jsonOutput, 'utf-8');
+        }
+        if (options.outMd) {
+          fs.writeFileSync(options.outMd, markdownOutput, 'utf-8');
+        }
+
+        return {
+          exitCode: 0,
+          stdout: options.json ? jsonOutput : markdownOutput,
+          stderr: '',
+        };
+      }
+    } catch (err: any) {
+      return {
+        exitCode: 1,
+        stdout: '',
+        stderr: formatter.red(`[ERROR] Experiment execution failed: ${err.message}`),
+      };
+    }
+  }
+
   const baseApiUrl = options.apiUrl || process.env.OPENSEARCH_API_URL || 'http://localhost:3001';
 
-  // 3. Health check command
+  // 4. Health check command
   if (options.health) {
     try {
       const res = await fetch(`${baseApiUrl}/health`);
@@ -183,7 +338,7 @@ export async function runCli(args: string[], injectedStdin?: string): Promise<Cl
     }
   }
 
-  // 4. Autocomplete suggest command
+  // 5. Autocomplete suggest command
   if (options.suggest !== undefined) {
     const prefix = options.suggest;
     if (!prefix.trim()) {
@@ -227,7 +382,7 @@ export async function runCli(args: string[], injectedStdin?: string): Promise<Cl
     }
   }
 
-  // 5. Query Search
+  // 6. Query Search
   let query = options.query?.trim();
 
   // If no query was supplied as argument, attempt reading from stdin
