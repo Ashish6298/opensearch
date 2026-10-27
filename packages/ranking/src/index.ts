@@ -229,3 +229,33 @@ export {
   transformPageRankScore,
   DEFAULT_PAGERANK_SIGNAL_OPTIONS,
 } from './scorer/pagerank-scorer.js';
+// ── Phase 90: Judged Query Dataset & Quality Lab (Milestone 32) ──────────
+export type {
+  JudgedQueryCategory,
+  DatasetSplit,
+  RelevanceGrade,
+  RelevanceLabel,
+  JudgedDocument,
+  JudgedQuery,
+  JudgedDatasetProvenance,
+  JudgedDataset,
+  JudgedDatasetFilterOptions,
+} from './evaluation/judged-dataset-types.js';
+
+export {
+  CI_JUDGED_DATASET,
+} from './evaluation/datasets/ci-judged-dataset.js';
+
+export {
+  FULL_JUDGED_DATASET,
+} from './evaluation/datasets/full-judged-dataset.js';
+
+export {
+  validateJudgedDataset,
+  scanDatasetForPrivacyViolations,
+  getTuningQueries,
+  getHeldOutQueries,
+  getQueriesByCategory,
+  filterJudgedDataset,
+  getIdealQrels,
+} from './evaluation/judged-dataset-loader.js';

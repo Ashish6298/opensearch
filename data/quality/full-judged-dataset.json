@@ -1,0 +1,1536 @@
+{
+  "schemaVersion": "1.0.0",
+  "name": "opensearch-full-local-judged-queries-v1",
+  "description": "Comprehensive offline evaluation dataset for quality lab sweeps, BM25 tuning, and IR metric evaluations.",
+  "provenance": {
+    "curator": "OpenSearch Quality Engineering Guild",
+    "curatedAt": "2026-10-27T00:00:00Z",
+    "license": "CC0-1.0 (Public Domain)",
+    "methodology": "Curated collection of synthetic queries across educational curricula, software engineering documentation, scientific references, and polysemous concepts.",
+    "privacyAssurance": "Strictly zero personal histories, raw search logs, cookies, or user identifiers.",
+    "annotationRubricVersion": "v1.0.0-graded-4level"
+  },
+  "queryCount": 40,
+  "totalJudgments": 106,
+  "categoryCounts": {
+    "everyday": 8,
+    "education": 8,
+    "programming": 8,
+    "research": 8,
+    "ambiguous": 8
+  },
+  "splitCounts": {
+    "tuning": 20,
+    "held_out": 20
+  },
+  "queries": [
+    {
+      "id": "q-everyday-01",
+      "query": "local time zones UTC GMT calculation",
+      "category": "everyday",
+      "split": "tuning",
+      "intent": "Understand how UTC and GMT offset calculations work for international coordination.",
+      "judgments": [
+        {
+          "documentId": "doc-time-utc-guide",
+          "url": "https://timeanddate.com/time/utc-gmt.html",
+          "title": "Understanding UTC and GMT: Time Zones Explained",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Comprehensive reference explaining differences, offsets, and calculation rules.",
+          "domain": "timeanddate.com"
+        },
+        {
+          "documentId": "doc-iso-8601-time",
+          "url": "https://en.wikipedia.org/wiki/ISO_8601",
+          "title": "ISO 8601 Date and Time Standard",
+          "grade": 2,
+          "relevance": "relevant",
+          "rationale": "Accurate technical documentation for UTC timestamp representations.",
+          "domain": "wikipedia.org"
+        },
+        {
+          "documentId": "doc-horology-antique",
+          "url": "https://historyofclocks.org/antique-watches",
+          "title": "History of Mechanical Pocket Watches",
+          "grade": 0,
+          "relevance": "irrelevant",
+          "rationale": "Discusses physical antique clock mechanisms with no time zone calculation concepts.",
+          "domain": "historyofclocks.org"
+        }
+      ],
+      "idealOrder": [
+        "doc-time-utc-guide",
+        "doc-iso-8601-time",
+        "doc-horology-antique"
+      ]
+    },
+    {
+      "id": "q-everyday-02",
+      "query": "metric conversion meters to feet formula",
+      "category": "everyday",
+      "split": "tuning",
+      "intent": "Find the mathematical formula and factor to convert meters to feet.",
+      "judgments": [
+        {
+          "documentId": "doc-convert-m-ft",
+          "url": "https://calculator.net/metric-length-conversion.html",
+          "title": "Meters to Feet Conversion Calculator & Formula (1m = 3.28084 ft)",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Directly displays conversion factor 3.28084 and step-by-step multiplication formula.",
+          "domain": "calculator.net"
+        },
+        {
+          "documentId": "doc-nist-metric-history",
+          "url": "https://nist.gov/pml/weights-measures/metric-history",
+          "title": "History of the Metric System in the United States",
+          "grade": 1,
+          "relevance": "marginal",
+          "rationale": "Historical context on measurement systems, but lacks immediate conversion formula.",
+          "domain": "nist.gov"
+        },
+        {
+          "documentId": "doc-running-shoes-review",
+          "url": "https://runningshoes.org/best-marathon-shoes-2026",
+          "title": "Best Marathon Running Shoes for Flat Feet",
+          "grade": 0,
+          "relevance": "irrelevant",
+          "rationale": "Footwear product review, completely unrelated to length measurement conversion.",
+          "domain": "runningshoes.org"
+        }
+      ],
+      "idealOrder": [
+        "doc-convert-m-ft",
+        "doc-nist-metric-history",
+        "doc-running-shoes-review"
+      ]
+    },
+    {
+      "id": "q-everyday-03",
+      "query": "weather forecast barometric pressure rain",
+      "category": "everyday",
+      "split": "held_out",
+      "intent": "Understand how falling atmospheric pressure correlates with impending rainfall.",
+      "judgments": [
+        {
+          "documentId": "doc-noaa-barometer",
+          "url": "https://noaa.gov/education/barometric-pressure-weather",
+          "title": "How Barometric Pressure Affects Weather and Storms",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Official meteorological guide correlating millibar drops with precipitation.",
+          "domain": "noaa.gov"
+        },
+        {
+          "documentId": "doc-rainwater-harvest",
+          "url": "https://gardeningtips.net/collecting-rainwater",
+          "title": "DIY Rain Barrel Setup for Backyard Gardens",
+          "grade": 1,
+          "relevance": "marginal",
+          "rationale": "Mentions rain collection but omits atmospheric pressure science.",
+          "domain": "gardeningtips.net"
+        },
+        {
+          "documentId": "doc-kitchen-pressure-cooker",
+          "url": "https://recipes.com/electric-pressure-cooker-stew",
+          "title": "Instant Pressure Cooker Beef Stew",
+          "grade": 0,
+          "relevance": "irrelevant",
+          "rationale": "Culinary recipe using pressure cookers; false lexical match on \"pressure\".",
+          "domain": "recipes.com"
+        }
+      ],
+      "idealOrder": [
+        "doc-noaa-barometer",
+        "doc-rainwater-harvest",
+        "doc-kitchen-pressure-cooker"
+      ]
+    },
+    {
+      "id": "q-everyday-04",
+      "query": "public transport schedule route planning",
+      "category": "everyday",
+      "split": "held_out",
+      "intent": "Learn best practices and tools for public transit routing and timetable checks.",
+      "judgments": [
+        {
+          "documentId": "doc-transit-planning-standards",
+          "url": "https://transitcenter.org/how-transit-scheduling-works",
+          "title": "Modern Transit Routing: GTFS, Real-Time Scheduling and Route Maps",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Directly explains transit schedules, headway timing, and routing apps.",
+          "domain": "transitcenter.org"
+        },
+        {
+          "documentId": "doc-bus-pass-fares",
+          "url": "https://citytransit.gov/fare-prices",
+          "title": "City Metro Card Discounts and Monthly Passes",
+          "grade": 1,
+          "relevance": "marginal",
+          "rationale": "Discusses fares and passes rather than timetable routing.",
+          "domain": "citytransit.gov"
+        },
+        {
+          "documentId": "doc-airline-baggage",
+          "url": "https://airlinetravel.com/carry-on-luggage-rules",
+          "title": "International Airline Carry-On Size Limits",
+          "grade": 0,
+          "relevance": "irrelevant",
+          "rationale": "Aviation baggage policies, not municipal public transportation schedules.",
+          "domain": "airlinetravel.com"
+        }
+      ],
+      "idealOrder": [
+        "doc-transit-planning-standards",
+        "doc-bus-pass-fares",
+        "doc-airline-baggage"
+      ]
+    },
+    {
+      "id": "q-edu-01",
+      "query": "photosynthesis light dependent reactions chlorophyll",
+      "category": "education",
+      "split": "tuning",
+      "intent": "Understand the biological mechanisms of thylakoid light absorption and ATP synthesis.",
+      "judgments": [
+        {
+          "documentId": "doc-bio-photosynthesis",
+          "url": "https://khanacademy.org/science/biology/photosynthesis-light-reactions",
+          "title": "Light-Dependent Reactions of Photosynthesis: Photosystem II and I",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Exhaustive textbook lesson covering chlorophyll photons, electron transport, and NADPH.",
+          "domain": "khanacademy.org"
+        },
+        {
+          "documentId": "doc-plant-chlorophyll-supplements",
+          "url": "https://healthnutrition.org/liquid-chlorophyll-benefits",
+          "title": "Liquid Chlorophyll Wellness Trends and Green Juice",
+          "grade": 1,
+          "relevance": "marginal",
+          "rationale": "Discusses human dietary supplements with only surface mentions of plant biology.",
+          "domain": "healthnutrition.org"
+        },
+        {
+          "documentId": "doc-solar-pv-panels",
+          "url": "https://cleanenergy.gov/photovoltaic-silicon-cells",
+          "title": "How Rooftop Silicon Solar Cells Generate Electricity",
+          "grade": 0,
+          "relevance": "irrelevant",
+          "rationale": "Photovoltaic physics, not biological plant photosynthesis.",
+          "domain": "cleanenergy.gov"
+        }
+      ],
+      "idealOrder": [
+        "doc-bio-photosynthesis",
+        "doc-plant-chlorophyll-supplements",
+        "doc-solar-pv-panels"
+      ]
+    },
+    {
+      "id": "q-edu-02",
+      "query": "history of the internet arpanet packet switching",
+      "category": "education",
+      "split": "tuning",
+      "intent": "Trace early computer networking history from ARPANET to TCP/IP.",
+      "judgments": [
+        {
+          "documentId": "doc-hist-arpanet",
+          "url": "https://computerhistory.org/arpanet-packet-switching-origins",
+          "title": "The Birth of the Internet: ARPANET, Baran, Davies and Packet Switching",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Primary historical archive detailing nodes, IMPs, and Paul Baran packet research.",
+          "domain": "computerhistory.org"
+        },
+        {
+          "documentId": "doc-telecom-bell-monopoly",
+          "url": "https://telecomhistory.org/bell-system-breakup",
+          "title": "The 1982 Breakup of AT&T and Western Electric",
+          "grade": 1,
+          "relevance": "marginal",
+          "rationale": "Telecommunications business history with peripheral relation to networking.",
+          "domain": "telecomhistory.org"
+        },
+        {
+          "documentId": "doc-home-wifi-troubleshoot",
+          "url": "https://technews.com/speed-up-home-router-wifi",
+          "title": "How to Fix Slow Wi-Fi Connections at Home",
+          "grade": 0,
+          "relevance": "irrelevant",
+          "rationale": "Modern Wi-Fi router setup tips, no historical academic value.",
+          "domain": "technews.com"
+        }
+      ],
+      "idealOrder": [
+        "doc-hist-arpanet",
+        "doc-telecom-bell-monopoly",
+        "doc-home-wifi-troubleshoot"
+      ]
+    },
+    {
+      "id": "q-edu-03",
+      "query": "calculus derivative power rule proof",
+      "category": "education",
+      "split": "held_out",
+      "intent": "Find mathematical derivation and binomial proof for d/dx(x^n) = n*x^(n-1).",
+      "judgments": [
+        {
+          "documentId": "doc-math-power-rule",
+          "url": "https://mathworld.wolfram.com/PowerRule.html",
+          "title": "Power Rule for Differentiation and Binomial Theorem Proof",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Rigorous formal mathematical proof using limit definitions and binomial expansion.",
+          "domain": "wolfram.com"
+        },
+        {
+          "documentId": "doc-calc-integration-rules",
+          "url": "https://tutorial.math.lamar.edu/Classes/CalcI/IndefiniteIntegrals.aspx",
+          "title": "Basic Integration and Antiderivative Rules",
+          "grade": 1,
+          "relevance": "marginal",
+          "rationale": "Covers reverse power rule for integrals, related but inverted calculus concept.",
+          "domain": "lamar.edu"
+        },
+        {
+          "documentId": "doc-electrical-power-grid",
+          "url": "https://energy.org/three-phase-power-transmission",
+          "title": "High Voltage AC Electrical Power Lines and Transformers",
+          "grade": 0,
+          "relevance": "irrelevant",
+          "rationale": "Electrical engineering power transmission; lexical collision on \"power rule\".",
+          "domain": "energy.org"
+        }
+      ],
+      "idealOrder": [
+        "doc-math-power-rule",
+        "doc-calc-integration-rules",
+        "doc-electrical-power-grid"
+      ]
+    },
+    {
+      "id": "q-edu-04",
+      "query": "solar system gas giants jupiter saturn",
+      "category": "education",
+      "split": "held_out",
+      "intent": "Study physical properties and atmospheres of Jupiter and Saturn.",
+      "judgments": [
+        {
+          "documentId": "doc-space-gas-giants",
+          "url": "https://nasa.gov/solar-system/planets/gas-giants-overview",
+          "title": "Gas Giants: Exploration of Jupiter and Saturn by Cassini and Juno",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Official NASA planetary science overview detailing composition, rings, and gravity.",
+          "domain": "nasa.gov"
+        },
+        {
+          "documentId": "doc-astrology-saturn-transit",
+          "url": "https://astrologyhoroscopes.com/saturn-return-meaning",
+          "title": "Saturn Return in Astrology and Career Transformations",
+          "grade": 0,
+          "relevance": "irrelevant",
+          "rationale": "Pseudoscience astrology, zero educational astronomy content.",
+          "domain": "astrologyhoroscopes.com"
+        }
+      ],
+      "idealOrder": [
+        "doc-space-gas-giants",
+        "doc-astrology-saturn-transit"
+      ]
+    },
+    {
+      "id": "q-prog-01",
+      "query": "typescript generic constraints extends keyof",
+      "category": "programming",
+      "split": "tuning",
+      "intent": "Learn how to constrain generic type parameters using extends keyof in TypeScript.",
+      "judgments": [
+        {
+          "documentId": "doc-ts-generic-constraints",
+          "url": "https://typescriptlang.org/docs/handbook/2/generics.html#generic-constraints",
+          "title": "TypeScript Handbook: Generic Constraints and Keyof Type Operator",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Official documentation providing canonical getProperty<T, K extends keyof T> example.",
+          "domain": "typescriptlang.org"
+        },
+        {
+          "documentId": "doc-ts-mapped-types",
+          "url": "https://typescriptlang.org/docs/handbook/2/mapped-types.html",
+          "title": "TypeScript Mapped Types and Indexed Access",
+          "grade": 2,
+          "relevance": "relevant",
+          "rationale": "Closely related type manipulation concept utilizing keyof.",
+          "domain": "typescriptlang.org"
+        },
+        {
+          "documentId": "doc-javascript-prototype-chain",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Inheritance_and_the_prototype_chain",
+          "title": "JavaScript Prototype Chain and Inheritance",
+          "grade": 0,
+          "relevance": "irrelevant",
+          "rationale": "Runtime JS prototype mechanics, does not cover static TypeScript type system generics.",
+          "domain": "mozilla.org"
+        }
+      ],
+      "idealOrder": [
+        "doc-ts-generic-constraints",
+        "doc-ts-mapped-types",
+        "doc-javascript-prototype-chain"
+      ]
+    },
+    {
+      "id": "q-prog-02",
+      "query": "python list comprehension dictionary syntax",
+      "category": "programming",
+      "split": "tuning",
+      "intent": "Learn syntax for Python list comprehensions and dictionary comprehensions.",
+      "judgments": [
+        {
+          "documentId": "doc-py-comprehensions",
+          "url": "https://docs.python.org/3/tutorial/datastructures.html#list-comprehensions",
+          "title": "Python Tutorial: List Comprehensions and Dict Comprehensions",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Official Python tutorial explaining [x for x in list] and {k: v for k, v in dict}.",
+          "domain": "python.org"
+        },
+        {
+          "documentId": "doc-py-lambda-map",
+          "url": "https://realpython.com/python-map-function",
+          "title": "How to Use Python map() and filter() Functions",
+          "grade": 1,
+          "relevance": "marginal",
+          "rationale": "Functional alternatives to comprehensions, but doesn't cover comprehension syntax.",
+          "domain": "realpython.com"
+        },
+        {
+          "documentId": "doc-snake-reptile-care",
+          "url": "https://reptileguides.com/ball-python-diet",
+          "title": "Feeding and Caring for Pet Ball Pythons",
+          "grade": 0,
+          "relevance": "irrelevant",
+          "rationale": "Reptile care guide; collision on python keyword.",
+          "domain": "reptileguides.com"
+        }
+      ],
+      "idealOrder": [
+        "doc-py-comprehensions",
+        "doc-py-lambda-map",
+        "doc-snake-reptile-care"
+      ]
+    },
+    {
+      "id": "q-prog-03",
+      "query": "rust async await tokio concurrency patterns",
+      "category": "programming",
+      "split": "held_out",
+      "intent": "Understand asynchronous task spawning, Select!, and channels in Rust with Tokio.",
+      "judgments": [
+        {
+          "documentId": "doc-tokio-tutorial",
+          "url": "https://tokio.rs/tokio/tutorial",
+          "title": "Tokio Async Runtime Tutorial: Spawning Tasks, Select, and MPSC Channels",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Canonical reference for asynchronous programming patterns in Rust.",
+          "domain": "tokio.rs"
+        },
+        {
+          "documentId": "doc-rust-threads-sync",
+          "url": "https://doc.rust-lang.org/book/ch16-00-concurrency.html",
+          "title": "Fearless Concurrency: Threads and Message Passing in Rust",
+          "grade": 2,
+          "relevance": "relevant",
+          "rationale": "Covers synchronous OS threads and mpsc channels in standard library.",
+          "domain": "rust-lang.org"
+        },
+        {
+          "documentId": "doc-rust-metal-removal",
+          "url": "https://hardwaretips.org/remove-rust-from-tools",
+          "title": "How to Remove Iron Oxide Rust from Steel Wrenches",
+          "grade": 0,
+          "relevance": "irrelevant",
+          "rationale": "Hardware metallurgy; collision on the word \"rust\".",
+          "domain": "hardwaretips.org"
+        }
+      ],
+      "idealOrder": [
+        "doc-tokio-tutorial",
+        "doc-rust-threads-sync",
+        "doc-rust-metal-removal"
+      ]
+    },
+    {
+      "id": "q-prog-04",
+      "query": "git cherry pick merge conflict resolution",
+      "category": "programming",
+      "split": "held_out",
+      "intent": "How to cherry pick commits across git branches and resolve merge conflicts.",
+      "judgments": [
+        {
+          "documentId": "doc-git-cherry-pick",
+          "url": "https://git-scm.com/docs/git-cherry-pick",
+          "title": "git-cherry-pick Documentation: Apply Changes and Resolve Conflicts",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Official git manual explaining --continue, --abort, and conflict markers.",
+          "domain": "git-scm.com"
+        },
+        {
+          "documentId": "doc-git-rebase-guide",
+          "url": "https://atlassian.com/git/tutorials/rewriting-history/git-rebase",
+          "title": "Git Rebase vs Merge: Interactive Rebasing Workflow",
+          "grade": 2,
+          "relevance": "relevant",
+          "rationale": "Related commit replay mechanism with similar conflict resolution steps.",
+          "domain": "atlassian.com"
+        },
+        {
+          "documentId": "doc-cherry-pie-baking",
+          "url": "https://bakingsweets.com/homemade-sour-cherry-pie",
+          "title": "Classic Sour Cherry Pie Recipe with Flaky Butter Crust",
+          "grade": 0,
+          "relevance": "irrelevant",
+          "rationale": "Fruit pie baking recipe; collision on \"cherry pick\".",
+          "domain": "bakingsweets.com"
+        }
+      ],
+      "idealOrder": [
+        "doc-git-cherry-pick",
+        "doc-git-rebase-guide",
+        "doc-cherry-pie-baking"
+      ]
+    },
+    {
+      "id": "q-res-01",
+      "query": "bm25 ranking formula term frequency saturation",
+      "category": "research",
+      "split": "tuning",
+      "intent": "Understand the mathematical formulation of Robertson-Sparck Jones BM25 and parameter k1.",
+      "judgments": [
+        {
+          "documentId": "doc-bm25-paper",
+          "url": "https://trec.nist.gov/pubs/trec3/papers/city.ps.gz",
+          "title": "Okapi BM25: Robertson and Spärck Jones Term Frequency Saturation Model",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Foundational research paper defining BM25 weighting, k1 asymptote, and b length norm.",
+          "domain": "nist.gov"
+        },
+        {
+          "documentId": "doc-lucene-bm25-impl",
+          "url": "https://lucene.apache.org/core/documentation/bm25similarity.html",
+          "title": "Apache Lucene BM25Similarity Algorithm Implementation",
+          "grade": 2,
+          "relevance": "relevant",
+          "rationale": "Applied engineering implementation of BM25 in Lucene/OpenSearch.",
+          "domain": "apache.org"
+        },
+        {
+          "documentId": "doc-bmw-m25-car",
+          "url": "https://automotivemagazine.com/bmw-m25-coupe-specs",
+          "title": "BMW M25 Concept Car Horsepower and Engine Specs",
+          "grade": 0,
+          "relevance": "irrelevant",
+          "rationale": "Automobile concept review; string match on \"BM25\".",
+          "domain": "automotivemagazine.com"
+        }
+      ],
+      "idealOrder": [
+        "doc-bm25-paper",
+        "doc-lucene-bm25-impl",
+        "doc-bmw-m25-car"
+      ]
+    },
+    {
+      "id": "q-res-02",
+      "query": "pagerank stationary distribution power iteration damping",
+      "category": "research",
+      "split": "tuning",
+      "intent": "Understand the random walk Markov chain, damping factor 0.85, and power iteration algorithm.",
+      "judgments": [
+        {
+          "documentId": "doc-pagerank-stanford",
+          "url": "https://ilpubs.stanford.edu:8090/422/1/1999-66.pdf",
+          "title": "The PageRank Citation Ranking: Bringing Order to the Web (Page, Brin, Motwani, Winograd)",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "The original 1999 Stanford paper establishing power iteration and dangling node distribution.",
+          "domain": "stanford.edu"
+        },
+        {
+          "documentId": "doc-hits-kleinberg",
+          "url": "https://cs.cornell.edu/kleinber/auth.pdf",
+          "title": "Authoritative Sources in a Hyperlinked Environment (Kleinberg HITS Algorithm)",
+          "grade": 2,
+          "relevance": "relevant",
+          "rationale": "Key comparative link analysis research paper on hubs and authorities.",
+          "domain": "cornell.edu"
+        },
+        {
+          "documentId": "doc-pager-beeper-history",
+          "url": "https://techhistory.org/the-rise-and-fall-of-telecom-pagers",
+          "title": "How 1990s Numeric Pagers and Beepers Worked",
+          "grade": 0,
+          "relevance": "irrelevant",
+          "rationale": "Telecommunication paging devices; false lexical match on \"pager\".",
+          "domain": "techhistory.org"
+        }
+      ],
+      "idealOrder": [
+        "doc-pagerank-stanford",
+        "doc-hits-kleinberg",
+        "doc-pager-beeper-history"
+      ]
+    },
+    {
+      "id": "q-res-03",
+      "query": "zero knowledge proofs snarks cryptography",
+      "category": "research",
+      "split": "held_out",
+      "intent": "Explore zk-SNARK mathematical foundations, arithmetic circuits, and cryptographic proving systems.",
+      "judgments": [
+        {
+          "documentId": "doc-zksnark-explainer",
+          "url": "https://eprint.iacr.org/2016/260.pdf",
+          "title": "On the Size of Pairing-based Non-interactive Arguments (Groth16 zk-SNARK)",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Seminal IACR cryptographic paper on Groth16 zero knowledge proofs.",
+          "domain": "iacr.org"
+        },
+        {
+          "documentId": "doc-stark-research",
+          "url": "https://eprint.iacr.org/2018/046.pdf",
+          "title": "Scalable, Transparent, and Post-quantum Secure zk-STARKs",
+          "grade": 2,
+          "relevance": "relevant",
+          "rationale": "Closely related zero-knowledge research paper using transparent polynomial IOPs.",
+          "domain": "iacr.org"
+        },
+        {
+          "documentId": "doc-snark-lewis-carroll",
+          "url": "https://poetryarchive.org/poem/hunting-of-the-snark",
+          "title": "The Hunting of the Snark by Lewis Carroll",
+          "grade": 0,
+          "relevance": "irrelevant",
+          "rationale": "Nonsense poem literature; lexical collision on \"snark\".",
+          "domain": "poetryarchive.org"
+        }
+      ],
+      "idealOrder": [
+        "doc-zksnark-explainer",
+        "doc-stark-research",
+        "doc-snark-lewis-carroll"
+      ]
+    },
+    {
+      "id": "q-res-04",
+      "query": "transformer multi head self attention mechanism",
+      "category": "research",
+      "split": "held_out",
+      "intent": "Understand Vaswani et al. attention mechanism, query-key-value dot product, and scaling factor.",
+      "judgments": [
+        {
+          "documentId": "doc-attention-all-you-need",
+          "url": "https://arxiv.org/abs/1706.03762",
+          "title": "Attention Is All You Need (Vaswani et al., 2017)",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Original arXiv publication defining multi-head self-attention and Transformer architecture.",
+          "domain": "arxiv.org"
+        },
+        {
+          "documentId": "doc-bert-paper",
+          "url": "https://arxiv.org/abs/1810.04805",
+          "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+          "grade": 2,
+          "relevance": "relevant",
+          "rationale": "Prominent application paper building upon multi-head self-attention for NLP.",
+          "domain": "arxiv.org"
+        },
+        {
+          "documentId": "doc-electrical-transformers-grid",
+          "url": "https://electricalrepair.org/substation-step-down-transformers",
+          "title": "Industrial Step-Down Transformers for Electrical Grid Distribution",
+          "grade": 0,
+          "relevance": "irrelevant",
+          "rationale": "Power engineering hardware; lexical collision on \"transformer\".",
+          "domain": "electricalrepair.org"
+        }
+      ],
+      "idealOrder": [
+        "doc-attention-all-you-need",
+        "doc-bert-paper",
+        "doc-electrical-transformers-grid"
+      ]
+    },
+    {
+      "id": "q-ambig-01",
+      "query": "apple",
+      "category": "ambiguous",
+      "split": "tuning",
+      "intent": "Search query with polysemous interpretations: fruit (Malus domestica) vs. technology company (Apple Inc.).",
+      "ambiguityNotes": "Both interpretations are valid. A high-quality search engine presents authoritative results for both major senses.",
+      "judgments": [
+        {
+          "documentId": "doc-apple-inc-home",
+          "url": "https://apple.com",
+          "title": "Apple: iPhone, iPad, Mac, Watch, and Software",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Official portal for Apple Inc. technology company (dominant commercial sense).",
+          "domain": "apple.com"
+        },
+        {
+          "documentId": "doc-apple-fruit-wiki",
+          "url": "https://en.wikipedia.org/wiki/Apple",
+          "title": "Apple (Fruit): Varieties, Cultivation, and Nutrition",
+          "grade": 2,
+          "relevance": "relevant",
+          "rationale": "Authoritative encyclopedic coverage of the edible pomaceous fruit.",
+          "domain": "wikipedia.org"
+        },
+        {
+          "documentId": "doc-apple-records-beatles",
+          "url": "https://thebeatles.com/apple-corps-records",
+          "title": "Apple Corps & Apple Records: History with The Beatles",
+          "grade": 1,
+          "relevance": "marginal",
+          "rationale": "Valid secondary historical entity, but less common interpretation.",
+          "domain": "thebeatles.com"
+        },
+        {
+          "documentId": "doc-orange-citrus-farming",
+          "url": "https://citrusfarming.org/oranges-and-lemons",
+          "title": "Commercial Orange and Lemon Grove Cultivation",
+          "grade": 0,
+          "relevance": "irrelevant",
+          "rationale": "Citrus farming; distinct fruit with no connection to Apple brand or fruit.",
+          "domain": "citrusfarming.org"
+        }
+      ],
+      "idealOrder": [
+        "doc-apple-inc-home",
+        "doc-apple-fruit-wiki",
+        "doc-apple-records-beatles",
+        "doc-orange-citrus-farming"
+      ]
+    },
+    {
+      "id": "q-ambig-02",
+      "query": "mercury",
+      "category": "ambiguous",
+      "split": "tuning",
+      "intent": "Disambiguation across: chemical element (Hg), inner planet, and Roman deity.",
+      "ambiguityNotes": "Scientific and educational queries frequently seek either the planet or the heavy metal element.",
+      "judgments": [
+        {
+          "documentId": "doc-mercury-planet-nasa",
+          "url": "https://nasa.gov/solar-system/mercury",
+          "title": "Planet Mercury Overview: Closest Planet to the Sun",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Definitive planetary science resource for the celestial body.",
+          "domain": "nasa.gov"
+        },
+        {
+          "documentId": "doc-mercury-element-rsc",
+          "url": "https://rsc.org/periodic-table/element/80/mercury",
+          "title": "Mercury Element (Hg) - Periodic Table Information & Properties",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Authoritative chemical science reference for element 80 (quicksilver).",
+          "domain": "rsc.org"
+        },
+        {
+          "documentId": "doc-mercury-mythology",
+          "url": "https://britannica.com/topic/Mercury-Roman-god",
+          "title": "Mercury: Roman God of Commerce and Messenger of Gods",
+          "grade": 2,
+          "relevance": "relevant",
+          "rationale": "Classical mythological deity origin of both names.",
+          "domain": "britannica.com"
+        },
+        {
+          "documentId": "doc-ford-mercury-car",
+          "url": "https://carhistory.com/ford-mercury-division-retrospective",
+          "title": "Mercury Automobile Division of Ford Motor Company (1938–2011)",
+          "grade": 1,
+          "relevance": "marginal",
+          "rationale": "Defunct automotive marque, valid historical sense.",
+          "domain": "carhistory.com"
+        }
+      ],
+      "idealOrder": [
+        "doc-mercury-planet-nasa",
+        "doc-mercury-element-rsc",
+        "doc-mercury-mythology",
+        "doc-ford-mercury-car"
+      ]
+    },
+    {
+      "id": "q-ambig-03",
+      "query": "rust",
+      "category": "ambiguous",
+      "split": "held_out",
+      "intent": "Disambiguation between: Rust programming language vs iron oxide oxidation.",
+      "ambiguityNotes": "Developers search for compiler and language; homeowners and metallurgists search for corrosion removal.",
+      "judgments": [
+        {
+          "documentId": "doc-rust-lang-official",
+          "url": "https://rust-lang.org",
+          "title": "Rust Programming Language: Fast, Reliable, Memory-Safe",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Primary homepage of the systems programming language.",
+          "domain": "rust-lang.org"
+        },
+        {
+          "documentId": "doc-rust-chemistry-corrosion",
+          "url": "https://en.wikipedia.org/wiki/Rust",
+          "title": "Rust (Iron Oxide): Chemical Reactions and Prevention",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Definitive physical science reference for iron oxidation.",
+          "domain": "wikipedia.org"
+        },
+        {
+          "documentId": "doc-rust-video-game",
+          "url": "https://facepunch.com/games/rust",
+          "title": "Rust Multiplayer Survival Game by Facepunch Studios",
+          "grade": 2,
+          "relevance": "relevant",
+          "rationale": "Popular survival video game title.",
+          "domain": "facepunch.com"
+        },
+        {
+          "documentId": "doc-wood-stain-finishing",
+          "url": "https://woodworking.org/varnish-oak-stains",
+          "title": "Applying Polyurethane Wood Finishes to Oak Tables",
+          "grade": 0,
+          "relevance": "irrelevant",
+          "rationale": "Carpentry stain techniques, unrelated to rust or programming.",
+          "domain": "woodworking.org"
+        }
+      ],
+      "idealOrder": [
+        "doc-rust-lang-official",
+        "doc-rust-chemistry-corrosion",
+        "doc-rust-video-game",
+        "doc-wood-stain-finishing"
+      ]
+    },
+    {
+      "id": "q-ambig-04",
+      "query": "java",
+      "category": "ambiguous",
+      "split": "held_out",
+      "intent": "Disambiguation between: Java programming language, Java island (Indonesia), and coffee.",
+      "ambiguityNotes": "One of the most classic multi-faceted ambiguous terms in computing and geography.",
+      "judgments": [
+        {
+          "documentId": "doc-java-oracle-dev",
+          "url": "https://dev.java",
+          "title": "Java Platform and Language Documentation: Oracle",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Authoritative documentation portal for the Java programming environment.",
+          "domain": "java"
+        },
+        {
+          "documentId": "doc-java-island-indonesia",
+          "url": "https://indonesia.travel/destinations/java-island",
+          "title": "Java Island, Indonesia: Cultural Heritage and Travel Guide",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Official geographic and tourism documentation for the island of Java.",
+          "domain": "indonesia.travel"
+        },
+        {
+          "documentId": "doc-java-coffee-beans",
+          "url": "https://coffeereview.com/origin/indonesia-java-arabica",
+          "title": "Java Arabica Coffee: Origin, Flavor Profile and Roasting",
+          "grade": 2,
+          "relevance": "relevant",
+          "rationale": "Colloquial and commercial sense for coffee derived from Java origin.",
+          "domain": "coffeereview.com"
+        },
+        {
+          "documentId": "doc-javascript-mdn",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript",
+          "title": "JavaScript Reference Manual: MDN Web Docs",
+          "grade": 1,
+          "relevance": "marginal",
+          "rationale": "Commonly confused with Java by beginners; useful disambiguation note.",
+          "domain": "mozilla.org"
+        }
+      ],
+      "idealOrder": [
+        "doc-java-oracle-dev",
+        "doc-java-island-indonesia",
+        "doc-java-coffee-beans",
+        "doc-javascript-mdn"
+      ]
+    },
+    {
+      "id": "q-everyday-05",
+      "query": "celsius to fahrenheit conversion formula temperature",
+      "category": "everyday",
+      "split": "tuning",
+      "intent": "Find the standard temperature formula F = C * 9/5 + 32.",
+      "judgments": [
+        {
+          "documentId": "doc-temp-formula",
+          "url": "https://weather.gov/temperature-formulas",
+          "title": "Celsius to Fahrenheit and Kelvin Conversion Formulas",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Direct formula and table for quick conversion.",
+          "domain": "weather.gov"
+        },
+        {
+          "documentId": "doc-fever-thermometer-use",
+          "url": "https://healthguide.org/how-to-read-thermometer",
+          "title": "How to Take Your Temperature with a Digital Thermometer",
+          "grade": 1,
+          "relevance": "marginal",
+          "rationale": "Mentions temperature scales in clinical context.",
+          "domain": "healthguide.org"
+        },
+        {
+          "documentId": "doc-book-fahrenheit-451",
+          "url": "https://literaturehub.org/fahrenheit-451-summary",
+          "title": "Fahrenheit 451 by Ray Bradbury: Plot Analysis",
+          "grade": 0,
+          "relevance": "irrelevant",
+          "rationale": "Dystopian literature; lexical match on \"Fahrenheit\".",
+          "domain": "literaturehub.org"
+        }
+      ],
+      "idealOrder": [
+        "doc-temp-formula",
+        "doc-fever-thermometer-use",
+        "doc-book-fahrenheit-451"
+      ]
+    },
+    {
+      "id": "q-everyday-06",
+      "query": "first aid minor burns cold water treatment",
+      "category": "everyday",
+      "split": "tuning",
+      "intent": "Immediate first aid guidelines for treating minor first-degree thermal burns.",
+      "judgments": [
+        {
+          "documentId": "doc-redcross-burns",
+          "url": "https://redcross.org/first-aid/minor-burns",
+          "title": "First Aid for First and Second Degree Burns: Cool Running Water",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Authoritative Red Cross safety steps advising cool water and non-stick bandages.",
+          "domain": "redcross.org"
+        },
+        {
+          "documentId": "doc-calorie-burn-exercises",
+          "url": "https://fitnesscoach.com/exercises-that-burn-calories",
+          "title": "Top 10 High Intensity Exercises to Burn Calories Fast",
+          "grade": 0,
+          "relevance": "irrelevant",
+          "rationale": "Fitness calorie burning; semantic collision on \"burns\".",
+          "domain": "fitnesscoach.com"
+        }
+      ],
+      "idealOrder": [
+        "doc-redcross-burns",
+        "doc-calorie-burn-exercises"
+      ]
+    },
+    {
+      "id": "q-everyday-07",
+      "query": "solar eclipse viewing eye protection safety glasses",
+      "category": "everyday",
+      "split": "held_out",
+      "intent": "Guidelines for safely viewing a solar eclipse with ISO 12312-2 certified filters.",
+      "judgments": [
+        {
+          "documentId": "doc-nasa-eclipse-safety",
+          "url": "https://nasa.gov/eclipse/safety",
+          "title": "Total Solar Eclipse Safety: ISO 12312-2 Viewing Glasses",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Official NASA eye protection protocol and verified vendor standards.",
+          "domain": "nasa.gov"
+        },
+        {
+          "documentId": "doc-sunglasses-fashion-trends",
+          "url": "https://stylemagazine.com/summer-sunglasses-trends",
+          "title": "Designer Polarized Sunglasses for Summer 2026",
+          "grade": 0,
+          "relevance": "irrelevant",
+          "rationale": "Fashion sunglasses that are explicitly unsafe for solar eclipse viewing.",
+          "domain": "stylemagazine.com"
+        }
+      ],
+      "idealOrder": [
+        "doc-nasa-eclipse-safety",
+        "doc-sunglasses-fashion-trends"
+      ]
+    },
+    {
+      "id": "q-everyday-08",
+      "query": "baking soda versus baking powder leavening differences",
+      "category": "everyday",
+      "split": "held_out",
+      "intent": "Understand chemical difference between sodium bicarbonate and double-acting baking powder.",
+      "judgments": [
+        {
+          "documentId": "doc-baking-chemistry",
+          "url": "https://foodchemistry.org/baking-soda-vs-baking-powder",
+          "title": "Chemical Leavening Agents: Baking Soda vs. Baking Powder Explained",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Explains acid-base reactions, cream of tartar buffers, and substitution ratios.",
+          "domain": "foodchemistry.org"
+        },
+        {
+          "documentId": "doc-soda-beverages-history",
+          "url": "https://historyofbeverages.com/carbonated-soft-drinks",
+          "title": "History of Carbonated Soda Fountains in America",
+          "grade": 0,
+          "relevance": "irrelevant",
+          "rationale": "Soft drink beverage history; false lexical match on \"soda\".",
+          "domain": "historyofbeverages.com"
+        }
+      ],
+      "idealOrder": [
+        "doc-baking-chemistry",
+        "doc-soda-beverages-history"
+      ]
+    },
+    {
+      "id": "q-edu-05",
+      "query": "mitosis versus meiosis cell division chromosome count",
+      "category": "education",
+      "split": "tuning",
+      "intent": "Compare diploid asexual replication with haploid gamete formation.",
+      "judgments": [
+        {
+          "documentId": "doc-biology-mitosis-meiosis",
+          "url": "https://khanacademy.org/biology/mitosis-vs-meiosis-comparison",
+          "title": "Mitosis vs. Meiosis: Detailed Comparison Table and Chromosome Phases",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Direct curriculum comparison showing 2n to 2n vs 2n to n divisions.",
+          "domain": "khanacademy.org"
+        },
+        {
+          "documentId": "doc-plant-cell-wall-structure",
+          "url": "https://botanyscience.org/cell-wall-cellulose",
+          "title": "Cellulose and Pectin in Plant Cell Walls",
+          "grade": 1,
+          "relevance": "marginal",
+          "rationale": "Cell biology context but lacks division phase explanations.",
+          "domain": "botanyscience.org"
+        }
+      ],
+      "idealOrder": [
+        "doc-biology-mitosis-meiosis",
+        "doc-plant-cell-wall-structure"
+      ]
+    },
+    {
+      "id": "q-edu-06",
+      "query": "newton three laws of motion inertia acceleration action reaction",
+      "category": "education",
+      "split": "tuning",
+      "intent": "Understand classical Newtonian mechanics: F=ma, inertia, and equal/opposite reactions.",
+      "judgments": [
+        {
+          "documentId": "doc-physics-newton-laws",
+          "url": "https://physicsclassroom.com/class/newtlaws",
+          "title": "Newton's Laws of Motion: Inertia, F=ma, and Equal and Opposite Reactions",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Comprehensive tutorial with free-body diagrams and mathematical definitions.",
+          "domain": "physicsclassroom.com"
+        },
+        {
+          "documentId": "doc-motion-picture-film-history",
+          "url": "https://filmmaking.org/motion-picture-cameras",
+          "title": "History of Early 35mm Motion Picture Cameras",
+          "grade": 0,
+          "relevance": "irrelevant",
+          "rationale": "Cinematography camera history; lexical match on \"motion\".",
+          "domain": "filmmaking.org"
+        }
+      ],
+      "idealOrder": [
+        "doc-physics-newton-laws",
+        "doc-motion-picture-film-history"
+      ]
+    },
+    {
+      "id": "q-edu-07",
+      "query": "water cycle evaporation condensation precipitation runoff",
+      "category": "education",
+      "split": "held_out",
+      "intent": "Learn Earth hydrological cycle stages: solar evaporation, cloud formation, and rainfall.",
+      "judgments": [
+        {
+          "documentId": "doc-usgs-water-cycle",
+          "url": "https://usgs.gov/special-topics/water-science-school/science/water-cycle-diagram",
+          "title": "The Natural Water Cycle: Comprehensive USGS Hydrology Diagram",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "USGS scientific diagram and text explaining all atmospheric and ground pathways.",
+          "domain": "usgs.gov"
+        },
+        {
+          "documentId": "doc-swimming-pool-filters",
+          "url": "https://poolcare.com/sand-filters-maintenance",
+          "title": "How to Backwash a Sand Pool Filter",
+          "grade": 0,
+          "relevance": "irrelevant",
+          "rationale": "Swimming pool maintenance, not Earth hydrological science.",
+          "domain": "poolcare.com"
+        }
+      ],
+      "idealOrder": [
+        "doc-usgs-water-cycle",
+        "doc-swimming-pool-filters"
+      ]
+    },
+    {
+      "id": "q-edu-08",
+      "query": "french revolution storming of the bastille 1789 causes",
+      "category": "education",
+      "split": "held_out",
+      "intent": "Understand social inequality, taxation, and Estates-General events leading to July 14, 1789.",
+      "judgments": [
+        {
+          "documentId": "doc-hist-french-revolution",
+          "url": "https://britannica.com/event/French-Revolution",
+          "title": "The French Revolution: The Storming of the Bastille and the Declaration of Rights",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Authoritative historical chronology from the Estates-General to the Bastille.",
+          "domain": "britannica.com"
+        },
+        {
+          "documentId": "doc-french-onion-soup",
+          "url": "https://gourmetrecipes.com/traditional-french-onion-soup",
+          "title": "Classic French Onion Soup with Gruyere Croutons",
+          "grade": 0,
+          "relevance": "irrelevant",
+          "rationale": "Recipe for soup; false match on \"French\".",
+          "domain": "gourmetrecipes.com"
+        }
+      ],
+      "idealOrder": [
+        "doc-hist-french-revolution",
+        "doc-french-onion-soup"
+      ]
+    },
+    {
+      "id": "q-prog-05",
+      "query": "docker compose multi container networking port binding",
+      "category": "programming",
+      "split": "tuning",
+      "intent": "How to configure bridge networks, service discovery, and port mappings in docker-compose.yml.",
+      "judgments": [
+        {
+          "documentId": "doc-docker-compose-net",
+          "url": "https://docs.docker.com/compose/networking/",
+          "title": "Networking in Compose: Default Networks and Custom Bridges",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Official Docker documentation on automatic DNS resolution across services.",
+          "domain": "docker.com"
+        },
+        {
+          "documentId": "doc-dockerfile-best-practices",
+          "url": "https://docs.docker.com/develop/develop-images/dockerfile_best-practices/",
+          "title": "Best Practices for Writing Dockerfiles: Multi-Stage Builds",
+          "grade": 2,
+          "relevance": "relevant",
+          "rationale": "Related containerization guide focusing on image size rather than compose networking.",
+          "domain": "docker.com"
+        }
+      ],
+      "idealOrder": [
+        "doc-docker-compose-net",
+        "doc-dockerfile-best-practices"
+      ]
+    },
+    {
+      "id": "q-prog-06",
+      "query": "sql indexing btree versus hash index performance",
+      "category": "programming",
+      "split": "tuning",
+      "intent": "Understand trade-offs between B-Tree range queries and Hash exact-match lookup.",
+      "judgments": [
+        {
+          "documentId": "doc-pg-index-types",
+          "url": "https://postgresql.org/docs/current/indexes-types.html",
+          "title": "PostgreSQL Documentation: Index Types (B-Tree, Hash, GiST, GIN, BRIN)",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Official database engine comparison of index access methods.",
+          "domain": "postgresql.org"
+        },
+        {
+          "documentId": "doc-cryptographic-hash-sha256",
+          "url": "https://crypto.org/sha256-hash-functions",
+          "title": "Cryptographic Hash Functions: Collision Resistance and SHA-256",
+          "grade": 1,
+          "relevance": "marginal",
+          "rationale": "Cryptographic hashing, distinct from database index structures.",
+          "domain": "crypto.org"
+        }
+      ],
+      "idealOrder": [
+        "doc-pg-index-types",
+        "doc-cryptographic-hash-sha256"
+      ]
+    },
+    {
+      "id": "q-prog-07",
+      "query": "css flexbox layout justify content align items cheat sheet",
+      "category": "programming",
+      "split": "held_out",
+      "intent": "Visual reference guide for CSS Flexible Box main-axis and cross-axis alignment.",
+      "judgments": [
+        {
+          "documentId": "doc-css-flexbox-guide",
+          "url": "https://css-tricks.com/snippets/css/a-guide-to-flexbox/",
+          "title": "A Complete Guide to Flexbox: Visual Diagram and Properties",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Canonical developer reference visual cheat sheet for CSS flexbox.",
+          "domain": "css-tricks.com"
+        },
+        {
+          "documentId": "doc-css-grid-layout",
+          "url": "https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_grid_layout",
+          "title": "Grids: Two-Dimensional Grid Systems in CSS",
+          "grade": 2,
+          "relevance": "relevant",
+          "rationale": "Related modern 2D CSS layout system.",
+          "domain": "mozilla.org"
+        }
+      ],
+      "idealOrder": [
+        "doc-css-flexbox-guide",
+        "doc-css-grid-layout"
+      ]
+    },
+    {
+      "id": "q-prog-08",
+      "query": "linux systemd service unit file restart on failure",
+      "category": "programming",
+      "split": "held_out",
+      "intent": "How to write a systemd service unit file with Restart=on-failure and ExecStart.",
+      "judgments": [
+        {
+          "documentId": "doc-systemd-service-spec",
+          "url": "https://www.freedesktop.org/software/systemd/man/systemd.service.html",
+          "title": "systemd.service(5) — Service Unit Configuration Manual",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Official manual describing RestartSec, Restart=on-failure, and daemon life cycles.",
+          "domain": "freedesktop.org"
+        },
+        {
+          "documentId": "doc-crontab-schedule-syntax",
+          "url": "https://linuxhandbook.com/crontab/",
+          "title": "How to Schedule Cron Jobs on Ubuntu and Debian",
+          "grade": 1,
+          "relevance": "marginal",
+          "rationale": "Covers periodic task execution rather than persistent systemd background daemons.",
+          "domain": "linuxhandbook.com"
+        }
+      ],
+      "idealOrder": [
+        "doc-systemd-service-spec",
+        "doc-crontab-schedule-syntax"
+      ]
+    },
+    {
+      "id": "q-res-05",
+      "query": "distributed consensus raft algorithm leader election log replication",
+      "category": "research",
+      "split": "tuning",
+      "intent": "Understand Ongaro and Ousterhout Raft consensus algorithm phases and safety invariant.",
+      "judgments": [
+        {
+          "documentId": "doc-raft-paper",
+          "url": "https://raft.github.io/raft.pdf",
+          "title": "In Search of an Understandable Consensus Algorithm (Ongaro & Ousterhout, 2014)",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Original USENIX paper introducing the Raft distributed consensus algorithm.",
+          "domain": "raft.github.io"
+        },
+        {
+          "documentId": "doc-paxos-lamport",
+          "url": "https://lamport.azurewebsites.net/pubs/paxos-simple.pdf",
+          "title": "Paxos Made Simple (Leslie Lamport, 2001)",
+          "grade": 2,
+          "relevance": "relevant",
+          "rationale": "The classic foundational distributed consensus algorithm.",
+          "domain": "lamport.azurewebsites.net"
+        }
+      ],
+      "idealOrder": [
+        "doc-raft-paper",
+        "doc-paxos-lamport"
+      ]
+    },
+    {
+      "id": "q-res-06",
+      "query": "diffie hellman key exchange discrete logarithm cryptography",
+      "category": "research",
+      "split": "tuning",
+      "intent": "Understand mathematical foundation of Diffie-Hellman protocol based on cyclic groups.",
+      "judgments": [
+        {
+          "documentId": "doc-diffie-hellman-paper",
+          "url": "https://ee.stanford.edu/~hellman/publications/pub024.pdf",
+          "title": "New Directions in Cryptography (Diffie & Hellman, 1976)",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Original IEEE paper inaugurating public key cryptography and discrete logs.",
+          "domain": "stanford.edu"
+        },
+        {
+          "documentId": "doc-rsa-cryptosystem",
+          "url": "https://people.csail.mit.edu/rivest/Rsapaper.pdf",
+          "title": "A Method for Obtaining Digital Signatures and Public-Key Cryptosystems (RSA, 1978)",
+          "grade": 2,
+          "relevance": "relevant",
+          "rationale": "Related asymmetric cryptographic algorithm based on prime factorization.",
+          "domain": "mit.edu"
+        }
+      ],
+      "idealOrder": [
+        "doc-diffie-hellman-paper",
+        "doc-rsa-cryptosystem"
+      ]
+    },
+    {
+      "id": "q-res-07",
+      "query": "reinforcement learning ppo proximal policy optimization clipping",
+      "category": "research",
+      "split": "held_out",
+      "intent": "Understand Schulman et al. PPO clipped surrogate objective function.",
+      "judgments": [
+        {
+          "documentId": "doc-ppo-paper",
+          "url": "https://arxiv.org/abs/1707.06347",
+          "title": "Proximal Policy Optimization Algorithms (Schulman et al., 2017)",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Foundational research paper defining PPO-Clip and advantage estimation.",
+          "domain": "arxiv.org"
+        },
+        {
+          "documentId": "doc-dqn-nature-paper",
+          "url": "https://nature.com/articles/nature14236",
+          "title": "Human-level Control Through Deep Reinforcement Learning (Mnih et al., 2015)",
+          "grade": 2,
+          "relevance": "relevant",
+          "rationale": "Seminal Deep Q-Network paper in modern deep reinforcement learning.",
+          "domain": "nature.com"
+        }
+      ],
+      "idealOrder": [
+        "doc-ppo-paper",
+        "doc-dqn-nature-paper"
+      ]
+    },
+    {
+      "id": "q-res-08",
+      "query": "byzantine fault tolerance pbft castro liskov practical consensus",
+      "category": "research",
+      "split": "held_out",
+      "intent": "Study Miguel Castro and Barbara Liskov Practical Byzantine Fault Tolerance (PBFT) protocol.",
+      "judgments": [
+        {
+          "documentId": "doc-pbft-paper",
+          "url": "https://pmg.csail.mit.edu/papers/osdi99.pdf",
+          "title": "Practical Byzantine Fault Tolerance (Castro & Liskov, OSDI 1999)",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Foundational OSDI paper establishing state machine replication with 3f+1 replicas.",
+          "domain": "mit.edu"
+        },
+        {
+          "documentId": "doc-byzantine-generals-lamport",
+          "url": "https://lamport.azurewebsites.net/pubs/byz.pdf",
+          "title": "The Byzantine Generals Problem (Lamport, Shostak, Pease, 1982)",
+          "grade": 2,
+          "relevance": "relevant",
+          "rationale": "Theoretical paper that originally formulated the Byzantine agreement problem.",
+          "domain": "lamport.azurewebsites.net"
+        }
+      ],
+      "idealOrder": [
+        "doc-pbft-paper",
+        "doc-byzantine-generals-lamport"
+      ]
+    },
+    {
+      "id": "q-ambig-05",
+      "query": "amazon",
+      "category": "ambiguous",
+      "split": "tuning",
+      "intent": "Disambiguation across: Amazon.com e-commerce/cloud vs Amazon Rainforest and Amazon River.",
+      "ambiguityNotes": "E-commerce commercial giant vs major geographic ecological biome.",
+      "judgments": [
+        {
+          "documentId": "doc-amazon-ecommerce",
+          "url": "https://amazon.com",
+          "title": "Amazon.com: Online Shopping for Electronics, Apparel, and Cloud (AWS)",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Dominant commercial e-commerce enterprise portal.",
+          "domain": "amazon.com"
+        },
+        {
+          "documentId": "doc-amazon-rainforest",
+          "url": "https://worldwildlife.org/places/amazon",
+          "title": "Amazon Rainforest and Basin: Biodiversity and Conservation",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Authoritative environmental reference for the Amazon ecological basin.",
+          "domain": "worldwildlife.org"
+        }
+      ],
+      "idealOrder": [
+        "doc-amazon-ecommerce",
+        "doc-amazon-rainforest"
+      ]
+    },
+    {
+      "id": "q-ambig-06",
+      "query": "matrix",
+      "category": "ambiguous",
+      "split": "tuning",
+      "intent": "Disambiguation between: mathematical linear algebra matrix vs Matrix film franchise vs open chat protocol.",
+      "ambiguityNotes": "Mathematics vs popular film vs open federated communication protocol (Matrix.org).",
+      "judgments": [
+        {
+          "documentId": "doc-math-matrix-algebra",
+          "url": "https://en.wikipedia.org/wiki/Matrix_(mathematics)",
+          "title": "Matrix (Mathematics): Linear Transformations, Rows and Columns",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Definitive mathematical definition of a matrix.",
+          "domain": "wikipedia.org"
+        },
+        {
+          "documentId": "doc-matrix-film",
+          "url": "https://imdb.com/title/tt0133093/",
+          "title": "The Matrix (1999) — Directed by The Wachowskis",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Definitive film database entry for the classic science fiction movie.",
+          "domain": "imdb.com"
+        },
+        {
+          "documentId": "doc-matrix-org-protocol",
+          "url": "https://matrix.org",
+          "title": "Matrix.org: Open Standard for Secure, Decentralized Real-Time Communication",
+          "grade": 2,
+          "relevance": "relevant",
+          "rationale": "Prominent open protocol for decentralized messaging.",
+          "domain": "matrix.org"
+        }
+      ],
+      "idealOrder": [
+        "doc-math-matrix-algebra",
+        "doc-matrix-film",
+        "doc-matrix-org-protocol"
+      ]
+    },
+    {
+      "id": "q-ambig-07",
+      "query": "spring",
+      "category": "ambiguous",
+      "split": "held_out",
+      "intent": "Disambiguation across: meteorological season vs Java Spring Framework vs mechanical coil spring.",
+      "ambiguityNotes": "Season vs software framework vs mechanical device.",
+      "judgments": [
+        {
+          "documentId": "doc-spring-framework",
+          "url": "https://spring.io",
+          "title": "Spring Framework: Level Up Your Java Development (Spring Boot)",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Official portal for the Java enterprise software framework.",
+          "domain": "spring.io"
+        },
+        {
+          "documentId": "doc-spring-season",
+          "url": "https://britannica.com/science/spring-season",
+          "title": "Spring (Season): Vernal Equinox, Climate, and Biology",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Comprehensive geographic and astronomical encyclopedic reference.",
+          "domain": "britannica.com"
+        },
+        {
+          "documentId": "doc-mechanical-spring",
+          "url": "https://engineeringtoolbox.com/spring-constants-d_1495.html",
+          "title": "Helical Coil Compression Springs: Hooke's Law and Spring Constants",
+          "grade": 2,
+          "relevance": "relevant",
+          "rationale": "Mechanical engineering formula reference.",
+          "domain": "engineeringtoolbox.com"
+        }
+      ],
+      "idealOrder": [
+        "doc-spring-framework",
+        "doc-spring-season",
+        "doc-mechanical-spring"
+      ]
+    },
+    {
+      "id": "q-ambig-08",
+      "query": "mars",
+      "category": "ambiguous",
+      "split": "held_out",
+      "intent": "Disambiguation across: Planet Mars vs Mars confectionery company vs Roman God of War.",
+      "ambiguityNotes": "Astronomical planet vs Mars Inc. candy company vs Roman mythology.",
+      "judgments": [
+        {
+          "documentId": "doc-mars-planet-nasa",
+          "url": "https://nasa.gov/mars",
+          "title": "Mars Exploration Program: Perseverance Rover and Red Planet Science",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Official NASA planetary exploration portal.",
+          "domain": "nasa.gov"
+        },
+        {
+          "documentId": "doc-mars-inc-chocolate",
+          "url": "https://mars.com",
+          "title": "Mars, Incorporated: Confectionery, Pet Care, and Food Brands",
+          "grade": 3,
+          "relevance": "perfect",
+          "rationale": "Official corporate portal of the multi-billion dollar food manufacturer.",
+          "domain": "mars.com"
+        }
+      ],
+      "idealOrder": [
+        "doc-mars-planet-nasa",
+        "doc-mars-inc-chocolate"
+      ]
+    }
+  ]
+}
