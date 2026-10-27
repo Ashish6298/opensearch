@@ -1,3 +1,4 @@
+import { PageRankLookupProvider, PageRankScoreExplanation, PageRankTransformType } from './pagerank-scorer.js';
 /**
  * @opensearch/ranking — Ranking & Scorer Types (Phase 14)
  *
@@ -45,6 +46,14 @@ export interface ScoreSignalConfig {
   freshnessMaxDays: number;
   /** Weight for domain authority signal (Phase 48, default: 0.10) */
   domainAuthorityWeight?: number;
+  /** Weight for PageRank signal (Phase 89, default: 0.15, 0 = disabled) */
+  pageRankWeight?: number;
+  /** Maximum allowable PageRank boost ceiling to protect lexical relevance (default: 2.0) */
+  pageRankMaxBoost?: number;
+  /** Transformation method for PageRank probability (default: 'logarithmic') */
+  pageRankTransform?: PageRankTransformType;
+  /** Maximum age before PageRank score is considered stale in ms (default: 7 days) */
+  pageRankStaleThresholdMs?: number;
 }
 
 export interface RankingOptions {
@@ -60,6 +69,10 @@ export interface RankingOptions {
   enableDuplicatePenalty?: boolean;
   /** Whether to include detailed score explanations in results (default: true) */
   explain?: boolean;
+  /** PageRank lookup provider or table (Phase 89) */
+  pageRankTable?: PageRankLookupProvider;
+  /** Whether to enable PageRank blending (Phase 89, default: true when table available) */
+  enablePageRank?: boolean;
 }
 
 export interface TermScoreBreakdown {
@@ -90,6 +103,10 @@ export interface ScoreExplanation {
   freshnessBonus: number;
   /** Domain trust authority bonus score (Phase 48) */
   authorityBonus?: number;
+  /** PageRank bonus contribution added to relevance (Phase 89) */
+  pageRankBonus?: number;
+  /** Detailed breakdown and diagnostics of PageRank signal (Phase 89) */
+  pageRankExplain?: PageRankScoreExplanation;
   /** Near-duplicate / domain clustering penalty factor (<= 1.0) */
   duplicatePenalty: number;
   /** Final calculated total relevance score */

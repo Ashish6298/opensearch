@@ -217,3 +217,15 @@ export * from './providers/index.js';
 
 // ── Phase 81: Safe Search & Content Controls (V1.5.0) ───────────────────
 export * from './safety/safe-search.js';
+// ── Phase 89: PageRank Integration & Explainability (V1.5.0) ────────────
+export type {
+  PageRankLookupProvider,
+  PageRankSignalOptions,
+  PageRankScoreExplanation,
+  PageRankTransformType,
+} from './scorer/pagerank-scorer.js';
+export {
+  evaluatePageRankSignal,
+  transformPageRankScore,
+  DEFAULT_PAGERANK_SIGNAL_OPTIONS,
+} from './scorer/pagerank-scorer.js';

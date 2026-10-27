@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@opensearch/shared": "*",
-    "@opensearch/indexer": "*"
+    "@opensearch/indexer": "*",
+    "@opensearch/crawler": "*"
   }
 }

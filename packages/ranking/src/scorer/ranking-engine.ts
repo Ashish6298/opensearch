@@ -18,6 +18,10 @@ import { CandidateDocument } from '../retrieval/retrieval-types.js';
 import { BM25Scorer, DEFAULT_BM25_PARAMS, DEFAULT_FIELD_BOOSTS } from './bm25-scorer.js';
 import { AuthorityScorer, createAuthorityScorer } from './authority-scorer.js';
 import {
+  evaluatePageRankSignal,
+  PageRankLookupProvider,
+} from './pagerank-scorer.js';
+import {
   RankingEngine,
   RankingOptions,
   RankingResult,
@@ -35,6 +39,10 @@ export const DEFAULT_SCORE_SIGNALS: ScoreSignalConfig = {
   freshnessWeight: 0.10,
   freshnessMaxDays: 30,
   domainAuthorityWeight: 0.10,
+  pageRankWeight: 0.15,
+  pageRankMaxBoost: 2.0,
+  pageRankTransform: 'logarithmic',
+  pageRankStaleThresholdMs: 7 * 24 * 60 * 60 * 1000,
 };
 
 export interface DefaultRankingEngineOptions {
@@ -42,17 +50,29 @@ export interface DefaultRankingEngineOptions {
   index: InvertedIndex;
   /** Global default ranking options */
   defaultOptions?: RankingOptions;
+  /** Optional PageRank lookup provider / table */
+  pageRankTable?: PageRankLookupProvider;
 }
 
 export class DefaultRankingEngine implements RankingEngine {
   private readonly index: InvertedIndex;
   private readonly globalOptions: RankingOptions;
   private readonly authorityScorer: AuthorityScorer;
+  private pageRankTable: PageRankLookupProvider | null = null;
 
   constructor(options: DefaultRankingEngineOptions) {
     this.index = options.index;
     this.globalOptions = options.defaultOptions ?? {};
     this.authorityScorer = createAuthorityScorer();
+    this.pageRankTable = options.pageRankTable ?? this.globalOptions.pageRankTable ?? null;
+  }
+
+  setPageRankTable(table: PageRankLookupProvider | null): void {
+    this.pageRankTable = table;
+  }
+
+  getPageRankTable(): PageRankLookupProvider | null {
+    return this.pageRankTable;
   }
 
   computeIdf(totalDocuments: number, documentFrequency: number): number {
@@ -98,6 +118,8 @@ export class DefaultRankingEngine implements RankingEngine {
     const signals = { ...DEFAULT_SCORE_SIGNALS, ...mergedOptions.signals };
 
     const bm25Scorer = new BM25Scorer(this.index, bm25Params, fieldBoosts);
+    const pageRankTable = mergedOptions.pageRankTable ?? this.pageRankTable ?? undefined;
+    const enablePageRank = mergedOptions.enablePageRank ?? true;
 
     // 1. Compute individual candidate scores and preliminary explanations
     const intermediateList: Array<{
@@ -142,10 +164,29 @@ export class DefaultRankingEngine implements RankingEngine {
       const authorityWeight = signals.domainAuthorityWeight ?? 0.10;
       const authorityBonus = authorityWeight * domainAuthority;
 
+      // Phase 89: PageRank signal evaluation & blending
+      const prEvaluation = evaluatePageRankSignal(
+        candidate.documentMeta.url,
+        pageRankTable,
+        {
+          enabled: enablePageRank,
+          weight: signals.pageRankWeight,
+          maxBoost: signals.pageRankMaxBoost,
+          transform: signals.pageRankTransform,
+          staleThresholdMs: signals.pageRankStaleThresholdMs,
+        },
+        now,
+      );
+      const pageRankBonus = prEvaluation.bonus;
+
       // Base combination formula:
-      // (BM25 * fullMatchMultiplier * phraseMultiplier) + urlBonus + freshnessBonus + authorityBonus
+      // (BM25 * fullMatchMultiplier * phraseMultiplier) + urlBonus + freshnessBonus + authorityBonus + pageRankBonus
       let combinedScore =
-        bm25Score * fullMatchMultiplier * phraseMultiplier + urlBonus + freshnessBonus + authorityBonus;
+        bm25Score * fullMatchMultiplier * phraseMultiplier +
+        urlBonus +
+        freshnessBonus +
+        authorityBonus +
+        pageRankBonus;
       combinedScore = Math.max(0, combinedScore);
 
       const parsedUrl = this.safeParseHostname(candidate.documentMeta.url);
@@ -160,6 +201,8 @@ export class DefaultRankingEngine implements RankingEngine {
         urlBonus: Math.round(urlBonus * 10000) / 10000,
         freshnessBonus: Math.round(freshnessBonus * 10000) / 10000,
         authorityBonus: Math.round(authorityBonus * 10000) / 10000,
+        pageRankBonus: Math.round(pageRankBonus * 10000) / 10000,
+        pageRankExplain: prEvaluation.explanation,
         duplicatePenalty: 1.0, // May be updated below
         finalScore: Math.round(combinedScore * 10000) / 10000,
       };
@@ -310,9 +353,11 @@ export class DefaultRankingEngine implements RankingEngine {
 export function createRankingEngine(
   index: InvertedIndex,
   defaultOptions?: RankingOptions,
+  pageRankTable?: PageRankLookupProvider,
 ): RankingEngine {
   return new DefaultRankingEngine({
     index,
     defaultOptions,
+    pageRankTable,
   });
 }
