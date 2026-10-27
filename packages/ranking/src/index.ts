@@ -406,3 +406,36 @@ export {
   runTopKMultiCorpusBenchmark,
   exportTopKBenchmarkMarkdown,
 } from './retrieval/topk-benchmark.js';
+
+// ── Phase 97: Segment-Based Indexing & Compaction (Milestone 33) ────────
+export type {
+  SegmentMetadata,
+  SegmentPayload,
+  SegmentManifest,
+  SegmentMergeOptions,
+  SegmentMergeResult,
+  SegmentCrashRecoveryReport,
+  SegmentCompactionPolicy,
+  SegmentedIndexOptions,
+  IngestionBatchMetric,
+  SegmentBenchmarkReport,
+} from '@opensearch/indexer';
+
+export {
+  CURRENT_SEGMENT_SCHEMA_VERSION,
+  CURRENT_MANIFEST_SCHEMA_VERSION,
+  MANIFEST_FILE_NAME,
+  MANIFEST_TMP_FILE_NAME,
+  SEGMENTS_SUBDIR,
+  computeManifestChecksum,
+  loadSegmentManifest,
+  saveSegmentManifestAtomic,
+  computeSegmentChecksum,
+  writeSegmentAtomic,
+  loadSegment,
+  recoverOrCleanDanglingSegments,
+  mergeSegments,
+  SegmentedInvertedIndex,
+  runSegmentJustificationBenchmark,
+  exportSegmentBenchmarkMarkdown,
+} from '@opensearch/indexer';

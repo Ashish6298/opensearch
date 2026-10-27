@@ -186,4 +186,29 @@ describe('Phase 94 — CLI Performance Benchmark Command Suite', () => {
       expect(parsed.evaluations.length).toBeGreaterThan(0);
     });
   });
+
+  describe('5. CLI Segment Indexing Benchmark Execution', () => {
+    it('executes segment command and outputs Markdown report', async () => {
+      const result = await runCli(['segment', '--iterations', '2', '--docs', '2']);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).toBe('');
+      expect(result.stdout).toContain('# OpenSearch Segment-Based Indexing Justification Report');
+      expect(result.stdout).toContain('I/O Write Amplification Reduction');
+      expect(result.stdout).toContain('Incremental Batch Ingestion Matrix');
+    });
+
+    it('executes segment command with --json and outputs valid JSON report', async () => {
+      const result = await runCli(['segment', '--iterations', '2', '--docs', '2', '--json']);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stderr).toBe('');
+
+      const parsed = JSON.parse(result.stdout);
+      expect(parsed.timestamp).toBeDefined();
+      expect(parsed.ioReductionFactor).toBeGreaterThanOrEqual(1.0);
+      expect(parsed.deterministicEquivalenceVerified).toBe(true);
+      expect(parsed.crashRecoveryVerified).toBe(true);
+    });
+  });
 });

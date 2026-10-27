@@ -143,3 +143,49 @@ export {
 } from './corpus/corpus-ingestion.js';
 export type { IngestionOptions } from './corpus/corpus-ingestion.js';
 
+
+// ── Phase 97: Segment-Based Indexing & Compaction (Milestone 33) ────────
+export type {
+  SegmentMetadata,
+  SegmentPayload,
+  SegmentManifest,
+  SegmentMergeOptions,
+  SegmentMergeResult,
+  SegmentCrashRecoveryReport,
+  SegmentCompactionPolicy,
+} from './segments/segment-types.js';
+
+export {
+  CURRENT_SEGMENT_SCHEMA_VERSION,
+  CURRENT_MANIFEST_SCHEMA_VERSION,
+  MANIFEST_FILE_NAME,
+  MANIFEST_TMP_FILE_NAME,
+  SEGMENTS_SUBDIR,
+} from './segments/segment-types.js';
+
+export {
+  computeManifestChecksum,
+  loadSegmentManifest,
+  saveSegmentManifestAtomic,
+} from './segments/segment-manifest.js';
+
+export {
+  computeSegmentChecksum,
+  writeSegmentAtomic,
+  loadSegment,
+  recoverOrCleanDanglingSegments,
+  mergeSegments,
+} from './segments/segment-merger.js';
+
+export type { SegmentedIndexOptions } from './segments/segmented-index.js';
+export { SegmentedInvertedIndex } from './segments/segmented-index.js';
+
+export type {
+  IngestionBatchMetric,
+  SegmentBenchmarkReport,
+} from './segments/segment-benchmark.js';
+
+export {
+  runSegmentJustificationBenchmark,
+  exportSegmentBenchmarkMarkdown,
+} from './segments/segment-benchmark.js';

@@ -20,6 +20,8 @@ import {
   runSubsystemProfiling,
   exportTopKBenchmarkMarkdown,
   runTopKMultiCorpusBenchmark,
+  exportSegmentBenchmarkMarkdown,
+  runSegmentJustificationBenchmark,
   runParameterSweep,
 } from '@opensearch/ranking';
 import { PROJECT_NAME, PROJECT_VERSION } from '@opensearch/shared';
@@ -58,6 +60,8 @@ export interface CliOptions {
   // Phase 96: Top-k options
   topk?: boolean;
   algorithm?: 'exhaustive' | 'maxscore' | 'wand' | 'adaptive';
+  // Phase 97: Segment options
+  segment?: boolean;
 }
 
 export interface CliExecutionResult {
@@ -166,6 +170,8 @@ export function parseCliArgs(args: string[]): CliOptions {
       options.page = parseInt(arg.split('=')[1] ?? '1', 10);
     } else if (arg.startsWith('--api=')) {
       options.apiUrl = arg.split('=')[1];
+    } else if (arg === 'segment' || arg === '--segment') {
+      options.segment = true;
     } else if (arg === 'topk' || arg === '--topk') {
       options.topk = true;
     } else if (arg === '--algo' || arg === '--algorithm') {
@@ -207,7 +213,8 @@ export function parseCliArgs(args: string[]): CliOptions {
       p !== 'benchmark' &&
       p !== 'bench' &&
       p !== 'profile' &&
-      p !== 'topk',
+      p !== 'topk' &&
+      p !== 'segment',
   );
   if (filteredPositional.length > 0) {
     options.query = filteredPositional.join(' ');
@@ -450,6 +457,38 @@ export async function runCli(args: string[], injectedStdin?: string): Promise<Cl
         exitCode: 1,
         stdout: '',
         stderr: formatter.red(`[ERROR] Top-k benchmark execution failed: ${err.message}`),
+      };
+    }
+  }
+
+  // 7. Phase 97: Segment Indexing Benchmark Subcommand
+  if (options.segment) {
+    try {
+      const report = await runSegmentJustificationBenchmark({
+        batchCount: options.iterations ?? 3,
+        docsPerBatch: options.docs ?? 5,
+      });
+
+      const jsonOutput = JSON.stringify(report, null, 2);
+      const markdownOutput = exportSegmentBenchmarkMarkdown(report);
+
+      if (options.outJson) {
+        fs.writeFileSync(options.outJson, jsonOutput, 'utf-8');
+      }
+      if (options.outMd) {
+        fs.writeFileSync(options.outMd, markdownOutput, 'utf-8');
+      }
+
+      return {
+        exitCode: 0,
+        stdout: options.json ? jsonOutput : markdownOutput,
+        stderr: '',
+      };
+    } catch (err: any) {
+      return {
+        exitCode: 1,
+        stdout: '',
+        stderr: formatter.red(`[ERROR] Segment benchmark execution failed: ${err.message}`),
       };
     }
   }

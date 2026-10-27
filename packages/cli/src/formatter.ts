@@ -292,6 +292,7 @@ ${this.yellow(this.bold('COMMANDS & OPTIONS:'))}
   ${this.cyan('benchmark [options]')}      Run performance benchmark harness (Phase 94)
   ${this.cyan('profile [options]')}        Run subsystem performance profiler (Phase 95)
   ${this.cyan('topk [options]')}           Run top-k pruning & retrieval benchmark (Phase 96)
+  ${this.cyan('segment [options]')}        Run segment indexing & I/O benchmark (Phase 97)
   ${this.cyan('--sweep')}                  Run controlled BM25 & PageRank parameter grid sweep
   ${this.cyan('--dataset <ci|full>')}      Evaluation dataset (default: ci)
   ${this.cyan('--split <tuning|held_out>')} Dataset split partition (default: tuning)
