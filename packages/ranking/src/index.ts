@@ -314,4 +314,22 @@ export {
   resolveDataset,
 } from './evaluation/experiment-runner.js';
 
+// ── Phase 93: Ranking Regression Checks (Milestone 32) ───────────────────
+export type {
+  RegressionThresholds,
+  RegressionSeverity,
+  QueryRegressionRecord,
+  CategoryTradeOff,
+  CategoryRegressionSummary,
+  RankingRegressionResult,
+} from './evaluation/regression-types.js';
+
+export {
+  DEFAULT_REGRESSION_THRESHOLDS,
+  checkRankingRegression,
+  runCiRegressionGate,
+  formatRegressionReport,
+} from './evaluation/regression-checker.js';
+
+
 
