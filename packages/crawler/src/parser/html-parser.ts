@@ -13,6 +13,7 @@
 
 import { validateUrl } from '../url/url-validator.js';
 import { normalizeUrl } from '../url/url-normalizer.js';
+import { classifyDocumentResources } from '../tracker/index.js';
 import { ExtractedDocument, HeadingItem, HtmlParser, HtmlParserOptions } from './parser-types.js';
 import { cleanVisibleText, decodeHtmlEntities, stripHtmlNoiseTags } from './text-cleaner.js';
 import { extractBaseHref, extractOutboundLinks } from './link-extractor.js';
@@ -27,6 +28,7 @@ export class DefaultHtmlParser implements HtmlParser {
       maxBodyTextLength: options.maxBodyTextLength ?? 1_000_000,
       maxLinks: options.maxLinks ?? 500,
       stripNavNoise: options.stripNavNoise ?? true,
+      classifyTrackers: options.classifyTrackers ?? false,
     };
   }
 
@@ -86,6 +88,9 @@ export class DefaultHtmlParser implements HtmlParser {
       outboundLinks,
       discoveredUrls,
       textLength: bodyText.length,
+      trackerClassification: this.options.classifyTrackers
+        ? classifyDocumentResources(html, documentUrl)
+        : undefined,
     };
   }
 

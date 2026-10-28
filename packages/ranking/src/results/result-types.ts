@@ -11,6 +11,8 @@
 
 import { ParsedQuery } from '../query/query-types.js';
 import { ScoredDocument } from '../scorer/scorer-types.js';
+import type { TrackerIndicator, TrackerClassificationSource } from '../tracker/tracker-signal-types.js';
+import type { FocusLensProfile, LensScoreExplanation, FocusLensRegistry } from '../lens/index.js';
 
 export interface HighlightTagOptions {
   /** Opening highlight tag (default: '<mark>') */
@@ -107,6 +109,10 @@ export interface SearchResultItem {
   isStale?: boolean;
   /** Formatted recency badge */
   recencyLabel?: string;
+  /** Evidence-based tracker classification and privacy indicator (Phase 100) */
+  trackerIndicator?: TrackerIndicator;
+  /** Focus Lens applied and score explanation (Phase 101) */
+  lensExplain?: LensScoreExplanation;
 }
 
 export interface SearchResultSet {
@@ -116,6 +122,10 @@ export interface SearchResultSet {
   items: SearchResultItem[];
   /** Pagination calculations and navigation state */
   pagination: PaginationMeta;
+  /** Active Focus Lens identifier (Phase 101) */
+  activeLensId?: string;
+  /** Active Focus Lens title (Phase 101) */
+  activeLensName?: string;
   /** Execution diagnostics and timing in milliseconds */
   durationMs: number;
 }
@@ -125,6 +135,14 @@ export interface ResultGeneratorOptions {
   snippet?: SnippetOptions;
   /** Default pagination options */
   pagination?: PaginationOptions;
+  /** Optional tracker classification data source for attaching indicators (Phase 100) */
+  trackerClassificationSource?: TrackerClassificationSource;
+  /** Whether to attach tracker indicators to result items (Phase 100, default: true when source or tracker explanation present) */
+  includeTrackerIndicators?: boolean;
+  /** Focus Lens profile or identifier applied (Phase 101) */
+  lens?: FocusLensProfile | string;
+  /** Focus Lens registry (Phase 101) */
+  lensRegistry?: FocusLensRegistry;
 }
 
 export interface ResultGenerator {

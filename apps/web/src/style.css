@@ -2006,3 +2006,38 @@ html[data-theme='light'] .run-btn:hover {
   background: var(--color-accent, #38bdf8);
   color: #000;
 }
+
+/* Phase 102: Focus Lens Selector Styling */
+.lens-control-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-surface, #1e293b);
+  border: 1px solid var(--border-terminal);
+  border-radius: 14px;
+  padding: 3px 10px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s ease;
+}
+
+.lens-control-container:hover,
+.lens-control-container:focus-within {
+  border-color: var(--color-accent, #38bdf8);
+}
+
+.lens-selector {
+  background: transparent;
+  color: var(--color-foreground, #f8fafc);
+  border: none;
+  font-size: 0.8rem;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  padding: 0 4px;
+}
+
+.lens-selector option {
+  background: var(--bg-primary, #0f172a);
+  color: var(--color-foreground, #f8fafc);
+}

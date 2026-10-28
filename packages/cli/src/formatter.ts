@@ -1,3 +1,4 @@
+import type { LensPreviewReport } from '@opensearch/ranking';
 /**
  * @opensearch/cli — Terminal ANSI Color & Layout Formatter (Phase 44)
  *
@@ -184,7 +185,20 @@ export class CliFormatter {
       domain?: string;
       category?: string;
       score?: number;
+      trackerIndicator?: {
+        badgeText: string;
+        severity: 'clean' | 'warning' | 'alert' | 'neutral';
+        trackerCount: number;
+        tooltip?: string;
+      } | null;
       explanation?: Record<string, unknown> | null;
+      lensExplain?: {
+        lensName: string;
+        action: 'none' | 'boost' | 'demote' | 'exclude';
+        multiplier: number;
+        matchedPattern?: string;
+        explanation: string;
+      } | null;
     },
     index: number,
     queryTerms?: string[],
@@ -205,14 +219,46 @@ export class CliFormatter {
     }
 
     const domainTag = item.domain ? this.magenta(`[${item.domain}]`) : '';
-    let out = `${num} ${title} ${domainTag}\n    ${url}\n    ${snippet}`;
+    let trackerBadge = '';
+    if (item.trackerIndicator) {
+      const ind = item.trackerIndicator;
+      if (ind.severity === 'clean') {
+        trackerBadge = this.brightGreen(`[🛡️ ${ind.badgeText}]`);
+      } else if (ind.severity === 'alert') {
+        trackerBadge = this.red(`[⚠️ ${ind.badgeText}]`);
+      } else if (ind.severity === 'warning') {
+        trackerBadge = this.yellow(`[⚠️ ${ind.badgeText}]`);
+      } else {
+        trackerBadge = this.dim(`[ℹ️ ${ind.badgeText}]`);
+      }
+    }
+    let lensBadge = '';
+    if (item.lensExplain && item.lensExplain.action !== 'none') {
+      const lx = item.lensExplain;
+      if (lx.action === 'boost') {
+        lensBadge = this.cyan(`[🎯 ${lx.lensName} +${lx.multiplier}x]`);
+      } else if (lx.action === 'demote') {
+        lensBadge = this.yellow(`[🎯 ${lx.lensName} ${lx.multiplier}x]`);
+      }
+    }
+    let out = `${num} ${title} ${domainTag} ${trackerBadge} ${lensBadge}`.replace(/\s+/g, ' ').trim() + `\n    ${url}\n    ${snippet}`;
 
     if (item.explanation && typeof item.explanation === 'object') {
       const exp = item.explanation as any;
       const explainHeader = this.yellow(`    [Explain Plan // Final Score: ${exp.finalScore ?? item.score ?? 'N/A'}]`);
       const bm25Line = this.dim(`      • BM25: ${exp.bm25Score ?? '0'} | FullMatch: x${exp.fullMatchMultiplier ?? '1'} | PhraseMatch: x${exp.phraseMultiplier ?? '1'}`);
       const signalsLine = this.dim(`      • Freshness Bonus: +${exp.freshnessBonus ?? '0'} | Domain Authority: +${exp.authorityBonus ?? '0'} | URL Bonus: +${exp.urlBonus ?? '0'}`);
-      out += `\n${explainHeader}\n${bm25Line}\n${signalsLine}`;
+      let trackerLine = '';
+      if (exp.trackerExplain) {
+        const trk = exp.trackerExplain;
+        trackerLine = '\n' + this.dim(`      • Tracker Multiplier: x${exp.trackerMultiplier ?? trk.multiplier ?? '1.0'} (${trk.status}) | ${trk.explanation}`);
+      }
+      let lensLine = '';
+      if (exp.lensExplain && exp.lensExplain.action !== 'none') {
+        const lx = exp.lensExplain;
+        lensLine = '\n' + this.dim(`      • Focus Lens: ${lx.lensName} (${lx.action} x${lx.multiplier}) | ${lx.explanation}`);
+      }
+      out += `\n${explainHeader}\n${bm25Line}\n${signalsLine}${trackerLine}${lensLine}`;
     }
 
     return out;
@@ -264,6 +310,146 @@ export class CliFormatter {
     return out;
   }
 
+  formatPublishBenchmarkReport(report: any): string {
+    const lines: string[] = [
+      this.bold(this.brightGreen('OPENSEARCH SCALE BENCHMARK REPORT (PHASE 98)')),
+      this.dim(`Report ID: ${report.reportId} | Host: ${report.environment.platform} ${report.environment.arch}`),
+      '',
+      this.yellow(this.bold('⚠️  DISCLAIMER & NON-MISREPRESENTATION NOTICE:')),
+      this.dim(report.productionDisclaimer),
+      '',
+      this.bold('1. Progressive Corpus Scaling Results:'),
+    ];
+
+    for (const t of report.tiers) {
+      if (t.status === 'completed') {
+        lines.push(
+          `  • ${this.cyan(t.tierName.padEnd(10))} : ${String(t.actualDocs.toLocaleString()).padStart(7)} docs | Build: ${String(t.buildDurationMs.toFixed(0) + 'ms').padStart(8)} | Disk: ${String(t.indexSizeMb.toFixed(2) + 'MB').padStart(8)} | QPS: ${this.green(t.queryThroughputQps.toFixed(1))} | p50: ${t.warmLatency.p50Ms.toFixed(2)}ms | p95: ${t.warmLatency.p95Ms.toFixed(2)}ms`
+        );
+      } else {
+        lines.push(
+          `  • ${this.magenta(t.tierName.padEnd(10))} : ${this.dim('[SKIPPED - HARDWARE GUARD]')} ${t.hardwareConstraintReason || ''}`
+        );
+      }
+    }
+
+    lines.push(
+      '',
+      this.bold('2. Visual Scaling Charts:'),
+      '',
+      report.charts.buildTimeChart,
+      '',
+      report.charts.throughputChart,
+      '',
+      report.charts.latencyChart,
+      '',
+      report.charts.indexSizeChart,
+    );
+
+    return lines.join('\n');
+  }
+
+  formatLensList(lenses: Array<{
+    id: string;
+    name: string;
+    description: string;
+    icon?: string;
+    boostDomains: Array<{ pattern: string; multiplier: number }>;
+    demoteDomains: Array<{ pattern: string; multiplier: number }>;
+    excludeDomains: string[];
+    disclaimer?: string;
+  }>): string {
+    const header = this.brightGreen(this.bold('⚡ OpenSearch Focus Lenses (Ranking Profiles)'));
+    const sep = this.dim('─'.repeat(70));
+    const lines = [header, sep, ''];
+
+    for (const lens of lenses) {
+      const icon = lens.icon ?? '🔍';
+      const title = this.bold(`${icon} ${lens.name} [id: ${this.cyan(lens.id)}]`);
+      const desc = this.dim(`  ${lens.description}`);
+      lines.push(title, desc);
+
+      if (lens.boostDomains.length > 0) {
+        const boosts = lens.boostDomains
+          .map(b => `${b.pattern} (${b.multiplier}x)`)
+          .slice(0, 5)
+          .join(', ');
+        lines.push(`  ${this.green('• Boosts:')} ${boosts}`);
+      }
+      if (lens.demoteDomains.length > 0) {
+        const demotes = lens.demoteDomains
+          .map(d => `${d.pattern} (${d.multiplier}x)`)
+          .slice(0, 3)
+          .join(', ');
+        lines.push(`  ${this.yellow('• Demotes:')} ${demotes}`);
+      }
+      if (lens.excludeDomains.length > 0) {
+        lines.push(`  ${this.red('• Excludes:')} ${lens.excludeDomains.join(', ')}`);
+      }
+      if (lens.disclaimer) {
+        lines.push(`  ${this.magenta('⚠️ Notice:')} ${this.dim(lens.disclaimer)}`);
+      }
+      lines.push('');
+    }
+
+    return lines.join('\n');
+  }
+
+  formatLensPreview(report: LensPreviewReport): string {
+    const title = this.brightGreen(this.bold(`🔎 Focus Lens Preview: ${report.lensName} [id: ${report.lensId}]`));
+    const sep = this.dim('─'.repeat(75));
+    const lines = [title, sep];
+    lines.push(this.dim(`Description: ${report.description}`));
+    if (report.disclaimer) {
+      lines.push(this.magenta(`⚠️ Disclaimer: ${report.disclaimer}`));
+    }
+    lines.push(
+      this.cyan(
+        `Index Immutability Verified: ${report.indexImmutabilityVerified ? 'PASS (Underlying index unchanged)' : 'FAIL'}`
+      )
+    );
+    lines.push(
+      this.dim(
+        `Queries tested: ${report.queriesTested} | Total Boosted: ${report.totalBoostedAcrossQueries} | Total Demoted: ${report.totalDemotedAcrossQueries} | Total Excluded: ${report.totalExcludedAcrossQueries}`
+      )
+    );
+    lines.push('');
+
+    for (const summary of report.summaries) {
+      lines.push(this.bold(`Query: "${summary.query}" [Category: ${summary.category}]`));
+      lines.push(
+        `  Hits: ${summary.totalLensHits} (baseline: ${summary.totalBaselineHits}) | Boosted: ${summary.boostedCount} | Demoted: ${summary.demotedCount} | Excluded: ${summary.excludedCount} | Rank Shifts: ${summary.rankShiftCount}`
+      );
+
+      for (const hit of summary.results.slice(0, 3)) {
+        const actionSymbol =
+          hit.action === 'boost'
+            ? this.green('▲ BOOST')
+            : hit.action === 'demote'
+            ? this.yellow('▼ DEMOTE')
+            : this.dim('• NEUTRAL');
+        const shift = hit.rankDelta
+          ? hit.rankDelta > 0
+            ? this.green(`(+\${hit.rankDelta})`)
+            : this.yellow(`(\${hit.rankDelta})`)
+          : this.dim('(0)');
+        lines.push(`    ${actionSymbol} [Rank ${hit.lensRank} ${shift}] ${hit.title}`);
+        lines.push(`      Score: ${hit.baselineScore} -> ${hit.lensScore} (${hit.multiplier}x) | Domain: ${hit.domain}`);
+        lines.push(`      Reason: ${this.dim(hit.explanation)}`);
+      }
+
+      if (summary.excludedItems.length > 0) {
+        for (const ex of summary.excludedItems) {
+          lines.push(`    ${this.red('✕ EXCLUDED')} [Original rank ${ex.baselineRank}] ${ex.title}`);
+          lines.push(`      Reason: ${this.red(ex.explanation)}`);
+        }
+      }
+      lines.push('');
+    }
+
+    return lines.join('\n');
+  }
+
   formatHelp(): string {
     const logo = `
   ___                    ____                      _     
@@ -289,6 +475,17 @@ ${this.yellow(this.bold('COMMANDS & OPTIONS:'))}
   ${this.cyan('-s, --suggest <prefix>')}   Fetch prefix autocompletions for a term
   ${this.cyan('--health')}                 Probe cluster diagnostic health and document statistics
   ${this.cyan('experiment [options]')}     Run offline IR ranking experiment (Phase 92)
+  ${this.cyan('benchmark [options]')}      Run performance benchmark harness (Phase 94)
+  ${this.cyan('profile [options]')}        Run subsystem performance profiler (Phase 95)
+  ${this.cyan('topk [options]')}           Run top-k pruning & retrieval benchmark (Phase 96)
+  ${this.cyan('segment [options]')}        Run segment indexing & I/O benchmark (Phase 97)
+  ${this.cyan('publish [options]')}        Run multi-tier scale benchmark & publish charts (Phase 98)
+  ${this.cyan('tracker-eval [options]')}   Run tracker-aware ranking evaluation & tradeoff analysis (Phase 100)
+  ${this.cyan('lenses')}                   List available Focus Lenses (ranking profiles) (Phase 101)
+  ${this.cyan('--lens <id>')}              Activate Focus Lens (general, student, developer, research, trusted-health, no-trackers)
+  ${this.cyan('--tracker-signal')}         Enable tracker classification ranking adjustments
+  ${this.cyan('--no-tracker-signal')}      Disable tracker classification ranking adjustments (lexical only)
+  ${this.cyan('--tracker-weight <val>')}   Blending weight for tracker signal [0.0 - 1.0] (default: 0.15)
   ${this.cyan('--sweep')}                  Run controlled BM25 & PageRank parameter grid sweep
   ${this.cyan('--dataset <ci|full>')}      Evaluation dataset (default: ci)
   ${this.cyan('--split <tuning|held_out>')} Dataset split partition (default: tuning)

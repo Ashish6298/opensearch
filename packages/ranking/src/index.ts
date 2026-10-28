@@ -331,5 +331,218 @@ export {
   formatRegressionReport,
 } from './evaluation/regression-checker.js';
 
+// ── Phase 94: Benchmark Harness (Milestone 33) ───────────────────────────
+export type {
+  HardwareEnvironment,
+  MemorySnapshot,
+  IndexingBenchmarkResult,
+  LatencyDistribution,
+  QueryPhaseBenchmarkResult,
+  QueryLevelBenchmarkItem,
+  BenchmarkReport,
+  BenchmarkHarnessOptions,
+} from './benchmark/benchmark-types.js';
+
+export {
+  BENCHMARK_QUERY_SET_VERSION,
+  REPEATABLE_BENCHMARK_QUERIES,
+} from './benchmark/benchmark-queries.js';
+
+export {
+  FIXED_BENCHMARK_CORPUS_VERSION,
+  getMemorySnapshot,
+  captureEnvironment,
+  calculateDistribution,
+  benchmarkIndexingPhase,
+  benchmarkQueryPhases,
+  runBenchmark,
+  exportBenchmarkJson,
+  exportBenchmarkMarkdown,
+} from './benchmark/benchmark-harness.js';
+
+// ── Phase 95: Profile Before Optimizing (Milestone 33) ───────────────────
+export type {
+  SearchSubsystemStage,
+  StageExecutionStats,
+  DominantCostFinding,
+  OptimizationRecommendation,
+  ProfilerReport,
+  CorrectnessComparisonResult,
+} from './benchmark/profiler-types.js';
+
+export type { ProfilerOptions } from './benchmark/subsystem-profiler.js';
+
+export {
+  runSubsystemProfiling,
+  compareOptimizedCorrectness,
+  exportProfilerJson,
+  exportProfilerMarkdown,
+} from './benchmark/subsystem-profiler.js';
+
+// ── Phase 96: Top-k Retrieval Optimization (Milestone 33) ────────────────
+export type {
+  TopKAlgorithm,
+  TermUpperScoreBound,
+  PostingSkipBlock,
+  TopKRetrievalOptions,
+  TopKPruningStats,
+  TopKResult,
+  TopKVerificationResult,
+} from './retrieval/topk-types.js';
+
+export { TermBoundComputer } from './retrieval/term-bound-computer.js';
+export { PostingSkipList } from './retrieval/posting-skip-list.js';
+export {
+  TopKRankingEngine,
+  verifyTopKEquivalence,
+} from './retrieval/topk-retriever.js';
+
+export type {
+  CorpusScaleEvaluation,
+  TopKBenchmarkReport,
+} from './retrieval/topk-benchmark.js';
+
+export {
+  runTopKMultiCorpusBenchmark,
+  exportTopKBenchmarkMarkdown,
+} from './retrieval/topk-benchmark.js';
+
+// ── Phase 97: Segment-Based Indexing & Compaction (Milestone 33) ────────
+export type {
+  SegmentMetadata,
+  SegmentPayload,
+  SegmentManifest,
+  SegmentMergeOptions,
+  SegmentMergeResult,
+  SegmentCrashRecoveryReport,
+  SegmentCompactionPolicy,
+  SegmentedIndexOptions,
+  IngestionBatchMetric,
+  SegmentBenchmarkReport,
+} from '@opensearch/indexer';
+
+export {
+  CURRENT_SEGMENT_SCHEMA_VERSION,
+  CURRENT_MANIFEST_SCHEMA_VERSION,
+  MANIFEST_FILE_NAME,
+  MANIFEST_TMP_FILE_NAME,
+  SEGMENTS_SUBDIR,
+  computeManifestChecksum,
+  loadSegmentManifest,
+  saveSegmentManifestAtomic,
+  computeSegmentChecksum,
+  writeSegmentAtomic,
+  loadSegment,
+  recoverOrCleanDanglingSegments,
+  mergeSegments,
+  SegmentedInvertedIndex,
+  runSegmentJustificationBenchmark,
+  exportSegmentBenchmarkMarkdown,
+} from '@opensearch/indexer';
+
+// ── Phase 98: Publish Benchmark Results (Milestone 33) ───────────────────
+export type {
+  ProgressiveScaleTierConfig,
+  TierBenchmarkResult,
+  BenchmarkChartSet,
+  HardwareLimitGuard,
+  PublishBenchmarkReport,
+  PublishBenchmarkOptions,
+} from './benchmark/publish-benchmark-types.js';
+
+export {
+  DEFAULT_SCALE_TIERS,
+  PRODUCTION_DISCLAIMER,
+  BENCHMARK_LIMITATIONS,
+  evaluateHardwareGuard,
+  generateAsciiBarChart,
+  generateBenchmarkCharts,
+  runPublishBenchmark,
+  exportPublishBenchmarkJson,
+  exportPublishBenchmarkMarkdown,
+} from './benchmark/publish-benchmark.js';
+
+// ── Phase 100: Tracker-Aware Ranking & Privacy Indicators ────────────────
+export type {
+  TrackerRankingOptions,
+  TrackerScoreExplanation,
+  TrackerIndicator,
+  QueryLevelRankShift,
+  TrackerQualityComparisonReport,
+  TrackerClassificationSource,
+  EvaluatedTrackerSignal,
+  TrackerQualityComparisonOptions,
+  PreparedQueryTestItem,
+  TrackerBenchmarkCliOptions,
+} from './tracker/index.js';
+
+export {
+  TRACKER_DETECTION_DISCLAIMER,
+  DEFAULT_TRACKER_RANKING_OPTIONS,
+  resolveClassificationFromSource,
+  evaluateTrackerSignal,
+  createTrackerIndicator,
+  TrackerQualityEvaluator,
+  runTrackerQualityBenchmark,
+} from './tracker/index.js';
+
+// ── Phase 101: Focus Lens Schema & Local Profiles (Milestone 34) ──────────
+export type {
+  DomainRuleAction,
+  DomainMultiplierRule,
+  FocusLensRankingWeights,
+  FocusLensProfileMetadata,
+  FocusLensProfile,
+  LensScoreExplanation,
+  LensValidationResult,
+  EvaluatedLensResult,
+  FocusLensRegistryOptions,
+  LensExportOptions,
+  LensEditorOptions,
+  SampleQueryDocument,
+  PreviewResultHit,
+  QueryPreviewSummary,
+  LensPreviewReport,
+  LensPreviewOptions,
+} from './lens/index.js';
+
+export {
+  CURRENT_LENS_SCHEMA_VERSION,
+  SUPPORTED_LENS_SCHEMA_VERSIONS,
+  HEALTH_LENS_DISCLAIMER,
+  NO_TRACKERS_LENS_DISCLAIMER,
+  LENS_BOOST_MIN,
+  LENS_BOOST_MAX,
+  LENS_DEMOTE_MIN,
+  LENS_DEMOTE_MAX,
+  LENS_WEIGHT_MIN,
+  LENS_WEIGHT_MAX,
+  MAX_LENS_FILE_SIZE_BYTES,
+  FOCUS_LENS_JSON_SCHEMA,
+  isValidDomainPattern,
+  validateLensProfile,
+  GENERAL_LENS,
+  STUDENT_LENS,
+  DEVELOPER_LENS,
+  RESEARCH_LENS,
+  TRUSTED_HEALTH_LENS,
+  NO_TRACKERS_LENS,
+  BUILTIN_LENSES,
+  getBuiltinLens,
+  isBuiltinLensId,
+  extractHostnameFromUrl,
+  matchesDomainPattern,
+  evaluateLensForDocument,
+  FocusLensRegistry,
+  getDefaultLensRegistry,
+  exportLensToJson,
+  importLensFromJson,
+  FocusLensEditor,
+  FIXED_PREVIEW_CORPUS,
+  FIXED_SAMPLE_QUERIES,
+  previewLensEffects,
+} from './lens/index.js';
+
+
 
 

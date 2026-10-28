@@ -18,6 +18,19 @@ import { CandidateDocument } from '../retrieval/retrieval-types.js';
 import { BM25Scorer, DEFAULT_BM25_PARAMS, DEFAULT_FIELD_BOOSTS } from './bm25-scorer.js';
 import { AuthorityScorer, createAuthorityScorer } from './authority-scorer.js';
 import {
+  evaluateTrackerSignal,
+  resolveClassificationFromSource,
+  TrackerClassificationSource,
+  TrackerScoreExplanation,
+} from '../tracker/index.js';
+import {
+  evaluateLensForDocument,
+  FocusLensProfile,
+  FocusLensRegistry,
+  getDefaultLensRegistry,
+  LensScoreExplanation,
+} from '../lens/index.js';
+import {
   evaluatePageRankSignal,
   PageRankLookupProvider,
 } from './pagerank-scorer.js';
@@ -52,6 +65,12 @@ export interface DefaultRankingEngineOptions {
   defaultOptions?: RankingOptions;
   /** Optional PageRank lookup provider / table */
   pageRankTable?: PageRankLookupProvider;
+  /** Optional Tracker classification data source (Phase 100) */
+  trackerClassificationSource?: TrackerClassificationSource;
+  /** Optional Focus Lens registry (Phase 101) */
+  lensRegistry?: FocusLensRegistry;
+  /** Default Focus Lens profile or identifier (Phase 101) */
+  lens?: FocusLensProfile | string;
 }
 
 export class DefaultRankingEngine implements RankingEngine {
@@ -59,12 +78,38 @@ export class DefaultRankingEngine implements RankingEngine {
   private readonly globalOptions: RankingOptions;
   private readonly authorityScorer: AuthorityScorer;
   private pageRankTable: PageRankLookupProvider | null = null;
+  private trackerClassificationSource: TrackerClassificationSource | null = null;
+  private lensRegistry: FocusLensRegistry;
 
   constructor(options: DefaultRankingEngineOptions) {
     this.index = options.index;
     this.globalOptions = options.defaultOptions ?? {};
     this.authorityScorer = createAuthorityScorer();
     this.pageRankTable = options.pageRankTable ?? this.globalOptions.pageRankTable ?? null;
+    this.trackerClassificationSource =
+      options.trackerClassificationSource ??
+      this.globalOptions.trackerClassificationSource ??
+      null;
+    this.lensRegistry =
+      options.lensRegistry ??
+      this.globalOptions.lensRegistry ??
+      getDefaultLensRegistry();
+  }
+
+  setTrackerClassificationSource(source: TrackerClassificationSource | null): void {
+    this.trackerClassificationSource = source;
+  }
+
+  getTrackerClassificationSource(): TrackerClassificationSource | null {
+    return this.trackerClassificationSource;
+  }
+
+  setLensRegistry(registry: FocusLensRegistry): void {
+    this.lensRegistry = registry;
+  }
+
+  getLensRegistry(): FocusLensRegistry {
+    return this.lensRegistry;
   }
 
   setPageRankTable(table: PageRankLookupProvider | null): void {
@@ -120,6 +165,42 @@ export class DefaultRankingEngine implements RankingEngine {
     const bm25Scorer = new BM25Scorer(this.index, bm25Params, fieldBoosts);
     const pageRankTable = mergedOptions.pageRankTable ?? this.pageRankTable ?? undefined;
     const enablePageRank = mergedOptions.enablePageRank ?? true;
+    const lensRegistry = mergedOptions.lensRegistry ?? this.lensRegistry;
+    const activeLens = lensRegistry.resolveLens(mergedOptions.lens ?? this.globalOptions.lens);
+
+    let enableTrackerSignal = mergedOptions.enableTrackerSignal ?? false;
+    let trackerOptions = mergedOptions.trackerOptions;
+
+    // Apply Focus Lens ranking weight overrides if specified
+    if (activeLens.rankingWeights) {
+      const rw = activeLens.rankingWeights;
+      if (rw.bm25) {
+        Object.assign(bm25Params, rw.bm25);
+      }
+      if (rw.fieldBoosts) {
+        Object.assign(fieldBoosts, rw.fieldBoosts);
+      }
+      if (rw.freshnessWeight !== undefined) {
+        signals.freshnessWeight = rw.freshnessWeight;
+      }
+      if (rw.domainAuthorityWeight !== undefined) {
+        signals.domainAuthorityWeight = rw.domainAuthorityWeight;
+      }
+      if (rw.pageRankWeight !== undefined) {
+        signals.pageRankWeight = rw.pageRankWeight;
+      }
+      if (rw.enableTrackerSignal !== undefined && mergedOptions.enableTrackerSignal === undefined) {
+        enableTrackerSignal = rw.enableTrackerSignal;
+      }
+      if (rw.trackerSignalWeight !== undefined) {
+        trackerOptions = {
+          ...trackerOptions,
+          weight: rw.trackerSignalWeight,
+        };
+      }
+    }
+    const trackerSource =
+      mergedOptions.trackerClassificationSource ?? this.trackerClassificationSource ?? undefined;
 
     // 1. Compute individual candidate scores and preliminary explanations
     const intermediateList: Array<{
@@ -189,6 +270,47 @@ export class DefaultRankingEngine implements RankingEngine {
         pageRankBonus;
       combinedScore = Math.max(0, combinedScore);
 
+      let trackerMultiplier: number | undefined;
+      let trackerExplain: TrackerScoreExplanation | undefined;
+
+      if (enableTrackerSignal) {
+        const classification =
+          resolveClassificationFromSource(trackerSource, candidate.documentId) ??
+          resolveClassificationFromSource(trackerSource, candidate.documentMeta.url);
+
+        const trackerEval = evaluateTrackerSignal(
+          candidate.documentMeta.url,
+          classification,
+          {
+            ...trackerOptions,
+            enabled: enableTrackerSignal && (trackerOptions?.enabled ?? true),
+          },
+        );
+
+        trackerMultiplier = trackerEval.multiplier;
+        trackerExplain = trackerEval.explanation;
+        combinedScore = combinedScore * trackerMultiplier;
+        combinedScore = Math.max(0, combinedScore);
+      }
+
+      // Focus Lens evaluation (Phase 101)
+      const lensEval = evaluateLensForDocument(candidate.documentMeta.url, activeLens);
+      if (lensEval.action === 'exclude') {
+        // Exclude document from candidate results
+        continue;
+      }
+
+      let lensMultiplier: number | undefined;
+      let lensExplain: LensScoreExplanation | undefined;
+      if (lensEval.action !== 'none' || activeLens.id !== 'general') {
+        lensMultiplier = lensEval.multiplier;
+        lensExplain = lensEval.explanation;
+        if (lensEval.action === 'boost' || lensEval.action === 'demote') {
+          combinedScore = combinedScore * lensMultiplier;
+          combinedScore = Math.max(0, combinedScore);
+        }
+      }
+
       const parsedUrl = this.safeParseHostname(candidate.documentMeta.url);
       const titlePrefix = candidate.documentMeta.title.toLowerCase().trim().slice(0, 30);
 
@@ -203,6 +325,10 @@ export class DefaultRankingEngine implements RankingEngine {
         authorityBonus: Math.round(authorityBonus * 10000) / 10000,
         pageRankBonus: Math.round(pageRankBonus * 10000) / 10000,
         pageRankExplain: prEvaluation.explanation,
+        trackerMultiplier,
+        trackerExplain,
+        lensMultiplier,
+        lensExplain,
         duplicatePenalty: 1.0, // May be updated below
         finalScore: Math.round(combinedScore * 10000) / 10000,
       };

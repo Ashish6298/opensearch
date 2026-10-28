@@ -5,6 +5,8 @@
  * document content and outbound discovery links from raw HTML.
  */
 
+import type { TrackerClassificationResult } from '../tracker/tracker-types.js';
+
 export interface HeadingItem {
   /** Heading tag level (1-6 for h1-h6) */
   level: number;
@@ -50,6 +52,8 @@ export interface ExtractedDocument {
   discoveredUrls: string[];
   /** Content length of the extracted body text in characters */
   textLength: number;
+  /** Tracker and subresource privacy classification (Phase 99) */
+  trackerClassification?: TrackerClassificationResult;
 }
 
 export interface HtmlParserOptions {
@@ -63,6 +67,8 @@ export interface HtmlParserOptions {
   maxLinks?: number;
   /** Whether to strip navigation (<nav>, <header>, <footer>, <aside>) noise */
   stripNavNoise?: boolean;
+  /** Whether to run tracker metadata classification on the parsed document (default: false) */
+  classifyTrackers?: boolean;
 }
 
 export interface HtmlParser {

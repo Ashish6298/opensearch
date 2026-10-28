@@ -44,6 +44,10 @@ import {
   handleSearchStream,
   handleSuggest,
   handleSystemStatus,
+  handleListLenses,
+  handleGetLens,
+  handleValidateLens,
+  handlePreviewLens,
 } from './routes.js';
 import { ApiAppContext, ApiServerOptions, SearchApiResponse, SearchServices } from './types.js';
 
@@ -263,6 +267,10 @@ export class ApiServer {
     this.router.post('/api/v1/search', handleSearch);
     this.router.get('/api/v1/search/stream', handleSearchStream);
     this.router.get('/api/v1/suggest', handleSuggest);
+    this.router.get('/api/v1/lenses', handleListLenses);
+    this.router.get('/api/v1/lenses/:id', handleGetLens);
+    this.router.post('/api/v1/lenses/validate', handleValidateLens);
+    this.router.post('/api/v1/lenses/preview', handlePreviewLens);
     this.router.get('/api/v1/openapi.json', handleOpenApiSpec);
     this.router.get('/openapi.json', handleOpenApiSpec);
   }
