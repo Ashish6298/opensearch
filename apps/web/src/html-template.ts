@@ -169,6 +169,21 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
                 <span class="local-only-icon" aria-hidden="true">🔒</span>
                 <span class="local-only-label">Local-only</span>
               </label>
+              <!-- Phase 102: Accessible Focus Lens Selector -->
+              <div class="lens-control-container" title="Select a Focus Lens ranking profile">
+                <label for="lens-selector" class="lens-selector-label" title="Focus Lens">
+                  <span class="lens-icon" aria-hidden="true">🎯</span>
+                  <span class="sr-only">Focus Lens:</span>
+                </label>
+                <select id="lens-selector" class="lens-selector" aria-label="Focus Lens ranking profile" title="Select Focus Lens profile">
+                  <option value="general" selected>General Lens</option>
+                  <option value="student">🎓 Student</option>
+                  <option value="developer">💻 Developer</option>
+                  <option value="research">🔬 Research</option>
+                  <option value="trusted-health">🏥 Health Sources</option>
+                  <option value="no-trackers">🛡️ No-Trackers</option>
+                </select>
+              </div>
               <span class="hosted-transparency-note" id="hosted-transparency-note" title="Note: If using a hosted server, the host receives the query at its own endpoint, but contacts zero third-party providers.">
                 (zero external providers)
               </span>

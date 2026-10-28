@@ -86,6 +86,7 @@
   let currentActiveResultIndex = -1;
   let currentResultItems = [];
   let currentTheme = 'dark';
+  let currentLens = 'general';
   let currentRequestId = 0;
   let activeFilter = 'all';
   let rateLimitTimer = null;
@@ -1133,6 +1134,9 @@
       }
       if (isLocalOnly) {
         fetchUrl += '&localOnly=true';
+      }
+      if (currentLens && currentLens !== 'general') {
+        fetchUrl += '&lens=' + encodeURIComponent(currentLens);
       }
       const res = await fetch(fetchUrl, { signal });
 

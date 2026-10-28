@@ -29,6 +29,10 @@ import {
   TrackerQualityEvaluator,
   runTrackerQualityBenchmark,
   getDefaultLensRegistry,
+  exportLensToJson,
+  importLensFromJson,
+  previewLensEffects,
+  FocusLensEditor,
 } from '@opensearch/ranking';
 import { PROJECT_NAME, PROJECT_VERSION } from '@opensearch/shared';
 import { CliFormatter } from './formatter.js';
@@ -77,9 +81,14 @@ export interface CliOptions {
   trackerSignal?: boolean;
   noTrackerSignal?: boolean;
   trackerWeight?: number;
-  // Phase 101: Focus Lens options
+  // Phase 101 & 102: Focus Lens options
   lens?: string;
   lenses?: boolean;
+  lensExport?: string;
+  lensImport?: string;
+  lensPreview?: string;
+  lensValidate?: string;
+  lensReset?: boolean;
 }
 
 export interface CliExecutionResult {
@@ -238,6 +247,29 @@ export function parseCliArgs(args: string[]): CliOptions {
       options.trackerWeight = parseFloat(arg.split('=')[1] ?? '0.15');
     } else if (arg === 'lenses' || arg === '--lenses') {
       options.lenses = true;
+    } else if (arg === '--lens-export' || arg === 'lens-export') {
+      const next = args[++i];
+      if (next && !next.startsWith('-')) options.lensExport = next;
+    } else if (arg.startsWith('--lens-export=')) {
+      options.lensExport = arg.split('=')[1];
+    } else if (arg === '--lens-import' || arg === 'lens-import') {
+      const next = args[++i];
+      if (next && !next.startsWith('-')) options.lensImport = next;
+    } else if (arg.startsWith('--lens-import=')) {
+      options.lensImport = arg.split('=')[1];
+    } else if (arg === '--lens-preview' || arg === 'lens-preview') {
+      const next = args[++i];
+      if (next && !next.startsWith('-')) options.lensPreview = next;
+      else options.lensPreview = 'general';
+    } else if (arg.startsWith('--lens-preview=')) {
+      options.lensPreview = arg.split('=')[1];
+    } else if (arg === '--lens-validate' || arg === 'lens-validate') {
+      const next = args[++i];
+      if (next && !next.startsWith('-')) options.lensValidate = next;
+    } else if (arg.startsWith('--lens-validate=')) {
+      options.lensValidate = arg.split('=')[1];
+    } else if (arg === '--lens-reset' || arg === 'lens-reset') {
+      options.lensReset = true;
     } else if (arg === '--lens') {
       const next = args[++i];
       if (next && !next.startsWith('-')) options.lens = next;
@@ -263,7 +295,12 @@ export function parseCliArgs(args: string[]): CliOptions {
       p !== 'publish' &&
       p !== 'publish-benchmark' &&
       p !== 'tracker-eval' &&
-      p !== 'lenses',
+      p !== 'lenses' &&
+      p !== 'lens-export' &&
+      p !== 'lens-import' &&
+      p !== 'lens-preview' &&
+      p !== 'lens-validate' &&
+      p !== 'lens-reset',
   );
   if (filteredPositional.length > 0) {
     options.query = filteredPositional.join(' ');
@@ -608,6 +645,144 @@ export async function runCli(args: string[], injectedStdin?: string): Promise<Cl
         stderr: formatter.red(`[ERROR] Tracker quality evaluation failed: ${err.message}`),
       };
     }
+  }
+
+  // Phase 102: Focus Lens Export
+  if (options.lensExport) {
+    const registry = getDefaultLensRegistry();
+    const lens = registry.getLens(options.lensExport);
+    if (!lens) {
+      return {
+        exitCode: 1,
+        stdout: '',
+        stderr: `Error: Focus Lens profile "${options.lensExport}" was not found.\nAvailable lenses: ${registry.listLenses().map(l => l.id).join(', ')}`,
+      };
+    }
+    const jsonOutput = exportLensToJson(lens, { pretty: true });
+    return {
+      exitCode: 0,
+      stdout: jsonOutput,
+      stderr: '',
+    };
+  }
+
+  // Phase 102: Focus Lens Import
+  if (options.lensImport) {
+    try {
+      if (!fs.existsSync(options.lensImport)) {
+        return {
+          exitCode: 1,
+          stdout: '',
+          stderr: `Error: Lens import file "${options.lensImport}" does not exist.`,
+        };
+      }
+      const rawFile = fs.readFileSync(options.lensImport, 'utf8');
+      const result = importLensFromJson(rawFile);
+      if (!result.valid || !result.profile) {
+        return {
+          exitCode: 1,
+          stdout: options.json ? JSON.stringify(result, null, 2) : '',
+          stderr: `Failed to import Focus Lens profile:\n${result.errors.map(e => `  - ${e}`).join('\n')}`,
+        };
+      }
+      const registry = getDefaultLensRegistry();
+      const regResult = registry.registerProfile(result.profile);
+      if (!regResult.valid) {
+        return {
+          exitCode: 1,
+          stdout: '',
+          stderr: `Failed to register Focus Lens:\n${regResult.errors.map(e => `  - ${e}`).join('\n')}`,
+        };
+      }
+      const msg = `Successfully imported and registered Focus Lens: "${result.profile.name}" [${result.profile.id}]`;
+      return {
+        exitCode: 0,
+        stdout: options.json ? JSON.stringify({ success: true, profile: result.profile }, null, 2) : msg,
+        stderr: '',
+      };
+    } catch (err: unknown) {
+      const errMessage = err instanceof Error ? err.message : String(err);
+      return {
+        exitCode: 1,
+        stdout: '',
+        stderr: `Error reading import file: ${errMessage}`,
+      };
+    }
+  }
+
+  // Phase 102: Focus Lens Preview
+  if (options.lensPreview) {
+    const registry = getDefaultLensRegistry();
+    const lens = registry.resolveLens(options.lensPreview);
+    const report = previewLensEffects(lens);
+
+    if (options.json) {
+      return {
+        exitCode: 0,
+        stdout: JSON.stringify(report, null, 2),
+        stderr: '',
+      };
+    }
+
+    return {
+      exitCode: 0,
+      stdout: formatter.formatLensPreview(report),
+      stderr: '',
+    };
+  }
+
+  // Phase 102: Focus Lens Validate
+  if (options.lensValidate) {
+    try {
+      if (!fs.existsSync(options.lensValidate)) {
+        return {
+          exitCode: 1,
+          stdout: '',
+          stderr: `Error: Lens file "${options.lensValidate}" does not exist.`,
+        };
+      }
+      const rawFile = fs.readFileSync(options.lensValidate, 'utf8');
+      const result = importLensFromJson(rawFile);
+      if (options.json) {
+        return {
+          exitCode: result.valid ? 0 : 1,
+          stdout: JSON.stringify(result, null, 2),
+          stderr: '',
+        };
+      }
+      if (result.valid) {
+        return {
+          exitCode: 0,
+          stdout: `✅ Valid Focus Lens schema: "${result.profile?.name}" [${result.profile?.id}]`,
+          stderr: '',
+        };
+      } else {
+        return {
+          exitCode: 1,
+          stdout: '',
+          stderr: `❌ Focus Lens validation failed:\n${result.errors.map(e => `  - ${e}`).join('\n')}`,
+        };
+      }
+    } catch (err: unknown) {
+      const errMessage = err instanceof Error ? err.message : String(err);
+      return {
+        exitCode: 1,
+        stdout: '',
+        stderr: `Error reading file: ${errMessage}`,
+      };
+    }
+  }
+
+  // Phase 102: Focus Lens Reset to Default
+  if (options.lensReset) {
+    const editor = new FocusLensEditor();
+    const defaultProfile = editor.restoreDefault();
+    const msg = `✅ Restored default Focus Lens profile: "${defaultProfile.name}" [${defaultProfile.id}]. Search ranking is restored to general default weights.`;
+    return {
+      exitCode: 0,
+      stdout: options.json ? JSON.stringify({ success: true, activeProfile: defaultProfile }, null, 2) : msg,
+      stderr: '',
+    };
   }
 
   // 10. Phase 101: Focus Lens list subcommand

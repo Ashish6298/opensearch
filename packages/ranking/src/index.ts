@@ -497,6 +497,13 @@ export type {
   LensValidationResult,
   EvaluatedLensResult,
   FocusLensRegistryOptions,
+  LensExportOptions,
+  LensEditorOptions,
+  SampleQueryDocument,
+  PreviewResultHit,
+  QueryPreviewSummary,
+  LensPreviewReport,
+  LensPreviewOptions,
 } from './lens/index.js';
 
 export {
@@ -528,7 +535,14 @@ export {
   evaluateLensForDocument,
   FocusLensRegistry,
   getDefaultLensRegistry,
+  exportLensToJson,
+  importLensFromJson,
+  FocusLensEditor,
+  FIXED_PREVIEW_CORPUS,
+  FIXED_SAMPLE_QUERIES,
+  previewLensEffects,
 } from './lens/index.js';
+
 
 
 

@@ -1,5 +1,5 @@
 /**
- * @opensearch/ranking — Focus Lens Module (Phase 101)
+ * @opensearch/ranking — Focus Lens Module (Phase 101 & Phase 102)
  */
 
 export type {
@@ -56,3 +56,29 @@ export {
   FocusLensRegistry,
   getDefaultLensRegistry,
 } from './lens-registry.js';
+
+// ── Phase 102: Lens Editor, Import/Export, and Previewer ─────────────────
+export type { LensExportOptions } from './lens-import-export.js';
+export {
+  exportLensToJson,
+  importLensFromJson,
+} from './lens-import-export.js';
+
+export type { LensEditorOptions } from './lens-editor.js';
+export {
+  FocusLensEditor,
+} from './lens-editor.js';
+
+export type {
+  SampleQueryDocument,
+  PreviewResultHit,
+  QueryPreviewSummary,
+  LensPreviewReport,
+  LensPreviewOptions,
+} from './lens-previewer.js';
+
+export {
+  FIXED_PREVIEW_CORPUS,
+  FIXED_SAMPLE_QUERIES,
+  previewLensEffects,
+} from './lens-previewer.js';

@@ -1,3 +1,4 @@
+import type { LensPreviewReport } from '@opensearch/ranking';
 /**
  * @opensearch/cli — Terminal ANSI Color & Layout Formatter (Phase 44)
  *
@@ -387,6 +388,61 @@ export class CliFormatter {
       }
       if (lens.disclaimer) {
         lines.push(`  ${this.magenta('⚠️ Notice:')} ${this.dim(lens.disclaimer)}`);
+      }
+      lines.push('');
+    }
+
+    return lines.join('\n');
+  }
+
+  formatLensPreview(report: LensPreviewReport): string {
+    const title = this.brightGreen(this.bold(`🔎 Focus Lens Preview: ${report.lensName} [id: ${report.lensId}]`));
+    const sep = this.dim('─'.repeat(75));
+    const lines = [title, sep];
+    lines.push(this.dim(`Description: ${report.description}`));
+    if (report.disclaimer) {
+      lines.push(this.magenta(`⚠️ Disclaimer: ${report.disclaimer}`));
+    }
+    lines.push(
+      this.cyan(
+        `Index Immutability Verified: ${report.indexImmutabilityVerified ? 'PASS (Underlying index unchanged)' : 'FAIL'}`
+      )
+    );
+    lines.push(
+      this.dim(
+        `Queries tested: ${report.queriesTested} | Total Boosted: ${report.totalBoostedAcrossQueries} | Total Demoted: ${report.totalDemotedAcrossQueries} | Total Excluded: ${report.totalExcludedAcrossQueries}`
+      )
+    );
+    lines.push('');
+
+    for (const summary of report.summaries) {
+      lines.push(this.bold(`Query: "${summary.query}" [Category: ${summary.category}]`));
+      lines.push(
+        `  Hits: ${summary.totalLensHits} (baseline: ${summary.totalBaselineHits}) | Boosted: ${summary.boostedCount} | Demoted: ${summary.demotedCount} | Excluded: ${summary.excludedCount} | Rank Shifts: ${summary.rankShiftCount}`
+      );
+
+      for (const hit of summary.results.slice(0, 3)) {
+        const actionSymbol =
+          hit.action === 'boost'
+            ? this.green('▲ BOOST')
+            : hit.action === 'demote'
+            ? this.yellow('▼ DEMOTE')
+            : this.dim('• NEUTRAL');
+        const shift = hit.rankDelta
+          ? hit.rankDelta > 0
+            ? this.green(`(+\${hit.rankDelta})`)
+            : this.yellow(`(\${hit.rankDelta})`)
+          : this.dim('(0)');
+        lines.push(`    ${actionSymbol} [Rank ${hit.lensRank} ${shift}] ${hit.title}`);
+        lines.push(`      Score: ${hit.baselineScore} -> ${hit.lensScore} (${hit.multiplier}x) | Domain: ${hit.domain}`);
+        lines.push(`      Reason: ${this.dim(hit.explanation)}`);
+      }
+
+      if (summary.excludedItems.length > 0) {
+        for (const ex of summary.excludedItems) {
+          lines.push(`    ${this.red('✕ EXCLUDED')} [Original rank ${ex.baselineRank}] ${ex.title}`);
+          lines.push(`      Reason: ${this.red(ex.explanation)}`);
+        }
       }
       lines.push('');
     }

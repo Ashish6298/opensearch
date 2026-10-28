@@ -27,7 +27,15 @@ import {
   SuggestApiResponse,
 } from './types.js';
 import { fetchExternalWebWithTelemetry, getSharedProviderRegistry } from './external-search.js';
-import { SafeSearchLevel, filterSafeSearchResults, getSafeSearchDisclosure } from '@opensearch/ranking';
+import {
+  SafeSearchLevel,
+  filterSafeSearchResults,
+  getSafeSearchDisclosure,
+  getDefaultLensRegistry,
+  validateLensProfile,
+  previewLensEffects,
+  FocusLensProfile,
+} from '@opensearch/ranking';
 import { generateOpenApiSpec } from './openapi-spec.js';
 import { generateDocsHtml } from './docs-html.js';
 
@@ -82,6 +90,10 @@ export const handleHealthCheck: RouteHandler = (_req, res, context) => {
       'GET /api/v1/search',
       'POST /api/v1/search',
       'GET /api/v1/suggest',
+      'GET /api/v1/lenses',
+      'GET /api/v1/lenses/:id',
+      'POST /api/v1/lenses/validate',
+      'POST /api/v1/lenses/preview',
       'GET /api/v1/openapi.json',
       'GET /openapi.json',
     ],
@@ -265,6 +277,9 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
     }
   }
 
+  const rawLens = (req.query['lens'] as string) ?? (typeof (req.body as Record<string, unknown>)?.['lens'] === 'string' ? (req.body as Record<string, unknown>)['lens'] as string : undefined);
+  const activeLens = rawLens ? getDefaultLensRegistry().resolveLens(rawLens) : undefined;
+
   const explainParam = req.query['explain'];
   const explain = explainParam === 'true' || explainParam === '1';
 
@@ -325,7 +340,7 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
   }
 
   // Check LRU Query Cache (Phase 28 performance optimization)
-  const cacheKey = `q:${parsedQuery.normalizedQuery}|p:${page}|s:${pageSize}`;
+  const cacheKey = `q:${parsedQuery.normalizedQuery}|p:${page}|s:${pageSize}|l:${activeLens?.id ?? 'default'}`;
   const queryCache = context.services.queryCache || context.queryCache;
 
   if (queryCache) {
@@ -355,6 +370,7 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
   const rankingResult = rankingEngine.rank(parsedQuery, retrievalResult.candidates, {
     topK: Math.max(100, page * pageSize),
     enableDuplicatePenalty: true,
+    lens: activeLens,
   });
 
   // 6. Result Generation, Snippets & Pagination
@@ -602,6 +618,7 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
       timestamp: new Date().toISOString(),
       explainPlan: explain,
       category: requestedCategory,
+      lens: activeLens ? { id: activeLens.id, name: activeLens.name, disclaimer: activeLens.disclaimer, isMedicalEndorsement: false } : undefined,
       categoryAvailable: isLocalOnly && (requestedCategory === 'images' || requestedCategory === 'news') && finalResults.length === 0
         ? false
         : true,
@@ -712,4 +729,87 @@ export const handleSearchStream: RouteHandler = async (req, res, context) => {
   });
 
   res.raw.end();
+};
+
+
+export const handleListLenses: RouteHandler = (_req, res) => {
+  const registry = getDefaultLensRegistry();
+  const lenses = registry.listLenses();
+  res.status(HTTP_STATUS.OK).json({
+    total: lenses.length,
+    defaultLens: 'general',
+    lenses,
+  });
+};
+
+export const handleGetLens: RouteHandler = (req, res) => {
+  const lensId = req.params['id'];
+  if (!lensId) {
+    throw new ValidationError('Lens id parameter is required.');
+  }
+  const registry = getDefaultLensRegistry();
+  const lens = registry.getLens(lensId);
+  if (!lens) {
+    res.status(HTTP_STATUS.NOT_FOUND).json({
+      error: {
+        message: `Focus Lens with id "${lensId}" was not found.`,
+        code: 'LENS_NOT_FOUND',
+        statusCode: HTTP_STATUS.NOT_FOUND,
+      },
+    });
+    return;
+  }
+  res.status(HTTP_STATUS.OK).json({ lens });
+};
+
+export const handleValidateLens: RouteHandler = (req, res) => {
+  const rawBody = req.body;
+  if (!rawBody || typeof rawBody !== 'object') {
+    throw new ValidationError('Request body must be a JSON object containing the Lens profile.');
+  }
+  const result = validateLensProfile(rawBody);
+  res.status(HTTP_STATUS.OK).json(result);
+};
+
+export const handlePreviewLens: RouteHandler = (req, res) => {
+  const rawBody = req.body as Record<string, unknown> | undefined;
+  const registry = getDefaultLensRegistry();
+  let lensProfile: FocusLensProfile | undefined;
+
+  if (typeof rawBody?.['lensId'] === 'string') {
+    lensProfile = registry.resolveLens(rawBody['lensId'] as string);
+  } else if (typeof rawBody?.['lens'] === 'string') {
+    lensProfile = registry.resolveLens(rawBody['lens'] as string);
+  } else if (rawBody?.['profile'] && typeof rawBody['profile'] === 'object') {
+    const val = validateLensProfile(rawBody['profile']);
+    if (!val.valid || !val.profile) {
+      res.status(HTTP_STATUS.BAD_REQUEST).json({
+        error: {
+          message: 'Invalid Focus Lens profile definition.',
+          errors: val.errors,
+          code: 'INVALID_LENS_PROFILE',
+        },
+      });
+      return;
+    }
+    lensProfile = val.profile;
+  } else if (rawBody && typeof rawBody === 'object' && ('id' in rawBody || 'schemaVersion' in rawBody)) {
+    const val = validateLensProfile(rawBody);
+    if (!val.valid || !val.profile) {
+      res.status(HTTP_STATUS.BAD_REQUEST).json({
+        error: {
+          message: 'Invalid Focus Lens profile definition.',
+          errors: val.errors,
+          code: 'INVALID_LENS_PROFILE',
+        },
+      });
+      return;
+    }
+    lensProfile = val.profile;
+  } else {
+    lensProfile = registry.resolveLens('general');
+  }
+
+  const previewReport = previewLensEffects(lensProfile);
+  res.status(HTTP_STATUS.OK).json(previewReport);
 };
