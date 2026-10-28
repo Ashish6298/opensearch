@@ -20,6 +20,8 @@ import {
   QueryFilter,
   InstantAnswerEngine,
   InstantAnswerPayload,
+  QuickAnswerEngine,
+  QuickAnswerPayload,
   BangResult,
   ProviderRegistry,
 } from '@opensearch/ranking';
@@ -87,6 +89,7 @@ export interface SearchServices {
   prefixTrie?: PrefixTrie;
   typoEngine?: TypoToleranceEngine;
   instantAnswerEngine?: InstantAnswerEngine;
+  quickAnswerEngine?: QuickAnswerEngine;
   queryParser: QueryParser;
   candidateRetriever: CandidateRetriever;
   rankingEngine: RankingEngine;
@@ -145,6 +148,7 @@ export interface SearchApiResponse {
     filters?: QueryFilter;
   };
   instantAnswer?: InstantAnswerPayload | null;
+  quickAnswer?: QuickAnswerPayload | null;
   bang?: BangResult | null;
   didYouMean?: DidYouMeanResult | null;
   results: Array<SearchResultItem & { explanation?: unknown }>;

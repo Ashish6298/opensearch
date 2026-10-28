@@ -285,6 +285,8 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
           <div class="results-meta" id="results-meta" role="status" aria-live="polite"></div>
           <!-- Phase 38: Instant Answers & Direct Calculation/Bang Card -->
           <div class="instant-answer-card" id="instant-answer-card" role="region" aria-label="Instant answer" style="display:none;"></div>
+          <!-- Phase 104: Quick Answer Panel (Extractive Summary from Retrieved Results) -->
+          <div class="quick-answer-card" id="quick-answer-card" role="region" aria-label="Quick answer" style="display:none;"></div>
           <!-- Phase 36: Did You Mean Notification Banner -->
           <div class="did-you-mean-banner" id="did-you-mean-banner" role="status" aria-live="polite" style="display:none;"></div>
           <section class="results-container" id="results-area" role="feed" aria-label="Search Results"></section>

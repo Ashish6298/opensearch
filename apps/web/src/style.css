@@ -625,6 +625,97 @@ body {
   color: #000000;
 }
 
+/* Phase 104: Quick Answer Panel (Extractive Summary from Retrieved Results) */
+.quick-answer-card {
+  font-family: var(--font-mono);
+  background-color: rgba(10, 132, 255, 0.05);
+  border: 1px solid rgba(10, 132, 255, 0.25);
+  border-left: 3px solid #0a84ff;
+  border-radius: 4px;
+  padding: 14px 18px;
+  margin-top: 6px;
+  margin-bottom: 12px;
+}
+
+.quick-answer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.quick-answer-badge {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #0a84ff;
+  background: rgba(10, 132, 255, 0.12);
+  padding: 2px 6px;
+  border-radius: 2px;
+}
+
+.quick-answer-model-badge {
+  font-size: 11px;
+  color: var(--text-muted-50, #888);
+}
+
+.quick-answer-summary {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text-color, #e0e0e0);
+  margin-bottom: 10px;
+}
+
+.quick-answer-citation-ref {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #0a84ff;
+  text-decoration: none;
+  padding: 0 2px;
+  margin: 0 1px;
+}
+
+.quick-answer-citation-ref:hover {
+  text-decoration: underline;
+}
+
+.quick-answer-disagreement {
+  font-size: 12px;
+  color: #ff9f0a;
+  background: rgba(255, 159, 10, 0.1);
+  border-left: 2px solid #ff9f0a;
+  padding: 6px 10px;
+  border-radius: 2px;
+  margin-bottom: 10px;
+}
+
+.quick-answer-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(10, 132, 255, 0.2);
+}
+
+.quick-answer-source-link {
+  font-size: 11.5px;
+  color: #0a84ff;
+  text-decoration: none;
+  background: rgba(10, 132, 255, 0.08);
+  padding: 3px 8px;
+  border-radius: 3px;
+  border: 1px solid rgba(10, 132, 255, 0.2);
+}
+
+.quick-answer-source-link:hover {
+  background: rgba(10, 132, 255, 0.2);
+  text-decoration: underline;
+}
+
 /* Phase 36: Did You Mean Notification Banner */
 .did-you-mean-banner {
   font-size: 14px;

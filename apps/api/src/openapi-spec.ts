@@ -470,6 +470,9 @@ export function generateOpenApiSpec(options: OpenApiSpecOptions = {}): Record<st
             instantAnswer: {
               $ref: '#/components/schemas/InstantAnswerResult',
             },
+            quickAnswer: {
+              $ref: '#/components/schemas/QuickAnswerPayload',
+            },
             bang: {
               $ref: '#/components/schemas/BangShortcutResult',
             },
@@ -529,6 +532,44 @@ export function generateOpenApiSpec(options: OpenApiSpecOptions = {}): Record<st
               additionalProperties: { type: 'string' },
             },
             redirectUrl: { type: 'string', nullable: true },
+          },
+        },
+        QuickAnswerPayload: {
+          type: 'object',
+          nullable: true,
+          properties: {
+            status: {
+              type: 'string',
+              enum: ['sufficient_evidence', 'insufficient_evidence', 'no_relevant_sources', 'disagreement_detected'],
+              example: 'sufficient_evidence',
+            },
+            summary: { type: 'string', example: 'TypeScript is a typed superset of JavaScript [1].' },
+            hasSufficientEvidence: { type: 'boolean', example: true },
+            citations: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  index: { type: 'integer', example: 1 },
+                  documentId: { type: 'string', example: 'doc-1' },
+                  title: { type: 'string', example: 'TypeScript' },
+                  url: { type: 'string', format: 'uri', example: 'https://typescriptlang.org' },
+                  domain: { type: 'string', example: 'typescriptlang.org' },
+                  snippetQuote: { type: 'string' },
+                  sourceType: { type: 'string', enum: ['local', 'web'] },
+                },
+              },
+            },
+            model: {
+              type: 'object',
+              properties: {
+                type: { type: 'string', example: 'extractive' },
+                name: { type: 'string', example: 'deterministic-extractive-v1' },
+                isLocal: { type: 'boolean', example: true },
+                requiresPaidService: { type: 'boolean', example: false },
+                disclosed: { type: 'boolean', example: true },
+              },
+            },
           },
         },
         BangShortcutResult: {

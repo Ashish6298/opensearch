@@ -35,6 +35,7 @@ import {
   validateLensProfile,
   previewLensEffects,
   FocusLensProfile,
+  getSharedQuickAnswerEngine,
 } from '@opensearch/ranking';
 import { generateOpenApiSpec } from './openapi-spec.js';
 import { generateDocsHtml } from './docs-html.js';
@@ -572,6 +573,17 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
     didYouMean = typoEngine.suggestCorrection(rawQuery);
   }
 
+  // Phase 104 — Quick Answer Extractive Summarizer from Retrieved Results
+  const quickAnswerEngine = context.services.quickAnswerEngine ?? getSharedQuickAnswerEngine();
+  const quickAnswer = quickAnswerEngine
+    ? quickAnswerEngine.generate(rawQuery, finalResults, {
+        isLocalOnly,
+        maxInputDocuments: 5,
+        maxOutputSentences: 3,
+        minRelevanceThreshold: 0.20,
+      })
+    : null;
+
   // Phase 84 — Generate Verifiable Privacy Receipt from Real Execution Telemetry
   const clientIp = (req.ip as string) || (req.raw?.socket?.remoteAddress as string) || '127.0.0.1';
   const hasThumbnails = finalResults.some(r => Boolean(r.thumbnailUrl));
@@ -600,6 +612,7 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
       filters: parsedQuery.filters,
     },
     instantAnswer,
+    quickAnswer,
     bang,
     didYouMean,
     results: explain
@@ -729,6 +742,17 @@ export const handleSearchStream: RouteHandler = async (req, res, context) => {
     items: searchResultSet.items,
     totalHits: searchResultSet.pagination.totalHits,
   });
+
+  // 5.5. Stream extractive quick answer if evidence is sufficient (Phase 104)
+  const quickAnswerEngine = context.services.quickAnswerEngine ?? getSharedQuickAnswerEngine();
+  if (quickAnswerEngine && searchResultSet.items.length > 0) {
+    const quickAnswer = quickAnswerEngine.generate(rawQuery, searchResultSet.items, {
+      isLocalOnly: false,
+    });
+    if (quickAnswer && quickAnswer.hasSufficientEvidence) {
+      sendEvent('quick_answer', quickAnswer);
+    }
+  }
 
   // 6. Complete SSE Stream
   sendEvent('done', {

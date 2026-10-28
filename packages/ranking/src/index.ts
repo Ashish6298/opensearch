@@ -565,6 +565,36 @@ export {
   previewLensEffects,
 } from './lens/index.js';
 
+// ── Phase 104: Quick Answer Panel & Extractive Summarizer (Milestone 35) ──
+export type {
+  QuickAnswerStatus,
+  QuickAnswerCitation,
+  QuickAnswerStatement,
+  QuickAnswerDisagreement,
+  QuickAnswerModelInfo,
+  QuickAnswerProvenance,
+  QuickAnswerPayload,
+  QuickAnswerOptions,
+  IQuickAnswerEngine,
+} from './answers/quick-answer/index.js';
+
+export {
+  sanitizeUntrustedText,
+  validateSourceUrl,
+  detectDisagreement,
+  tokenizeText,
+  calculateJaccardSimilarity,
+  splitIntoSentences,
+  isBoilerplateOrLowQuality,
+  scoreCandidateSentence,
+  selectTopExtractiveSentences,
+  DEFAULT_QUICK_ANSWER_OPTIONS,
+  QuickAnswerEngine,
+  createQuickAnswerEngine,
+  getSharedQuickAnswerEngine,
+} from './answers/quick-answer/index.js';
+
+
 
 
 
