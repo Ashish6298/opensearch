@@ -543,7 +543,13 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
 
   // 7. Instant Answers & Bang Shortcuts Evaluation (Phase 38)
   const instantAnswerEngine = context.services.instantAnswerEngine;
-  const instantAnswer = instantAnswerEngine ? instantAnswerEngine.evaluate(rawQuery) : null;
+  const instantAnswer = instantAnswerEngine
+    ? await instantAnswerEngine.evaluateAsync(rawQuery, {
+        isLocalOnly,
+        privacyMode: isLocalOnly ? 'local-only' : 'standard',
+        timeoutMs: 2000,
+      })
+    : null;
   const bang =
     instantAnswer && instantAnswer.type === 'bang'
       ? {
@@ -688,7 +694,11 @@ export const handleSearchStream: RouteHandler = async (req, res, context) => {
 
   // 1. Instant Answer evaluation & streaming (first event)
   if (instantAnswerEngine) {
-    const instantAnswer = instantAnswerEngine.evaluate(rawQuery);
+    const instantAnswer = await instantAnswerEngine.evaluateAsync(rawQuery, {
+      isLocalOnly: false,
+      privacyMode: 'standard',
+      timeoutMs: 2000,
+    });
     if (instantAnswer) {
       sendEvent('answer', instantAnswer);
     }

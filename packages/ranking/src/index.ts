@@ -154,8 +154,30 @@ export type {
 } from './answers/conversion-evaluator.js';
 export { ConversionEvaluator } from './answers/conversion-evaluator.js';
 
-export type { InstantAnswerPayload } from './answers/instant-answer-engine.js';
-export { InstantAnswerEngine, createInstantAnswerEngine } from './answers/instant-answer-engine.js';
+export type {
+  InstantAnswerAttribution,
+  InstantAnswerPrivacyBehavior,
+  InstantAnswerProvenance,
+  InstantAnswerContext,
+  InstantAnswerType,
+  InstantAnswerPayload,
+  InstantAnswerProviderMetadata,
+  InstantAnswerProvider,
+  InstantAnswerRegistryOptions,
+  WeatherProviderOptions,
+} from './answers/index.js';
+export {
+  InstantAnswerEngine,
+  createInstantAnswerEngine,
+  InstantAnswerRegistry,
+  getDefaultInstantAnswerRegistry,
+  UnitConversionProvider,
+  MathCalculationProvider,
+  CurrencyInstantAnswerProvider,
+  OpenMeteoWeatherProvider,
+  DefinitionInstantAnswerProvider,
+  PlacesInstantAnswerProvider,
+} from './answers/index.js';
 
 // ── Phase 49: Knowledge Graph & Entity Info-Cards (V1.3.0) ───────────────
 export type {

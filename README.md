@@ -936,7 +936,8 @@ $ audit --privacy-boundaries
 | **Milestone 31** | **Real PageRank & Ranking Explainability**| Phases 87 – 89 | Link graph extraction, power-iteration PageRank, multi-tier ranking, explainability | `[MILESTONE 31 PASSED]` |
 | **Milestone 32** | **Search Quality Lab**                  | Phases 90 – 93 | Graded judged dataset, evaluation metrics (NDCG/MAP), score ablation, regressions | `[MILESTONE 32 PASSED]` |
 | **Milestone 33** | **Performance & Large-Scale Search**    | Phases 94 – 98 | Benchmark harness, execution profiling, postings traversal, segment indexing & scale metrics | `[MILESTONE 33 PASSED]` |
-| **Milestone 34** | **Tracker-Aware Search & Focus Lenses**  | Phases 99 – 102| Reviewable tracker registry, static subresource parsing, tracker-aware ranking signals, Focus Lens schema & initial profiles | `[PHASE 101 PASSED]` |
+| **Milestone 34** | **Tracker-Aware Search & Focus Lenses**  | Phases 99 – 102| Reviewable tracker registry, static subresource parsing, tracker-aware ranking signals, Focus Lens schema & initial profiles | `[MILESTONE 34 PASSED]` |
+| **Milestone 35** | **Instant Answers and Quick Answer**     | Phases 103 – 107| Modular instant-answer provider framework, provenance attribution, local unit conversions, open weather/currency/places/definitions, privacy enforcement | `[PHASE 103 PASSED]` |
 
 <br/>
 
@@ -947,16 +948,16 @@ $ npm test
 ✓ packages/indexer/tests/v1-2-0-release-benchmark.test.ts (11 tests)
 ✓ apps/api/tests/api.test.ts (38 tests)
 ✓ apps/api/tests/openapi-docs.test.ts (18 tests)
-✓ packages/cli/tests/cli.test.ts (11 tests)
+✓ packages/ranking/tests/instant-answer-framework.test.ts (14 tests)
 ✓ packages/ranking/tests/lens-editor-import-export.test.ts (23 tests)
 ✓ packages/cli/tests/cli-lens-editor.test.ts (16 tests)
 ✓ apps/api/tests/lens-api.test.ts (7 tests)
 ...
-Test Files  93 passed (93)
-     Tests  1028 passed (1028)
-  Duration  9.64s -- 100% Passing Pass Rate
+Test Files  94 passed (94)
+     Tests  1042 passed (1042)
+  Duration  9.81s -- 100% Passing Pass Rate
 ────────────────────────────────────────────────────────────
-TOTAL RESULT: 1028 / 1028 TESTS PASSED (100.0%) -- V1.5.0 PHASE 102 VERIFIED (MILESTONE 34 SEALED)
+TOTAL RESULT: 1042 / 1042 TESTS PASSED (100.0%) -- V1.5.0 PHASE 103 VERIFIED
 ```
 
 ---
