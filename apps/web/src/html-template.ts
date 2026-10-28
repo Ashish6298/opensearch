@@ -291,6 +291,8 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
           <div class="did-you-mean-banner" id="did-you-mean-banner" role="status" aria-live="polite" style="display:none;"></div>
           <section class="results-container" id="results-area" role="feed" aria-label="Search Results"></section>
           <div id="pagination-area" role="navigation" aria-label="Search pagination"></div>
+          <!-- Phase 105: Privacy-Conscious Search Quality Feedback Widget -->
+          <div class="search-feedback-widget" id="search-feedback-widget" role="region" aria-label="Search feedback" style="display:none;"></div>
         </div>
       </div>
     </main>

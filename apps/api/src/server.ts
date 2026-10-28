@@ -25,6 +25,7 @@ import {
   createTypoToleranceEngine,
   createInstantAnswerEngine,
   createQuickAnswerEngine,
+  createFeedbackService,
 } from '@opensearch/ranking';
 import { AppConfig, createLogger, loadConfig, Logger } from '@opensearch/shared';
 import {
@@ -49,6 +50,10 @@ import {
   handleGetLens,
   handleValidateLens,
   handlePreviewLens,
+  handlePostFeedback,
+  handleGetFeedback,
+  handleDeleteFeedback,
+  handleGetFeedbackPrivacy,
 } from './routes.js';
 import { ApiAppContext, ApiServerOptions, SearchApiResponse, SearchServices } from './types.js';
 
@@ -125,7 +130,7 @@ export class ApiServer {
       services: this.services,
       rateLimiter: this.rateLimiter,
       queryCache: this.queryCache,
-
+      feedbackService: this.services?.feedbackService,
     };
   }
 
@@ -146,6 +151,7 @@ export class ApiServer {
     const typoEngine = createTypoToleranceEngine(index);
     const instantAnswerEngine = createInstantAnswerEngine();
     const quickAnswerEngine = createQuickAnswerEngine();
+    const feedbackService = createFeedbackService();
     const resultGenerator = createResultGenerator({
       pagination: {
         pageSize: this.config.search.defaultPageSize,
@@ -163,6 +169,7 @@ export class ApiServer {
       rankingEngine,
       resultGenerator,
       queryCache: this.queryCache,
+      feedbackService,
 
     };
   }
@@ -274,6 +281,10 @@ export class ApiServer {
     this.router.get('/api/v1/lenses/:id', handleGetLens);
     this.router.post('/api/v1/lenses/validate', handleValidateLens);
     this.router.post('/api/v1/lenses/preview', handlePreviewLens);
+    this.router.get('/api/v1/feedback', handleGetFeedback);
+    this.router.post('/api/v1/feedback', handlePostFeedback);
+    this.router.delete('/api/v1/feedback', handleDeleteFeedback);
+    this.router.get('/api/v1/feedback/privacy', handleGetFeedbackPrivacy);
     this.router.get('/api/v1/openapi.json', handleOpenApiSpec);
     this.router.get('/openapi.json', handleOpenApiSpec);
   }

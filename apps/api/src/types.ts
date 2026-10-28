@@ -22,6 +22,7 @@ import {
   InstantAnswerPayload,
   QuickAnswerEngine,
   QuickAnswerPayload,
+  FeedbackService,
   BangResult,
   ProviderRegistry,
 } from '@opensearch/ranking';
@@ -96,6 +97,7 @@ export interface SearchServices {
   resultGenerator: ResultGenerator;
   queryCache?: LruQueryCache<SearchApiResponse>;
   providerRegistry?: ProviderRegistry;
+  feedbackService?: FeedbackService;
 }
 
 export interface ApiAppContext {
@@ -106,6 +108,7 @@ export interface ApiAppContext {
   rateLimiter?: MemoryRateLimiter;
   queryCache?: LruQueryCache<SearchApiResponse>;
   providerRegistry?: ProviderRegistry;
+  feedbackService?: FeedbackService;
 }
 
 export interface ComponentHealth {
@@ -185,6 +188,7 @@ export interface ApiServerOptions {
   services?: SearchServices;
   index?: InvertedIndex;
   providerRegistry?: ProviderRegistry;
+  feedbackService?: FeedbackService;
   rateLimitPerMinute?: number;
   searchTimeoutMs?: number;
 }

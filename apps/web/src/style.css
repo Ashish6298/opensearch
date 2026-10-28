@@ -2132,3 +2132,58 @@ html[data-theme='light'] .run-btn:hover {
   background: var(--bg-primary, #0f172a);
   color: var(--color-foreground, #f8fafc);
 }
+
+
+/* Phase 105: Privacy-Conscious Search Quality Feedback */
+.search-feedback-widget {
+  font-family: var(--font-mono);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-card, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1));
+  border-radius: 4px;
+  padding: 10px 16px;
+  margin-top: 18px;
+  margin-bottom: 24px;
+  font-size: 12.5px;
+  color: var(--text-muted-70, #aaa);
+}
+
+.feedback-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.feedback-btn {
+  background: transparent;
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.2));
+  color: var(--text-color, #eee);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  padding: 3px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.feedback-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--accent-green, #30d158);
+  color: var(--accent-green, #30d158);
+}
+
+.feedback-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.feedback-privacy-notice {
+  font-size: 11px;
+  color: var(--text-muted-50, #888);
+  line-height: 1.4;
+  border-left: 2px solid var(--accent-blue, #0a84ff);
+  padding-left: 8px;
+}

@@ -594,6 +594,33 @@ export {
   getSharedQuickAnswerEngine,
 } from './answers/quick-answer/index.js';
 
+// ── Phase 105: Privacy-Conscious Feedback (Milestone 36) ──────────────────
+export type {
+  FeedbackRating,
+  FeedbackReasonCode,
+  ResultCountBucket,
+  FeedbackMode,
+  FeedbackConsent,
+  FeedbackSubmissionPayload,
+  StoredFeedbackRecord,
+  FeedbackValidationResult,
+  FeedbackRetentionPolicy,
+  FeedbackExportPayload,
+  FeedbackStats,
+  SubmitFeedbackResult,
+} from './feedback/index.js';
+
+export {
+  CURRENT_DISCLOSURE_VERSION,
+  DEFAULT_RETENTION_POLICY,
+  validateFeedbackPayload,
+  FeedbackStorage,
+  FeedbackService,
+  getSharedFeedbackService,
+  createFeedbackService,
+} from './feedback/index.js';
+
+
 
 
 

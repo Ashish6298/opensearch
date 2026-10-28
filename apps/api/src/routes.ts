@@ -36,6 +36,7 @@ import {
   previewLensEffects,
   FocusLensProfile,
   getSharedQuickAnswerEngine,
+  getSharedFeedbackService,
 } from '@opensearch/ranking';
 import { generateOpenApiSpec } from './openapi-spec.js';
 import { generateDocsHtml } from './docs-html.js';
@@ -95,6 +96,10 @@ export const handleHealthCheck: RouteHandler = (_req, res, context) => {
       'GET /api/v1/lenses/:id',
       'POST /api/v1/lenses/validate',
       'POST /api/v1/lenses/preview',
+      'GET /api/v1/feedback',
+      'POST /api/v1/feedback',
+      'DELETE /api/v1/feedback',
+      'GET /api/v1/feedback/privacy',
       'GET /api/v1/openapi.json',
       'GET /openapi.json',
     ],
@@ -847,3 +852,75 @@ export const handlePreviewLens: RouteHandler = (req, res) => {
   const previewReport = previewLensEffects(lensProfile);
   res.status(HTTP_STATUS.OK).json(previewReport);
 };
+
+// ── Phase 105: Privacy-Conscious Feedback Endpoints (Milestone 36) ────────
+
+export const handlePostFeedback: RouteHandler = (req, res, context) => {
+  const feedbackService = context.services?.feedbackService ?? context.feedbackService ?? getSharedFeedbackService();
+  const rawBody = req.body;
+
+  if (!rawBody || typeof rawBody !== 'object') {
+    res.status(HTTP_STATUS.BAD_REQUEST).json({
+      error: {
+        code: 'INVALID_FEEDBACK_PAYLOAD',
+        message: 'Request body must be a JSON object containing the feedback submission and consent.',
+        statusCode: HTTP_STATUS.BAD_REQUEST,
+      },
+    });
+    return;
+  }
+
+  const result = feedbackService.submitFeedback(rawBody);
+
+  if (!result.success || !result.record) {
+    res.status(HTTP_STATUS.BAD_REQUEST).json({
+      error: {
+        code: 'FEEDBACK_VALIDATION_FAILED',
+        message: (result.errors || ['Invalid feedback payload']).join('; '),
+        statusCode: HTTP_STATUS.BAD_REQUEST,
+      },
+    });
+    return;
+  }
+
+  res.status(HTTP_STATUS.CREATED).json({
+    success: true,
+    message: 'Feedback recorded successfully under privacy-conscious retention policy.',
+    recordId: result.record.feedbackId,
+    timestamp: result.record.timestamp,
+    expiresAt: result.record.expiresAt,
+  });
+};
+
+export const handleGetFeedback: RouteHandler = (_req, res, context) => {
+  const feedbackService = context.services?.feedbackService ?? context.feedbackService ?? getSharedFeedbackService();
+  const exported = feedbackService.exportFeedback();
+  const stats = feedbackService.getStats();
+
+  res.status(HTTP_STATUS.OK).json({
+    ...exported,
+    stats,
+  });
+};
+
+export const handleDeleteFeedback: RouteHandler = (_req, res, context) => {
+  const feedbackService = context.services?.feedbackService ?? context.feedbackService ?? getSharedFeedbackService();
+  const purgedCount = feedbackService.purgeAllRecords();
+
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
+    message: `Successfully purged ${purgedCount} feedback record(s).`,
+    purgedCount,
+  });
+};
+
+export const handleGetFeedbackPrivacy: RouteHandler = (_req, res, context) => {
+  const feedbackService = context.services?.feedbackService ?? context.feedbackService ?? getSharedFeedbackService();
+  const policy = feedbackService.getPrivacyNotice();
+
+  res.status(HTTP_STATUS.OK).json({
+    policy,
+    disclaimer: 'Feedback collection is strictly optional. OpenSearch never collects raw queries, IP addresses, accounts, or click histories.',
+  });
+};
+
