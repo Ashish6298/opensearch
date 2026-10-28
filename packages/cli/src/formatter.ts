@@ -191,6 +191,13 @@ export class CliFormatter {
         tooltip?: string;
       } | null;
       explanation?: Record<string, unknown> | null;
+      lensExplain?: {
+        lensName: string;
+        action: 'none' | 'boost' | 'demote' | 'exclude';
+        multiplier: number;
+        matchedPattern?: string;
+        explanation: string;
+      } | null;
     },
     index: number,
     queryTerms?: string[],
@@ -224,7 +231,16 @@ export class CliFormatter {
         trackerBadge = this.dim(`[ℹ️ ${ind.badgeText}]`);
       }
     }
-    let out = `${num} ${title} ${domainTag} ${trackerBadge}`.trim() + `\n    ${url}\n    ${snippet}`;
+    let lensBadge = '';
+    if (item.lensExplain && item.lensExplain.action !== 'none') {
+      const lx = item.lensExplain;
+      if (lx.action === 'boost') {
+        lensBadge = this.cyan(`[🎯 ${lx.lensName} +${lx.multiplier}x]`);
+      } else if (lx.action === 'demote') {
+        lensBadge = this.yellow(`[🎯 ${lx.lensName} ${lx.multiplier}x]`);
+      }
+    }
+    let out = `${num} ${title} ${domainTag} ${trackerBadge} ${lensBadge}`.replace(/\s+/g, ' ').trim() + `\n    ${url}\n    ${snippet}`;
 
     if (item.explanation && typeof item.explanation === 'object') {
       const exp = item.explanation as any;
@@ -236,7 +252,12 @@ export class CliFormatter {
         const trk = exp.trackerExplain;
         trackerLine = '\n' + this.dim(`      • Tracker Multiplier: x${exp.trackerMultiplier ?? trk.multiplier ?? '1.0'} (${trk.status}) | ${trk.explanation}`);
       }
-      out += `\n${explainHeader}\n${bm25Line}\n${signalsLine}${trackerLine}`;
+      let lensLine = '';
+      if (exp.lensExplain && exp.lensExplain.action !== 'none') {
+        const lx = exp.lensExplain;
+        lensLine = '\n' + this.dim(`      • Focus Lens: ${lx.lensName} (${lx.action} x${lx.multiplier}) | ${lx.explanation}`);
+      }
+      out += `\n${explainHeader}\n${bm25Line}\n${signalsLine}${trackerLine}${lensLine}`;
     }
 
     return out;
@@ -327,6 +348,52 @@ export class CliFormatter {
     return lines.join('\n');
   }
 
+  formatLensList(lenses: Array<{
+    id: string;
+    name: string;
+    description: string;
+    icon?: string;
+    boostDomains: Array<{ pattern: string; multiplier: number }>;
+    demoteDomains: Array<{ pattern: string; multiplier: number }>;
+    excludeDomains: string[];
+    disclaimer?: string;
+  }>): string {
+    const header = this.brightGreen(this.bold('⚡ OpenSearch Focus Lenses (Ranking Profiles)'));
+    const sep = this.dim('─'.repeat(70));
+    const lines = [header, sep, ''];
+
+    for (const lens of lenses) {
+      const icon = lens.icon ?? '🔍';
+      const title = this.bold(`${icon} ${lens.name} [id: ${this.cyan(lens.id)}]`);
+      const desc = this.dim(`  ${lens.description}`);
+      lines.push(title, desc);
+
+      if (lens.boostDomains.length > 0) {
+        const boosts = lens.boostDomains
+          .map(b => `${b.pattern} (${b.multiplier}x)`)
+          .slice(0, 5)
+          .join(', ');
+        lines.push(`  ${this.green('• Boosts:')} ${boosts}`);
+      }
+      if (lens.demoteDomains.length > 0) {
+        const demotes = lens.demoteDomains
+          .map(d => `${d.pattern} (${d.multiplier}x)`)
+          .slice(0, 3)
+          .join(', ');
+        lines.push(`  ${this.yellow('• Demotes:')} ${demotes}`);
+      }
+      if (lens.excludeDomains.length > 0) {
+        lines.push(`  ${this.red('• Excludes:')} ${lens.excludeDomains.join(', ')}`);
+      }
+      if (lens.disclaimer) {
+        lines.push(`  ${this.magenta('⚠️ Notice:')} ${this.dim(lens.disclaimer)}`);
+      }
+      lines.push('');
+    }
+
+    return lines.join('\n');
+  }
+
   formatHelp(): string {
     const logo = `
   ___                    ____                      _     
@@ -358,6 +425,8 @@ ${this.yellow(this.bold('COMMANDS & OPTIONS:'))}
   ${this.cyan('segment [options]')}        Run segment indexing & I/O benchmark (Phase 97)
   ${this.cyan('publish [options]')}        Run multi-tier scale benchmark & publish charts (Phase 98)
   ${this.cyan('tracker-eval [options]')}   Run tracker-aware ranking evaluation & tradeoff analysis (Phase 100)
+  ${this.cyan('lenses')}                   List available Focus Lenses (ranking profiles) (Phase 101)
+  ${this.cyan('--lens <id>')}              Activate Focus Lens (general, student, developer, research, trusted-health, no-trackers)
   ${this.cyan('--tracker-signal')}         Enable tracker classification ranking adjustments
   ${this.cyan('--no-tracker-signal')}      Disable tracker classification ranking adjustments (lexical only)
   ${this.cyan('--tracker-weight <val>')}   Blending weight for tracker signal [0.0 - 1.0] (default: 0.15)

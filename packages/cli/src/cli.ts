@@ -28,6 +28,7 @@ import {
   runParameterSweep,
   TrackerQualityEvaluator,
   runTrackerQualityBenchmark,
+  getDefaultLensRegistry,
 } from '@opensearch/ranking';
 import { PROJECT_NAME, PROJECT_VERSION } from '@opensearch/shared';
 import { CliFormatter } from './formatter.js';
@@ -76,6 +77,9 @@ export interface CliOptions {
   trackerSignal?: boolean;
   noTrackerSignal?: boolean;
   trackerWeight?: number;
+  // Phase 101: Focus Lens options
+  lens?: string;
+  lenses?: boolean;
 }
 
 export interface CliExecutionResult {
@@ -232,6 +236,13 @@ export function parseCliArgs(args: string[]): CliOptions {
       if (next && !next.startsWith('-')) options.trackerWeight = parseFloat(next);
     } else if (arg.startsWith('--tracker-weight=')) {
       options.trackerWeight = parseFloat(arg.split('=')[1] ?? '0.15');
+    } else if (arg === 'lenses' || arg === '--lenses') {
+      options.lenses = true;
+    } else if (arg === '--lens') {
+      const next = args[++i];
+      if (next && !next.startsWith('-')) options.lens = next;
+    } else if (arg.startsWith('--lens=')) {
+      options.lens = arg.split('=')[1];
     } else if (arg.startsWith('--suggest=')) {
       options.suggest = arg.split('=')[1];
     } else if (!arg.startsWith('-')) {
@@ -251,7 +262,8 @@ export function parseCliArgs(args: string[]): CliOptions {
       p !== 'segment' &&
       p !== 'publish' &&
       p !== 'publish-benchmark' &&
-      p !== 'tracker-eval',
+      p !== 'tracker-eval' &&
+      p !== 'lenses',
   );
   if (filteredPositional.length > 0) {
     options.query = filteredPositional.join(' ');
@@ -598,6 +610,26 @@ export async function runCli(args: string[], injectedStdin?: string): Promise<Cl
     }
   }
 
+  // 10. Phase 101: Focus Lens list subcommand
+  if (options.lenses) {
+    const registry = getDefaultLensRegistry();
+    const allLenses = registry.listLenses();
+
+    if (options.json) {
+      return {
+        exitCode: 0,
+        stdout: JSON.stringify(allLenses, null, 2),
+        stderr: '',
+      };
+    }
+
+    return {
+      exitCode: 0,
+      stdout: formatter.formatLensList(allLenses),
+      stderr: '',
+    };
+  }
+
   const baseApiUrl = options.apiUrl || process.env.OPENSEARCH_API_URL || 'http://localhost:3001';
 
   // 4. Health check command
@@ -697,7 +729,13 @@ export async function runCli(args: string[], injectedStdin?: string): Promise<Cl
 
   try {
     const explainQuery = options.explain ? '&explain=true' : '';
-    const searchUrl = `${baseApiUrl}/api/v1/search?q=${encodeURIComponent(query)}&limit=${limit}&page=${page}${explainQuery}`;
+    const lensParam = options.lens ? `&lens=${encodeURIComponent(options.lens)}` : '';
+    const trackerParam = options.trackerSignal
+      ? '&trackerSignal=true'
+      : options.noTrackerSignal
+        ? '&trackerSignal=false'
+        : '';
+    const searchUrl = `${baseApiUrl}/api/v1/search?q=${encodeURIComponent(query)}&limit=${limit}&page=${page}${explainQuery}${lensParam}${trackerParam}`;
     const res = await fetch(searchUrl);
 
     if (!res.ok) {

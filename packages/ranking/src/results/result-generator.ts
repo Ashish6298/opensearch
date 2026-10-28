@@ -27,6 +27,7 @@ import {
   createTrackerIndicator,
   resolveClassificationFromSource,
 } from '../tracker/index.js';
+import { getDefaultLensRegistry } from '../lens/index.js';
 
 export const DEFAULT_PAGINATION: Required<PaginationOptions> = {
   page: 1,
@@ -63,12 +64,17 @@ export class DefaultResultGenerator implements ResultGenerator {
       mergedOptions.pagination?.pageSize,
     );
 
+    const lensRegistry = mergedOptions.lensRegistry ?? getDefaultLensRegistry();
+    const activeLens = lensRegistry.resolveLens(mergedOptions.lens);
+
     // Fast-path: no documents
     if (totalHits === 0) {
       return {
         query,
         items: [],
         pagination,
+        activeLensId: activeLens.id !== 'general' ? activeLens.id : undefined,
+        activeLensName: activeLens.id !== 'general' ? activeLens.name : undefined,
         durationMs: Date.now() - startMs,
       };
     }
@@ -134,6 +140,7 @@ export class DefaultResultGenerator implements ResultGenerator {
         source: 'local-index',
         contentType: 'webpage',
         trackerIndicator,
+        lensExplain: scoredDoc.explanation?.lensExplain,
       };
     });
 
@@ -141,6 +148,8 @@ export class DefaultResultGenerator implements ResultGenerator {
       query,
       items,
       pagination,
+      activeLensId: activeLens.id !== 'general' ? activeLens.id : undefined,
+      activeLensName: activeLens.id !== 'general' ? activeLens.name : undefined,
       durationMs: Date.now() - startMs,
     };
   }

@@ -4,6 +4,11 @@ import type {
   TrackerScoreExplanation,
   TrackerClassificationSource,
 } from '../tracker/tracker-signal-types.js';
+import type {
+  FocusLensProfile,
+  LensScoreExplanation,
+  FocusLensRegistry,
+} from '../lens/index.js';
 /**
  * @opensearch/ranking — Ranking & Scorer Types (Phase 14)
  *
@@ -84,6 +89,10 @@ export interface RankingOptions {
   trackerOptions?: Partial<TrackerRankingOptions>;
   /** Tracker classification data source or lookup provider (Phase 100) */
   trackerClassificationSource?: TrackerClassificationSource;
+  /** Active Focus Lens profile or lens identifier (Phase 101, default: undefined or 'general') */
+  lens?: FocusLensProfile | string;
+  /** Optional Focus Lens registry for resolving lens identifiers (Phase 101) */
+  lensRegistry?: FocusLensRegistry;
 }
 
 export interface TermScoreBreakdown {
@@ -122,6 +131,10 @@ export interface ScoreExplanation {
   trackerMultiplier?: number;
   /** Detailed breakdown and diagnostics of Tracker classification signal (Phase 100) */
   trackerExplain?: TrackerScoreExplanation;
+  /** Focus Lens multiplier adjustment factor (Phase 101) */
+  lensMultiplier?: number;
+  /** Detailed breakdown and diagnostics of Focus Lens signal (Phase 101) */
+  lensExplain?: LensScoreExplanation;
   /** Near-duplicate / domain clustering penalty factor (<= 1.0) */
   duplicatePenalty: number;
   /** Final calculated total relevance score */

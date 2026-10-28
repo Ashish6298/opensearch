@@ -486,4 +486,49 @@ export {
   runTrackerQualityBenchmark,
 } from './tracker/index.js';
 
+// ── Phase 101: Focus Lens Schema & Local Profiles (Milestone 34) ──────────
+export type {
+  DomainRuleAction,
+  DomainMultiplierRule,
+  FocusLensRankingWeights,
+  FocusLensProfileMetadata,
+  FocusLensProfile,
+  LensScoreExplanation,
+  LensValidationResult,
+  EvaluatedLensResult,
+  FocusLensRegistryOptions,
+} from './lens/index.js';
+
+export {
+  CURRENT_LENS_SCHEMA_VERSION,
+  SUPPORTED_LENS_SCHEMA_VERSIONS,
+  HEALTH_LENS_DISCLAIMER,
+  NO_TRACKERS_LENS_DISCLAIMER,
+  LENS_BOOST_MIN,
+  LENS_BOOST_MAX,
+  LENS_DEMOTE_MIN,
+  LENS_DEMOTE_MAX,
+  LENS_WEIGHT_MIN,
+  LENS_WEIGHT_MAX,
+  MAX_LENS_FILE_SIZE_BYTES,
+  FOCUS_LENS_JSON_SCHEMA,
+  isValidDomainPattern,
+  validateLensProfile,
+  GENERAL_LENS,
+  STUDENT_LENS,
+  DEVELOPER_LENS,
+  RESEARCH_LENS,
+  TRUSTED_HEALTH_LENS,
+  NO_TRACKERS_LENS,
+  BUILTIN_LENSES,
+  getBuiltinLens,
+  isBuiltinLensId,
+  extractHostnameFromUrl,
+  matchesDomainPattern,
+  evaluateLensForDocument,
+  FocusLensRegistry,
+  getDefaultLensRegistry,
+} from './lens/index.js';
+
+
 
