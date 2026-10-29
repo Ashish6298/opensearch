@@ -62,8 +62,11 @@ import {
   handleApproveEvaluationCase,
   handleRankingSafetyCheck,
   handleOpenSearchDescriptor,
+  handleMcpPost,
+  handleMcpSse,
 } from './routes.js';
 import { ApiAppContext, ApiServerOptions, SearchApiResponse, SearchServices } from './types.js';
+import { OpenSearchMcpServer } from './mcp/index.js';
 
 export class ApiServer {
   private readonly config: AppConfig;
@@ -74,6 +77,8 @@ export class ApiServer {
   private readonly rateLimiter: MemoryRateLimiter;
   private readonly queryCache: LruQueryCache<SearchApiResponse>;
   private readonly customIndexProvided: boolean;
+  private readonly mcpServer: OpenSearchMcpServer;
+  private readonly enableMcp: boolean;
   private server: Server | null = null;
 
   constructor(options: ApiServerOptions = {}) {
@@ -107,6 +112,16 @@ export class ApiServer {
     }
     this.customIndexProvided = Boolean(options.services || options.index);
 
+    // Initialize Model Context Protocol (MCP) server (Phase 109)
+    this.enableMcp = options.enableMcp ?? true;
+    this.mcpServer = new OpenSearchMcpServer({
+      services: this.services,
+      config: this.config,
+      logger: this.logger,
+      isLocalOnly: options.isLocalOnly ?? false,
+      enabled: this.enableMcp,
+    });
+
     const timeoutMs = options.searchTimeoutMs ?? this.config.search.searchTimeoutMs ?? 5_000;
     const corsOrigin = options.corsOrigin ?? this.config.api.corsOrigin ?? '*';
 
@@ -130,6 +145,10 @@ export class ApiServer {
     return this.queryCache;
   }
 
+  getMcpServer(): OpenSearchMcpServer {
+    return this.mcpServer;
+  }
+
   getContext(): ApiAppContext {
     return {
       config: this.config,
@@ -140,6 +159,8 @@ export class ApiServer {
       queryCache: this.queryCache,
       feedbackService: this.services?.feedbackService,
       feedbackReviewQueue: this.services?.feedbackReviewQueue,
+      mcpServer: this.mcpServer,
+      enableMcp: this.enableMcp,
     };
   }
 
@@ -303,6 +324,8 @@ export class ApiServer {
     this.router.post('/api/v1/feedback/review/ranking-check', handleRankingSafetyCheck);
     this.router.get('/opensearch.xml', handleOpenSearchDescriptor);
     this.router.get('/opensearchdescription.xml', handleOpenSearchDescriptor);
+    this.router.post('/api/v1/mcp', handleMcpPost);
+    this.router.get('/api/v1/mcp/sse', handleMcpSse);
     this.router.get('/api/v1/openapi.json', handleOpenApiSpec);
     this.router.get('/openapi.json', handleOpenApiSpec);
   }

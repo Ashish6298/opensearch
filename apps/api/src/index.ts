@@ -66,6 +66,21 @@ export {
   DEFAULT_DESCRIPTOR_CONFIG,
   type OpenSearchDescriptorOptions,
 } from './opensearch-descriptor.js';
+export {
+  OpenSearchMcpServer,
+  runStdioMcpServer,
+  handleMcpPost,
+  handleMcpSse,
+  MCP_PROTOCOL_VERSION,
+  MCP_SERVER_NAME,
+  MCP_SERVER_VERSION,
+  JSONRPC_ERRORS,
+  type McpServerOptions,
+  type McpToolDefinition,
+  type McpToolCallResult,
+  type JsonRpcRequest,
+  type JsonRpcResponse,
+} from './mcp/index.js';
 export { ApiServer, createApiServer } from './server.js';
 
 export function createApiContext(overrides?: Record<string, string | undefined>): ApiAppContext {

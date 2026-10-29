@@ -177,6 +177,7 @@ export const handleApiRoot: RouteHandler = (_req, res, context) => {
       lenses: '/api/v1/lenses',
       feedback: '/api/v1/feedback',
       feedbackReview: '/api/v1/feedback/review',
+      mcp: '/api/v1/mcp',
       opensearch: '/opensearch.xml',
       openapi: '/api/v1/openapi.json',
       docs: '/docs',
@@ -1183,5 +1184,7 @@ export const handleRankingSafetyCheck: RouteHandler = (req, res) => {
     });
   }
 };
+
+export { handleMcpPost, handleMcpSse } from './mcp/index.js';
 
 

@@ -102,6 +102,11 @@ export interface SearchServices {
   feedbackReviewQueue?: FeedbackReviewQueue;
 }
 
+export interface McpServerLike {
+  isEnabled(): boolean;
+  handleMessage(rawMessage: unknown): Promise<unknown>;
+}
+
 export interface ApiAppContext {
   config: AppConfig;
   logger: Logger;
@@ -112,6 +117,8 @@ export interface ApiAppContext {
   providerRegistry?: ProviderRegistry;
   feedbackService?: FeedbackService;
   feedbackReviewQueue?: FeedbackReviewQueue;
+  mcpServer?: McpServerLike;
+  enableMcp?: boolean;
 }
 
 export interface ComponentHealth {
@@ -194,6 +201,10 @@ export interface ApiServerOptions {
   feedbackService?: FeedbackService;
   rateLimitPerMinute?: number;
   searchTimeoutMs?: number;
+  /** Whether the Model Context Protocol (MCP) server endpoints are enabled. Default: true */
+  enableMcp?: boolean;
+  /** Whether to enforce Local-only mode server-side. Default: false */
+  isLocalOnly?: boolean;
 }
 
 export type ApiApplicationContext = ApiAppContext;

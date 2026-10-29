@@ -71,6 +71,10 @@ export function generateOpenApiSpec(options: OpenApiSpecOptions = {}): Record<st
         name: 'Feedback & Quality',
         description: 'Voluntary privacy-conscious feedback, review queue management, evaluation case approval, and ranking change safety checks.',
       },
+      {
+        name: 'MCP Integration',
+        description: 'Model Context Protocol (JSON-RPC 2.0 & SSE) endpoints for AI coding agents and desktop clients.',
+      },
     ],
     paths: {
       '/': {
@@ -896,6 +900,82 @@ export function generateOpenApiSpec(options: OpenApiSpecOptions = {}): Record<st
             },
             '400': {
               description: 'Ranking safety violation or held-out regression.',
+            },
+          },
+        },
+      },
+      '/api/v1/mcp': {
+        post: {
+          tags: ['MCP Integration'],
+          summary: 'Model Context Protocol (JSON-RPC 2.0) endpoint',
+          description:
+            'Dispatches JSON-RPC 2.0 requests to the OpenSearch Model Context Protocol server for AI coding agents and desktop applications. Provides search, quick_answer, get_status, and get_privacy_policy tools with strict query limits and server-side local-only enforcement.',
+          operationId: 'mcpPost',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    jsonrpc: { type: 'string', enum: ['2.0'] },
+                    id: { oneOf: [{ type: 'string' }, { type: 'number' }] },
+                    method: { type: 'string' },
+                    params: { type: 'object' },
+                  },
+                  required: ['jsonrpc', 'method'],
+                },
+              },
+            },
+          },
+          responses: {
+            '200': {
+              description: 'JSON-RPC 2.0 response object.',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      jsonrpc: { type: 'string', enum: ['2.0'] },
+                      id: { oneOf: [{ type: 'string' }, { type: 'number' }, { type: 'null' }] },
+                      result: { type: 'object' },
+                      error: {
+                        type: 'object',
+                        properties: {
+                          code: { type: 'integer' },
+                          message: { type: 'string' },
+                          data: { type: 'object' },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+            '503': {
+              description: 'MCP server disabled on this instance.',
+            },
+          },
+        },
+      },
+      '/api/v1/mcp/sse': {
+        get: {
+          tags: ['MCP Integration'],
+          summary: 'Model Context Protocol Server-Sent Events (SSE) stream',
+          description:
+            'Opens an SSE channel for MCP server events and endpoint announcement.',
+          operationId: 'mcpSseGet',
+          responses: {
+            '200': {
+              description: 'Persistent SSE stream.',
+              content: {
+                'text/event-stream': {
+                  schema: { type: 'string' },
+                },
+              },
+            },
+            '503': {
+              description: 'MCP server disabled.',
             },
           },
         },
