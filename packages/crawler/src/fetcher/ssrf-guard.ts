@@ -26,6 +26,8 @@ const PRIVATE_IPV4: RegExp[] = [
   /^169\.254\./, // Link-local / APIPA / Cloud metadata (169.254.0.0/16)
   /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./, // CGNAT (100.64.0.0/10)
   /^0\./, // "This" network (0.0.0.0/8)
+  /^(22[4-9]|23\d)\./, // Multicast (224.0.0.0/4)
+  /^(24\d|25[0-5])\./, // Reserved / Future use / Broadcast (240.0.0.0/4)
   /^255\./, // Broadcast
 ];
 
@@ -51,11 +53,50 @@ const PRIVATE_IPV6_PREFIXES = [
   'fe9',
   'fea',
   'feb',
+  'ff', // Multicast (ff00::/8)
   '::', // Unspecified
 ];
 
+/**
+ * Decodes integer, hexadecimal, or dotted octal IPv4 notations to canonical dotted decimal.
+ */
+export function decodeNumericOrHexIp(val: string): string | null {
+  const trimmed = val.trim().toLowerCase().replace(/^\[|\]$/g, '');
+  if (/^0x[0-9a-f]+$/i.test(trimmed)) {
+    const num = parseInt(trimmed, 16);
+    if (!isNaN(num) && num >= 0 && num <= 0xffffffff) {
+      return `${(num >>> 24) & 255}.${(num >>> 16) & 255}.${(num >>> 8) & 255}.${num & 255}`;
+    }
+  }
+  if (/^\d+$/.test(trimmed)) {
+    const num = parseInt(trimmed, 10);
+    if (!isNaN(num) && num >= 0 && num <= 0xffffffff) {
+      return `${(num >>> 24) & 255}.${(num >>> 16) & 255}.${(num >>> 8) & 255}.${num & 255}`;
+    }
+  }
+  const parts = trimmed.split('.');
+  if (parts.length === 4 && parts.every(p => /^0x[0-9a-f]+$/i.test(p) || /^0\d+$/.test(p) || /^\d+$/.test(p))) {
+    const octets = parts.map(p => {
+      if (p.startsWith('0x')) return parseInt(p, 16);
+      if (p.startsWith('0') && p.length > 1) return parseInt(p, 8);
+      return parseInt(p, 10);
+    });
+    if (octets.every(o => !isNaN(o) && o >= 0 && o <= 255)) {
+      return octets.join('.');
+    }
+  }
+  return null;
+}
+
 export function isPrivateIpv4(ip: string): boolean {
-  return PRIVATE_IPV4.some(p => p.test(ip));
+  if (PRIVATE_IPV4.some(p => p.test(ip))) {
+    return true;
+  }
+  const decoded = decodeNumericOrHexIp(ip);
+  if (decoded && PRIVATE_IPV4.some(p => p.test(decoded))) {
+    return true;
+  }
+  return false;
 }
 
 export function isPrivateIpv6(ip: string): boolean {
@@ -77,6 +118,8 @@ export function isPrivateHostname(hostname: string): boolean {
   if (LOOPBACK_NAMES.has(h)) return true;
   if (isPrivateIpv4(h)) return true;
   if (isPrivateIpv6(h)) return true;
+  const decoded = decodeNumericOrHexIp(h);
+  if (decoded && isPrivateIpv4(decoded)) return true;
   if (DANGEROUS_TLDS_AND_SUFFIXES.some(suffix => h.endsWith(suffix))) {
     return true;
   }
