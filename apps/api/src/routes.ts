@@ -19,6 +19,9 @@ import {
   SkippedProviderRecord,
   getProviderMetadataDefaults,
   ProviderExecutionStatus,
+  DEFAULT_LATENCY_BUCKETS,
+  DEFAULT_COUNT_BUCKETS,
+  getDefaultRegistry,
 } from '@opensearch/shared';
 import {
   HealthCheckResponse,
@@ -130,6 +133,7 @@ export const handleHealthCheck: RouteHandler = (_req, res, context) => {
       'POST /api/v1/feedback/review/ranking-check',
       'GET /opensearch.xml',
       'GET /opensearchdescription.xml',
+      'GET /metrics',
       'GET /api/v1/openapi.json',
       'GET /openapi.json',
     ],
@@ -264,6 +268,7 @@ export const handleApiRoot: RouteHandler = (_req, res, context) => {
       feedback: '/api/v1/feedback',
       feedbackReview: '/api/v1/feedback/review',
       mcp: '/api/v1/mcp',
+      metrics: '/metrics',
       opensearch: '/opensearch.xml',
       openapi: '/api/v1/openapi.json',
       docs: '/docs',
@@ -401,6 +406,99 @@ export const handleSystemStatus: RouteHandler = (_req, res, context) => {
   });
 };
 
+/**
+ * Prometheus operational metrics endpoint (GET /metrics - Phase 113).
+ * Exposes low-cardinality, privacy-safe metrics in standard Prometheus text exposition format (0.0.4)
+ * or JSON snapshot (when requested via Accept: application/json).
+ * Strictly guarantees zero collection of raw user queries, user IDs, or IPs.
+ */
+export const handleMetrics: RouteHandler = async (req, res, context) => {
+  const registry = context.metrics || getDefaultRegistry();
+
+  // 1. Process runtime metrics
+  registry
+    .gauge('opensearch_process_uptime_seconds', 'Process uptime in seconds')
+    .set(process.uptime());
+
+  const mem = process.memoryUsage();
+  registry
+    .gauge('opensearch_memory_heap_used_bytes', 'Process heap memory used in bytes')
+    .set(mem.heapUsed);
+  registry
+    .gauge('opensearch_memory_heap_total_bytes', 'Process heap memory total in bytes')
+    .set(mem.heapTotal);
+  registry
+    .gauge('opensearch_memory_rss_bytes', 'Process resident set size in bytes')
+    .set(mem.rss);
+
+  // 2. Index metrics
+  if (context.services?.index) {
+    try {
+      const stats = context.services.index.getStats();
+      registry
+        .gauge('opensearch_index_documents_total', 'Total number of documents indexed')
+        .set(stats.totalDocuments);
+      registry
+        .gauge('opensearch_index_terms_total', 'Total number of unique terms indexed')
+        .set(stats.totalTerms || 0);
+      registry
+        .gauge('opensearch_index_segments_total', 'Total number of active index segments')
+        .set(1);
+    } catch {
+      // Non-fatal if index is not loaded
+    }
+  }
+
+  // 3. Provider circuit breaker state metrics
+  const activeRegistry = context.services?.providerRegistry || context.providerRegistry;
+  if (activeRegistry) {
+    try {
+      const statuses = activeRegistry.getAllProviderStatuses();
+      const breakerGauge = registry.gauge(
+        'opensearch_provider_circuit_breaker_state',
+        'Current circuit breaker state per provider (0=closed/healthy, 1=half-open, 2=open/tripped)',
+        ['provider'],
+      );
+      for (const p of statuses) {
+        const stateVal = p.circuitState === 'OPEN' ? 2 : p.circuitState === 'HALF_OPEN' ? 1 : 0;
+        breakerGauge.set({ provider: p.id }, stateVal);
+      }
+    } catch {
+      // Non-fatal
+    }
+  }
+
+  // 4. Queue depth metrics
+  const reviewQueue = context.services?.feedbackReviewQueue || context.feedbackReviewQueue;
+  if (reviewQueue) {
+    try {
+      const stats = reviewQueue.getStats();
+      registry
+        .gauge(
+          'opensearch_queue_depth',
+          'Current pending queue depth for asynchronous background processing',
+          ['queue'],
+        )
+        .set({ queue: 'feedback_review' }, stats.pendingCount);
+    } catch {
+      // Non-fatal
+    }
+  }
+
+  // 5. Check Accept header: return JSON snapshot or standard Prometheus text format
+  const accept = (req.headers['accept'] as string) || '';
+  if (accept.includes('application/json')) {
+    res.status(HTTP_STATUS.OK).json(registry.getSnapshot());
+    return;
+  }
+
+  const output = registry.toPrometheusFormat();
+  res.raw.setHeader('Content-Type', 'text/plain; version=0.0.4; charset=utf-8');
+  res.raw.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.raw.statusCode = HTTP_STATUS.OK;
+  res.raw.end(output);
+};
+
 export const handleSearch: RouteHandler = async (req, res, context) => {
   const startMs = Date.now();
 
@@ -464,6 +562,9 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
 
   const explainParam = req.query['explain'];
   const explain = explainParam === 'true' || explainParam === '1';
+
+  const rawMode = ((req.query['mode'] as string) || ((req.body as Record<string, unknown>)?.['mode'] as string) || '').toLowerCase().trim();
+  const isLocalOnly = req.query['localOnly'] === 'true' || rawMode === 'local' || rawMode === 'local-only';
 
   // 2. Validate input constraints
   if (page < 1) {
@@ -538,6 +639,23 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
         },
       };
       res.setHeader('X-Cache', 'HIT');
+      if (context.metrics) {
+        const mode = isLocalOnly ? 'local_only' : 'standard';
+        context.metrics
+          .counter('opensearch_search_queries_total', 'Total search queries executed partitioned by privacy mode', ['mode'])
+          .inc({ mode });
+        context.metrics
+          .histogram(
+            'opensearch_search_pipeline_duration_seconds',
+            'Search query execution latency in seconds from start to result generation',
+            ['mode'],
+            DEFAULT_LATENCY_BUCKETS,
+          )
+          .observe({ mode }, (Date.now() - startMs) / 1000);
+        context.metrics
+          .histogram('opensearch_search_results_count', 'Distribution of search result item counts returned to clients', [], DEFAULT_COUNT_BUCKETS)
+          .observe(cached.results.length);
+      }
       res.status(HTTP_STATUS.OK).json(cachedResponse);
       return;
     }
@@ -592,9 +710,6 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
   const rawSafeSearch = ((req.query['safeSearch'] as string) || (req.query['safe'] as string) || 'moderate').toLowerCase().trim();
   const safeSearchLevel: SafeSearchLevel = rawSafeSearch === 'strict' || rawSafeSearch === 'off' ? rawSafeSearch : 'moderate';
 
-  const rawMode = ((req.query['mode'] as string) || ((req.body as Record<string, unknown>)?.['mode'] as string) || '').toLowerCase().trim();
-  const isLocalOnly = req.query['localOnly'] === 'true' || rawMode === 'local' || rawMode === 'local-only';
-
   // Query live web search when local indexed results are insufficient (unless in local-only mode)
   // In Local-Only mode: query planner strictly suppresses external search providers
   const providerRegistry = context.services.providerRegistry ?? context.providerRegistry;
@@ -605,6 +720,7 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
   const skippedProviders: SkippedProviderRecord[] = [];
   let isPartialResult = false;
   let searchDeadlineExceeded = false;
+  let liveExecution: Awaited<ReturnType<typeof fetchExternalWebWithTelemetry>> | undefined;
 
   const activeRegistry = providerRegistry ?? getSharedProviderRegistry();
 
@@ -630,7 +746,7 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
     }
   } else if (canFetchExternal && page === 1 && finalResults.length < pageSize) {
     try {
-      const liveExecution = await fetchExternalWebWithTelemetry(
+      liveExecution = await fetchExternalWebWithTelemetry(
         rawQuery,
         pageSize - finalResults.length,
         providerRegistry,
@@ -843,6 +959,56 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
   // Populate cache for subsequent identical requests
   if (queryCache) {
     queryCache.set(cacheKey, responsePayload);
+  }
+
+  // Operational metrics without query surveillance (Phase 113)
+  if (context.metrics) {
+    const mode = isLocalOnly ? 'local_only' : 'standard';
+    const durationSeconds = (Date.now() - startMs) / 1000;
+
+    context.metrics
+      .counter('opensearch_search_queries_total', 'Total search queries executed partitioned by privacy mode', ['mode'])
+      .inc({ mode });
+
+    context.metrics
+      .histogram(
+        'opensearch_search_pipeline_duration_seconds',
+        'Search query execution latency in seconds from start to result generation',
+        ['mode'],
+        DEFAULT_LATENCY_BUCKETS,
+      )
+      .observe({ mode }, durationSeconds);
+
+    context.metrics
+      .histogram(
+        'opensearch_search_results_count',
+        'Distribution of search result item counts returned to clients',
+        [],
+        DEFAULT_COUNT_BUCKETS,
+      )
+      .observe(finalResults.length);
+
+    if (liveExecution?.summary?.providerResults) {
+      for (const pResult of liveExecution.summary.providerResults) {
+        const provStatus = pResult.cached ? 'cached' : pResult.error || pResult.errorCode ? 'failure' : 'success';
+        context.metrics
+          .counter(
+            'opensearch_provider_requests_total',
+            'Total outbound requests made to search providers by provider ID and result status',
+            ['provider', 'status'],
+          )
+          .inc({ provider: pResult.providerId, status: provStatus });
+
+        context.metrics
+          .histogram(
+            'opensearch_provider_request_duration_seconds',
+            'Outbound search provider response latency in seconds',
+            ['provider'],
+            DEFAULT_LATENCY_BUCKETS,
+          )
+          .observe({ provider: pResult.providerId }, (pResult.durationMs || 0) / 1000);
+      }
+    }
   }
 
   res.setHeader('X-Cache', 'MISS');

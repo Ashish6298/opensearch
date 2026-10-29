@@ -29,7 +29,7 @@ import {
   createFeedbackService,
   createFeedbackReviewQueue,
 } from '@opensearch/ranking';
-import { AppConfig, createLogger, loadConfig, Logger } from '@opensearch/shared';
+import { AppConfig, createLogger, loadConfig, Logger, getDefaultRegistry, MetricsRegistry } from '@opensearch/shared';
 import {
   createCorsMiddleware,
   createLoggingMiddleware,
@@ -44,6 +44,7 @@ import {
   handleApiRoot,
   handleHealthCheck,
   handleReadinessCheck,
+  handleMetrics,
   handleOpenApiSpec,
   handleSearch,
   handleSearchStream,
@@ -91,6 +92,7 @@ export class ApiServer {
   private readonly enableMcp: boolean;
   private readonly trustProxy: TrustProxyConfig;
   private readonly deploymentModel: DeploymentModel;
+  private readonly metrics: MetricsRegistry;
   private server: Server | null = null;
   private state: ServerLifecycleState = 'initializing';
   private activeRequestsCount = 0;
@@ -161,6 +163,9 @@ export class ApiServer {
       enabled: this.enableMcp,
     });
 
+    // Initialize metrics registry (Phase 113)
+    this.metrics = options.metrics ?? getDefaultRegistry();
+
     const timeoutMs = options.searchTimeoutMs ?? this.config.search.searchTimeoutMs ?? 5_000;
     const corsOrigin = options.corsOrigin ?? this.config.api.corsOrigin ?? '*';
 
@@ -188,6 +193,10 @@ export class ApiServer {
     return this.mcpServer;
   }
 
+  getMetrics(): MetricsRegistry {
+    return this.metrics;
+  }
+
   getState(): ServerLifecycleState {
     return this.state;
   }
@@ -203,6 +212,7 @@ export class ApiServer {
       logger: this.logger,
       startTime: this.startTime,
       services: this.services,
+      providerRegistry: this.services.providerRegistry,
       rateLimiter: this.rateLimiter,
       queryCache: this.queryCache,
       feedbackService: this.services?.feedbackService,
@@ -211,6 +221,7 @@ export class ApiServer {
       enableMcp: this.enableMcp,
       trustProxy: this.trustProxy,
       deploymentModel: this.deploymentModel,
+      metrics: this.metrics,
       get isShuttingDown() {
         return self.state === 'shutting_down';
       },
@@ -383,6 +394,7 @@ export class ApiServer {
     this.router.post('/api/v1/feedback/review/ranking-check', handleRankingSafetyCheck);
     this.router.get('/opensearch.xml', handleOpenSearchDescriptor);
     this.router.get('/opensearchdescription.xml', handleOpenSearchDescriptor);
+    this.router.get('/metrics', handleMetrics);
     this.router.post('/api/v1/mcp', handleMcpPost);
     this.router.get('/api/v1/mcp/sse', handleMcpSse);
     this.router.get('/api/v1/openapi.json', handleOpenApiSpec);

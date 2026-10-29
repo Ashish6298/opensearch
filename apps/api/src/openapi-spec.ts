@@ -570,6 +570,32 @@ export function generateOpenApiSpec(options: OpenApiSpecOptions = {}): Record<st
           },
         },
       },
+      '/metrics': {
+        get: {
+          tags: ['System & Health'],
+          summary: 'Prometheus operational metrics',
+          description:
+            'Exposes low-cardinality, privacy-safe Prometheus text exposition format (version 0.0.4) metrics for latency, provider health, result counts, index status, queue depth, and errors.',
+          operationId: 'metricsGet',
+          responses: {
+            '200': {
+              description: 'Prometheus metrics in text/plain or JSON snapshot format.',
+              content: {
+                'text/plain': {
+                  schema: {
+                    type: 'string',
+                  },
+                },
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
       '/api/v1/status': {
         get: {
           tags: ['System & Health'],

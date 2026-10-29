@@ -27,7 +27,7 @@ import {
   BangResult,
   ProviderRegistry,
 } from '@opensearch/ranking';
-import { AppConfig, Logger, SystemStatus, PrivacyReceipt } from '@opensearch/shared';
+import { AppConfig, Logger, SystemStatus, PrivacyReceipt, MetricsRegistry } from '@opensearch/shared';
 import { MemoryRateLimiter } from './rate-limiter.js';
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'OPTIONS' | 'HEAD' | string;
@@ -49,6 +49,8 @@ export interface ApiRequest {
   body: unknown;
   /** Client IP address */
   ip: string;
+  /** Matched route pattern for low-cardinality metrics (e.g. /items/:id) */
+  routePattern?: string;
 }
 
 export interface ApiResponse {
@@ -84,6 +86,7 @@ export interface RouteDefinition {
   pattern: string | RegExp;
   paramNames?: string[];
   handler: RouteHandler;
+  pathPattern?: string;
 }
 
 export interface SearchServices {
@@ -145,6 +148,7 @@ export interface ApiAppContext {
   deploymentModel?: DeploymentModel;
   isShuttingDown?: boolean;
   lifecycleState?: ServerLifecycleState;
+  metrics?: MetricsRegistry;
 }
 
 export interface ComponentHealth {
@@ -241,6 +245,10 @@ export interface ApiServerOptions {
   rateLimitStore?: import('./rate-limiter.js').RateLimitStore;
   /** Custom route rate limit rules */
   routeRateLimits?: import('./rate-limiter.js').RouteRateLimitRule[];
+  /** Metrics registry instance (Phase 113) */
+  metrics?: MetricsRegistry;
+  /** Whether Prometheus metrics are enabled (default: true) */
+  enableMetrics?: boolean;
 }
 
 export type ApiApplicationContext = ApiAppContext;

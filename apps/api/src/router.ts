@@ -16,6 +16,8 @@ import {
   OpenSearchError,
   toSafeErrorResponse,
   ValidationError,
+  normalizeRoutePath,
+  anonymizeIpAddress,
 } from '@opensearch/shared';
 import {
   ApiAppContext,
@@ -111,6 +113,7 @@ export class Router {
       pattern: regex,
       paramNames,
       handler,
+      pathPattern,
     });
     return this;
   }
@@ -148,9 +151,10 @@ export class Router {
     context: ApiAppContext,
   ): Promise<void> {
     const apiRes = this.createResponseWrapper(res);
+    let apiReq: ApiRequest | undefined;
 
     try {
-      const apiReq = await this.createRequestWrapper(req, context);
+      apiReq = await this.createRequestWrapper(req, context);
 
       // Execute middleware chain
       let index = 0;
@@ -158,16 +162,16 @@ export class Router {
         if (index < this.middlewares.length) {
           const mw = this.middlewares[index++];
           if (mw) {
-            await mw(apiReq, apiRes, next, context);
+            await mw(apiReq!, apiRes, next, context);
           }
         } else {
-          await this.dispatchRoute(apiReq, apiRes, context);
+          await this.dispatchRoute(apiReq!, apiRes, context);
         }
       };
 
       await next();
     } catch (err: unknown) {
-      this.handleError(err, apiRes, context);
+      this.handleError(err, apiRes, context, apiReq);
     }
   }
 
@@ -197,6 +201,7 @@ export class Router {
             }
           }
           req.params = params;
+          req.routePattern = route.pathPattern;
           await route.handler(req, res, context);
           return;
         }
@@ -221,7 +226,12 @@ export class Router {
     });
   }
 
-  private handleError(err: unknown, res: ApiResponse, context: ApiAppContext): void {
+  private handleError(
+    err: unknown,
+    res: ApiResponse,
+    context: ApiAppContext,
+    req?: ApiRequest,
+  ): void {
     const safeError = toSafeErrorResponse(err);
     const statusCode =
       err instanceof OpenSearchError ? err.statusCode : HTTP_STATUS.INTERNAL_SERVER_ERROR;
@@ -237,6 +247,55 @@ export class Router {
         message: safeError.error.message,
         statusCode,
       });
+    }
+
+    if (req) {
+      context.logger.info('HTTP Request handled', {
+        method: req.method,
+        path: req.pathname,
+        ip: anonymizeIpAddress(req.ip),
+        statusCode,
+        durationMs: 0,
+      });
+    }
+
+    if (context.metrics) {
+      try {
+        const normPath = req ? (req.routePattern || normalizeRoutePath(req.pathname)) : '/other';
+        const method = req?.method?.toUpperCase() || 'GET';
+        const statusStr = String(statusCode);
+
+        context.metrics
+          .counter(
+            'opensearch_http_requests_total',
+            'Total number of HTTP requests processed by method, normalized route path, and status code',
+            ['method', 'path', 'status'],
+          )
+          .inc({ method, path: normPath, status: statusStr });
+
+        const errorType =
+          statusCode === 429
+            ? 'RATE_LIMITED'
+            : statusCode === 404
+            ? 'NOT_FOUND'
+            : statusCode === 400
+            ? 'VALIDATION_ERROR'
+            : statusCode === 401 || statusCode === 403
+            ? 'UNAUTHORIZED'
+            : statusCode === 503
+            ? 'SERVICE_UNAVAILABLE'
+            : 'INTERNAL_ERROR';
+
+        context.metrics
+          .counter(
+            'opensearch_errors_total',
+            'Total number of error responses categorized by error type code and normalized path',
+            ['code', 'path'],
+          )
+          .inc({ code: errorType, path: normPath });
+      } catch {
+        // Non-fatal
+      }
     }
 
     res.status(statusCode).json(safeError);

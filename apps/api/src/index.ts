@@ -68,6 +68,7 @@ export {
   handleApiRoot,
   handleHealthCheck,
   handleReadinessCheck,
+  handleMetrics,
   handleOpenApiSpec,
   handleSearch,
   handleSuggest,

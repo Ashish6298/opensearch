@@ -9,7 +9,7 @@
  * 5. Request Logging: Structured execution logs with privacy minimization (IP anonymization)
  */
 
-import { HTTP_STATUS, TimeoutError, anonymizeIpAddress } from '@opensearch/shared';
+import { DEFAULT_LATENCY_BUCKETS, HTTP_STATUS, TimeoutError, anonymizeIpAddress, normalizeRoutePath } from '@opensearch/shared';
 import { MemoryRateLimiter } from './rate-limiter.js';
 import { ApiRequest, MiddlewareHandler } from './types.js';
 
@@ -177,5 +177,62 @@ export function createLoggingMiddleware(): MiddlewareHandler {
       statusCode: res.raw.statusCode,
       durationMs,
     });
+
+    // Operational metrics without query surveillance (Phase 113)
+    if (context.metrics) {
+      try {
+        const normPath = req.routePattern || normalizeRoutePath(req.pathname);
+        const method = req.method.toUpperCase();
+        const statusCode = res.raw.statusCode || 200;
+        const statusStr = String(statusCode);
+
+        // 1. Total HTTP Requests counter
+        context.metrics
+          .counter(
+            'opensearch_http_requests_total',
+            'Total number of HTTP requests processed by method, normalized route path, and status code',
+            ['method', 'path', 'status'],
+          )
+          .inc({ method, path: normPath, status: statusStr });
+
+        // 2. HTTP Request duration in seconds
+        context.metrics
+          .histogram(
+            'opensearch_http_request_duration_seconds',
+            'Histogram of HTTP request latency in seconds by method and normalized path',
+            ['method', 'path'],
+            DEFAULT_LATENCY_BUCKETS,
+          )
+          .observe({ method, path: normPath }, durationMs / 1000);
+
+        // 3. Error counts if 4xx or 5xx
+        if (statusCode >= 400) {
+          const errorType =
+            statusCode === 429
+              ? 'RATE_LIMITED'
+              : statusCode === 404
+              ? 'NOT_FOUND'
+              : statusCode === 400
+              ? 'VALIDATION_ERROR'
+              : statusCode === 401 || statusCode === 403
+              ? 'UNAUTHORIZED'
+              : statusCode === 503
+              ? 'SERVICE_UNAVAILABLE'
+              : 'INTERNAL_ERROR';
+
+          context.metrics
+            .counter(
+              'opensearch_errors_total',
+              'Total number of error responses categorized by error type code and normalized path',
+              ['code', 'path'],
+            )
+            .inc({ code: errorType, path: normPath });
+        }
+      } catch (err) {
+        context.logger.debug('Failed to record request metrics', {
+          error: (err as Error).message,
+        });
+      }
+    }
   };
 }
