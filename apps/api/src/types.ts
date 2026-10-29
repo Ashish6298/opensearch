@@ -107,6 +107,9 @@ export interface McpServerLike {
   handleMessage(rawMessage: unknown): Promise<unknown>;
 }
 
+export type TrustProxyConfig = boolean | string[] | ((ip: string) => boolean);
+export type DeploymentModel = 'standalone' | 'cluster' | 'serverless';
+
 export interface ApiAppContext {
   config: AppConfig;
   logger: Logger;
@@ -119,6 +122,8 @@ export interface ApiAppContext {
   feedbackReviewQueue?: FeedbackReviewQueue;
   mcpServer?: McpServerLike;
   enableMcp?: boolean;
+  trustProxy?: TrustProxyConfig;
+  deploymentModel?: DeploymentModel;
 }
 
 export interface ComponentHealth {
@@ -205,6 +210,14 @@ export interface ApiServerOptions {
   enableMcp?: boolean;
   /** Whether to enforce Local-only mode server-side. Default: false */
   isLocalOnly?: boolean;
+  /** Reverse proxy trust configuration (false = ignore X-Forwarded-For, true = trust, or list of trusted IPs). Default: false */
+  trustProxy?: TrustProxyConfig;
+  /** Hosting deployment model. Default: 'standalone' */
+  deploymentModel?: DeploymentModel;
+  /** Storage backend for rate limiter (in-memory or file-backed) */
+  rateLimitStore?: import('./rate-limiter.js').RateLimitStore;
+  /** Custom route rate limit rules */
+  routeRateLimits?: import('./rate-limiter.js').RouteRateLimitRule[];
 }
 
 export type ApiApplicationContext = ApiAppContext;

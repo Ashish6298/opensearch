@@ -9,6 +9,7 @@
  */
 
 import { IncomingMessage, ServerResponse } from 'node:http';
+import * as net from 'node:net';
 import {
   HTTP_STATUS,
   NotFoundError,
@@ -24,11 +25,73 @@ import {
   MiddlewareHandler,
   RouteDefinition,
   RouteHandler,
+  TrustProxyConfig,
 } from './types.js';
+
+export interface RouterOptions {
+  trustProxy?: TrustProxyConfig;
+}
+
+/**
+ * Resolves the client IP address safely, preventing X-Forwarded-For spoofing
+ * unless the direct connecting socket is an explicitly trusted proxy.
+ */
+export function resolveClientIp(
+  req: IncomingMessage,
+  trustProxy?: TrustProxyConfig,
+): string {
+  const socketIp = req.socket.remoteAddress || '127.0.0.1';
+
+  // If proxy is not trusted (default), never trust X-Forwarded-For header
+  if (!trustProxy) {
+    return socketIp;
+  }
+
+  // If trustProxy is an array or function, verify socketIp first
+  if (typeof trustProxy === 'function') {
+    if (!trustProxy(socketIp)) {
+      return socketIp;
+    }
+  } else if (Array.isArray(trustProxy)) {
+    if (!trustProxy.includes(socketIp)) {
+      return socketIp;
+    }
+  }
+
+  // Socket is trusted proxy, parse X-Forwarded-For safely
+  const xForwardedFor = req.headers['x-forwarded-for'];
+  if (typeof xForwardedFor === 'string' && xForwardedFor.trim().length > 0) {
+    const rawIps = xForwardedFor.split(',');
+    for (const raw of rawIps) {
+      let candidate = raw.trim();
+      // Handle port if present (e.g. 1.2.3.4:8080 or [::1]:8080)
+      if (candidate.startsWith('[') && candidate.includes(']')) {
+        candidate = candidate.slice(1, candidate.indexOf(']'));
+      } else if (
+        candidate.includes(':') &&
+        !candidate.includes('::') &&
+        candidate.indexOf(':') === candidate.lastIndexOf(':')
+      ) {
+        candidate = candidate.split(':')[0]!;
+      }
+
+      if (net.isIP(candidate)) {
+        return candidate;
+      }
+    }
+  }
+
+  return socketIp;
+}
 
 export class Router {
   private readonly routes: RouteDefinition[] = [];
   private readonly middlewares: MiddlewareHandler[] = [];
+  private readonly trustProxy?: TrustProxyConfig;
+
+  constructor(options: RouterOptions = {}) {
+    this.trustProxy = options.trustProxy;
+  }
 
   /**
    * Registers a middleware function to run on all requests.
@@ -204,10 +267,7 @@ export class Router {
       headers[key.toLowerCase()] = val;
     }
 
-    const ip =
-      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
-      req.socket.remoteAddress ||
-      '127.0.0.1';
+    const ip = resolveClientIp(req, context.trustProxy ?? this.trustProxy);
 
     // Parse body for POST / PUT / PATCH requests
     let body: unknown = undefined;

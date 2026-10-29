@@ -940,7 +940,7 @@ $ audit --privacy-boundaries
 | **Milestone 35** | **Instant Answers and Quick Answer**     | Phases 103 – 104| Modular instant-answer framework, provenance attribution, deterministic extractive Quick Answer panel, verifiable non-fabricated citations, privacy boundaries | `[MILESTONE 35 PASSED]` |
 | **Milestone 36** | **Optional Search Quality Feedback**    | Phases 105 – 106| Restrained feedback rating, explicit user consent, strict prohibition of queries/IPs, 30-day retention, local review queue, held-out evaluation isolation, ranking safety guard | `[MILESTONE 36 PASSED]` |
 | **Milestone 37** | **API, Browser Search & MCP Integration**| Phases 107 – 109| OpenAPI 3.1.0 contract fidelity, schema consistency, SSE streaming audit, OpenSearch browser descriptor, MCP server | `[MILESTONE 37 PASSED]` |
-| **Milestone 38** | **Security and Operational Resilience** | Phases 110 – 113| SSRF defense audit, scheme allowlist, robots/limits validation, zero script execution, security headers & zero cookies | `[PHASE 110 PASSED]` |
+| **Milestone 38** | **Security and Operational Resilience** | Phases 110 – 113| SSRF defense audit, scheme allowlist, robots/limits validation, zero script execution, storage persistence audit, multi-tier rate limiting, proxy trust | `[PHASE 111 PASSED]` |
 
 <br/>
 
@@ -948,6 +948,7 @@ $ audit --privacy-boundaries
 
 ```console
 $ npm test
+✓ apps/api/tests/rate-limiting-and-hosting.test.ts (22 tests)
 ✓ packages/crawler/tests/security-regression-audit.test.ts (25 tests)
 ✓ apps/api/tests/mcp-server.test.ts (26 tests)
 ✓ apps/api/tests/api.test.ts (38 tests)
@@ -962,11 +963,11 @@ $ npm test
 ✓ apps/api/tests/feedback-review-api.test.ts (8 tests)
 ✓ apps/api/tests/lens-api.test.ts (7 tests)
 ...
-Test Files  105 passed (105)
-     Tests  1187 passed (1187)
-  Duration  15.03s -- 100% Passing Pass Rate
+Test Files  106 passed (106)
+     Tests  1209 passed (1209)
+  Duration  16.28s -- 100% Passing Pass Rate
 ────────────────────────────────────────────────────────────
-TOTAL RESULT: 1187 / 1187 TESTS PASSED (100.0%) -- V1.5.0 PHASE 110 VERIFIED (SECURITY REGRESSION AUDIT PASSED)
+TOTAL RESULT: 1209 / 1209 TESTS PASSED (100.0%) -- V1.5.0 PHASE 111 VERIFIED (RATE LIMITING & HOSTING COMPATIBILITY PASSED)
 ```
 
 ---

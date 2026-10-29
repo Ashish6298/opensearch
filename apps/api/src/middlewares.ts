@@ -11,7 +11,7 @@
 
 import { HTTP_STATUS, TimeoutError, anonymizeIpAddress } from '@opensearch/shared';
 import { MemoryRateLimiter } from './rate-limiter.js';
-import { MiddlewareHandler } from './types.js';
+import { ApiRequest, MiddlewareHandler } from './types.js';
 
 /**
  * Anonymizes an IP address for privacy-conscious logging.
@@ -68,10 +68,52 @@ export function createSecurityHeadersMiddleware(): MiddlewareHandler {
   };
 }
 
+/**
+ * Calculates operation complexity cost to protect against expensive search queries
+ * and heavy resource operations.
+ */
+export function calculateOperationCost(req: ApiRequest): number {
+  let cost = 1;
+
+  // Protect expensive search queries
+  if (req.pathname === '/api/v1/search' || req.pathname === '/api/v1/search/stream') {
+    let q = typeof req.query['q'] === 'string' ? req.query['q'] : '';
+    if (!q && req.body && typeof req.body === 'object' && 'query' in req.body) {
+      const bodyQuery = (req.body as { query?: unknown }).query;
+      if (typeof bodyQuery === 'string') q = bodyQuery;
+    }
+
+    // Wildcard or pattern-heavy queries require expansive postings traversal
+    if (q.includes('*') || q.includes('?') || q.includes('~')) {
+      cost += 1;
+    }
+
+    // Heavy pagination or oversized candidate limit
+    const limitParam = req.query['limit'] ?? (req.body && typeof req.body === 'object' && 'limit' in req.body ? (req.body as { limit?: unknown }).limit : undefined);
+    if (limitParam !== undefined) {
+      const parsedLimit = typeof limitParam === 'number' ? limitParam : parseInt(String(limitParam), 10);
+      if (!isNaN(parsedLimit) && parsedLimit > 50) {
+        cost += 1;
+      }
+    }
+  }
+
+  // Protect heavy review, crawl, or batch administrative operations
+  if (
+    req.pathname.startsWith('/api/v1/feedback/review') ||
+    req.pathname.startsWith('/api/v1/crawl')
+  ) {
+    cost = 2;
+  }
+
+  return Math.min(cost, 5);
+}
+
 export function createRateLimitMiddleware(rateLimiter: MemoryRateLimiter): MiddlewareHandler {
   return (req, res, next) => {
     const clientKey = req.ip || '127.0.0.1';
-    const result = rateLimiter.consume(clientKey);
+    const cost = calculateOperationCost(req);
+    const result = rateLimiter.consume(clientKey, req.pathname, cost);
 
     res.setHeader('X-RateLimit-Limit', result.limit.toString());
     res.setHeader('X-RateLimit-Remaining', result.remaining.toString());

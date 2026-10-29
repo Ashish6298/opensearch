@@ -41,3 +41,15 @@ export {
   VByteCompressor,
   calculateCompressionRatio,
 } from './compression/vbyte-compression.js';
+
+// ── Phase 111: Storage Persistence & Hosting Compatibility (V1.5.0) ────────
+export {
+  auditStoragePersistence,
+  isEphemeralPath,
+  verifyStorageWritable,
+} from './persistence-audit.js';
+export type {
+  DeploymentModel,
+  StoragePersistenceAudit,
+} from './persistence-audit.js';
+

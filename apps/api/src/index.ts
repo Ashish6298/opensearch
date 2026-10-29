@@ -38,7 +38,8 @@ export type {
   HttpMethod,
 } from './types.js';
 
-export { Router } from './router.js';
+export { Router, resolveClientIp } from './router.js';
+export type { RouterOptions } from './router.js';
 export {
   createCorsMiddleware,
   createSecurityHeadersMiddleware,
@@ -47,8 +48,19 @@ export {
   createLoggingMiddleware,
   anonymizeIp,
 } from './middlewares.js';
-export { MemoryRateLimiter, createRateLimiter } from './rate-limiter.js';
-export type { RateLimiterOptions, RateLimitResult } from './rate-limiter.js';
+export {
+  MemoryRateLimiter,
+  createRateLimiter,
+  MemoryRateLimitStore,
+  FileBackedRateLimitStore,
+} from './rate-limiter.js';
+export type {
+  RateLimiterOptions,
+  RateLimitResult,
+  RateLimitBucket,
+  RateLimitStore,
+  RouteRateLimitRule,
+} from './rate-limiter.js';
 export {
   handleApiDocs,
   handleApiRoot,

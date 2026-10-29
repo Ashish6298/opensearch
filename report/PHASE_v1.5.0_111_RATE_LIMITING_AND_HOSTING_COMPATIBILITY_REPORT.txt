@@ -1,0 +1,137 @@
+================================================================================
+OPENSEARCH V1.5.0 — VERIFICATION REPORT: PHASE 111 (RATE LIMITING & HOSTING COMPATIBILITY)
+================================================================================
+Timestamp: 2026-10-29T22:32:00+05:30
+Milestone: MILESTONE 38 — SECURITY AND OPERATIONAL RESILIENCE
+Phase: Phase 111 — Rate limiting and hosting compatibility
+Status: VERIFIED & COMPLETED
+Branch: ashish
+Ready for Next Phase: YES (Ready for Milestone 38 — Phase 112: Health, status, and graceful shutdown)
+
+--------------------------------------------------------------------------------
+1. EXECUTIVE SUMMARY & OBJECTIVES
+--------------------------------------------------------------------------------
+Phase 111 delivers architectural hosting compatibility, durable storage validation,
+multi-tier rate limiting, and trusted reverse proxy security across OpenSearch:
+
+- Deployment Models & Guarantees:
+  * Formalized three deployment models: `standalone` (default, single node VPS / bare metal),
+    `cluster` (multi-process / multi-instance behind reverse proxy), and `serverless`
+    (ephemeral tasks with external persistent mount requirements).
+  * Documented multi-instance rate-limiting behavior: process-memory limits apply per-instance
+    and cannot provide global guarantees alone; implemented `FileBackedRateLimitStore`
+    (atomic disk sync) to share quotas across local processes without requiring Redis,
+    and documented reverse-proxy / edge WAF rate limiting for distributed clusters.
+  * Zero paid infrastructure invariant: the complete search, index, crawler, PageRank,
+    and rate limiting architecture operates 100% on local hardware or self-hosted VPS
+    without requiring third-party SaaS, paid databases, or Redis.
+
+- Durable Index Storage vs Ephemeral Filesystems:
+  * Implemented `auditStoragePersistence()`, `isEphemeralPath()`, and `verifyStorageWritable()`.
+  * Detects and warns against mounting storage in ephemeral filesystems (`/tmp`, `/var/tmp`,
+    `/dev/shm`, `os.tmpdir()`), providing actionable persistent volume mount instructions.
+  * Emits critical data loss warnings when running production deployments on ephemeral paths.
+
+- Route-Specific & Provider-Specific Rate Limits:
+  * Route tiers:
+    - Search & MCP (`/api/v1/search`, `/api/v1/mcp`): default 60 req/min.
+    - Instant / Quick Answers (`/api/v1/instant-answer`): default 30 req/min.
+    - Crawl & Administrative Review (`/api/v1/feedback/review`, crawler start): default 10–20 req/min.
+    - Lightweight Metadata (`/api/v1/suggest`, `/health`, `/api/v1/status`, `/opensearch.xml`): default 180–300 req/min.
+  * Operation Complexity Weighting:
+    - Standard lexical queries: cost = 1 token.
+    - Wildcard/pattern queries (`*`, `?`, `~`): cost = 2 tokens.
+    - Oversized candidate limits (`limit > 50`): cost = 2 tokens.
+    - Administrative operations: cost = 2 tokens.
+  * Provider Rate Limiter (`ProviderRateLimiter`):
+    - Proactively throttles outbound calls to external search providers (Wikimedia, etc.)
+      to prevent upstream HTTP 429s and IP bans.
+
+- Trusted Proxy Settings & IP Spoofing Prevention:
+  * Implemented `resolveClientIp(req, trustProxy)`.
+  * `trustProxy: false` (secure default): strictly ignores `X-Forwarded-For` and uses
+    `req.socket.remoteAddress`, completely preventing client IP spoofing.
+  * `trustProxy: true` or IP array whitelist: validates IPs via `net.isIP()` and extracts
+    the verified client IP from the forwarding chain.
+  * Standards-compliant headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`,
+    and `Retry-After`. Emits HTTP 429 Too Many Requests with structured JSON error.
+
+--------------------------------------------------------------------------------
+2. IMPLEMENTED COMPONENTS
+--------------------------------------------------------------------------------
+A. Storage Persistence Auditor (`packages/storage/src/persistence-audit.ts` & `index.ts`):
+   - `isEphemeralPath(path)`: Heuristic & prefix detection for ephemeral filesystems.
+   - `verifyStorageWritable(path)`: Probe-file read/write verification.
+   - `auditStoragePersistence(path, deploymentModel, isProduction)`: Returns diagnostic
+     status, warnings, and volume mount recommendations.
+
+B. Pluggable Rate Limit Subsystem (`apps/api/src/rate-limiter.ts` & `middlewares.ts`):
+   - `RateLimitStore` interface: Pluggable storage backend.
+   - `MemoryRateLimitStore`: In-memory Map for standalone single-instance setups.
+   - `FileBackedRateLimitStore`: Atomic file persistence surviving server restarts and
+     coordinating local worker processes without Redis.
+   - `RouteRateLimitRule`: Configurable path rules for isolated tier limits.
+   - `calculateOperationCost(req)`: Query complexity weighting for expensive operations.
+
+C. Search Provider Rate Limiting (`packages/ranking/src/providers/provider-rate-limiter.ts`):
+   - `ProviderRateLimiter`: Sliding-window limiter tracking outbound provider requests.
+   - `acquire(providerId)`: Proactive check returning retry-after cooldowns.
+
+D. Trusted Proxy Resolution (`apps/api/src/router.ts` & `server.ts`):
+   - `resolveClientIp()`: Validates proxy trust and sanitizes `X-Forwarded-For`.
+   - `ApiServer`: Boot-time storage audit, `trustProxy` and `deploymentModel` options.
+
+E. Hosting & Deployment Documentation (`docs/hosting-and-deployment.md`):
+   - Complete guide covering standalone, clustered, and serverless hosting models,
+     persistent volume Docker commands, proxy setups, and zero paid infrastructure.
+
+--------------------------------------------------------------------------------
+3. TEST EXECUTION & VERIFICATION RESULTS
+--------------------------------------------------------------------------------
+Full Monorepo Test Run (`npm test`):
+  Total Test Files: 106 passed (106 total)
+  Total Tests:      1,209 passed (1,209 total)
+  Failed Tests:     0
+  Success Rate:     100.0%
+  Execution Time:   16.28s
+
+Phase 111 Dedicated Suite (`apps/api/tests/rate-limiting-and-hosting.test.ts` - 22 tests passed):
+  1. Storage Persistence & Ephemeral Filesystem Auditing:
+     * Detects ephemeral paths in temporary directories (/tmp, /var/tmp, /dev/shm, os.tmpdir)
+     * Identifies durable paths on persistent mount locations
+     * Audits storage persistence and provides recommendations for ephemeral paths
+     * Emits critical data loss warning for production deployments on ephemeral filesystems
+     * Warns about cold-boot storage loss in serverless deployment models
+     * Verifies that durable directories are writable via probe test
+  2. Pluggable Rate Limit Storage Backends:
+     * MemoryRateLimitStore tracks buckets and cleans up expired windows
+     * FileBackedRateLimitStore survives process restarts and reloads persisted state
+     * RateLimiter seamlessly operates with FileBackedRateLimitStore
+  3. Route-Specific Rate Limits & Tier Isolation:
+     * Applies separate rate limits to different route tiers (/api/v1/search vs /health vs /api/v1/suggest)
+  4. Operation Complexity Weighting:
+     * Assigns base cost of 1 to standard lightweight search queries
+     * Assigns elevated cost of 2 to wildcard or pattern-intensive search queries
+     * Assigns elevated cost to search queries requesting large page size or candidate limit
+     * Assigns higher cost of 2 to heavy review and crawl administrative operations
+     * Higher cost queries exhaust rate-limit quota more quickly
+  5. Provider-Specific Rate Limiting:
+     * Enforces request quotas per search provider domain (wikimedia, hackernews)
+     * Allows resetting rate tracking for individual providers
+  6. Trusted Proxy Settings & IP Spoofing Prevention:
+     * Ignores X-Forwarded-For by default when trustProxy is disabled
+     * Accepts X-Forwarded-For when trustProxy is explicitly enabled
+     * Only trusts X-Forwarded-For if socket IP matches the trusted proxy whitelist
+     * Rejects malformed or injected IP strings in X-Forwarded-For
+  7. HTTP Rate Limit Headers & Standard 429 Responses:
+     * Returns standard headers on successful requests and emits HTTP 429 when exhausted
+
+--------------------------------------------------------------------------------
+4. CONCLUSION & READINESS
+--------------------------------------------------------------------------------
+Phase 111 is fully verified with 100% test pass rate across all 106 test files
+(1,209 passing tests). Hosting compatibility and multi-tier rate limiting are established.
+Zero paid infrastructure invariant is verified.
+
+OpenSearch is READY for Milestone 38 — Phase 112: Health, status, and graceful shutdown.
+================================================================================

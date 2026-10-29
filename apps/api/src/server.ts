@@ -14,7 +14,7 @@ import {
   InvertedIndex,
   PrefixTrie,
 } from '@opensearch/indexer';
-import { createStorageAdapter } from '@opensearch/storage';
+import { createStorageAdapter, auditStoragePersistence } from '@opensearch/storage';
 import {
   createCandidateRetriever,
   createQueryParser,
@@ -65,7 +65,14 @@ import {
   handleMcpPost,
   handleMcpSse,
 } from './routes.js';
-import { ApiAppContext, ApiServerOptions, SearchApiResponse, SearchServices } from './types.js';
+import {
+  ApiAppContext,
+  ApiServerOptions,
+  DeploymentModel,
+  SearchApiResponse,
+  SearchServices,
+  TrustProxyConfig,
+} from './types.js';
 import { OpenSearchMcpServer } from './mcp/index.js';
 
 export class ApiServer {
@@ -79,6 +86,8 @@ export class ApiServer {
   private readonly customIndexProvided: boolean;
   private readonly mcpServer: OpenSearchMcpServer;
   private readonly enableMcp: boolean;
+  private readonly trustProxy: TrustProxyConfig;
+  private readonly deploymentModel: DeploymentModel;
   private server: Server | null = null;
 
   constructor(options: ApiServerOptions = {}) {
@@ -89,14 +98,36 @@ export class ApiServer {
         level: this.config.logging.level,
         format: this.config.logging.format,
       });
-    this.router = new Router();
+
+    // Resolve trust proxy setting (default false for security)
+    if (options.trustProxy !== undefined) {
+      this.trustProxy = options.trustProxy;
+    } else {
+      const envTrust = process.env.TRUST_PROXY?.trim();
+      if (envTrust === 'true' || envTrust === '1') {
+        this.trustProxy = true;
+      } else if (envTrust && envTrust !== 'false' && envTrust !== '0') {
+        this.trustProxy = envTrust.split(',').map(s => s.trim());
+      } else {
+        this.trustProxy = false;
+      }
+    }
+
+    // Resolve hosting deployment model (default: standalone)
+    this.deploymentModel =
+      options.deploymentModel ??
+      ((process.env.DEPLOYMENT_MODEL as DeploymentModel) || 'standalone');
+
+    this.router = new Router({ trustProxy: this.trustProxy });
     this.startTime = Date.now();
 
-    // Wire or initialize rate limiter
+    // Wire or initialize rate limiter with multi-store & route-specific limits support
     const rateLimit = options.rateLimitPerMinute ?? this.config.api.rateLimitPerMinute ?? 60;
     this.rateLimiter = createRateLimiter({
       maxRequests: rateLimit,
       windowMs: 60_000,
+      store: options.rateLimitStore,
+      routeRules: options.routeRateLimits,
     });
 
     // Wire or initialize query cache (Phase 28 performance optimization)
@@ -161,6 +192,8 @@ export class ApiServer {
       feedbackReviewQueue: this.services?.feedbackReviewQueue,
       mcpServer: this.mcpServer,
       enableMcp: this.enableMcp,
+      trustProxy: this.trustProxy,
+      deploymentModel: this.deploymentModel,
     };
   }
 
@@ -380,6 +413,20 @@ export class ApiServer {
     }
     if (!this.config.storage.indexDir) {
       this.logger.warn('Index directory not specified in configuration; using defaults');
+    }
+
+    const persistenceAudit = auditStoragePersistence(
+      this.config.storage.storageDir,
+      this.deploymentModel,
+      this.config.isProduction,
+    );
+    if (persistenceAudit.warnings.length > 0) {
+      for (const w of persistenceAudit.warnings) {
+        this.logger.warn(`Storage persistence: ${w}`, {
+          storageDir: this.config.storage.storageDir,
+          deploymentModel: this.deploymentModel,
+        });
+      }
     }
   }
 
