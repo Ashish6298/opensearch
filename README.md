@@ -938,7 +938,7 @@ $ audit --privacy-boundaries
 | **Milestone 33** | **Performance & Large-Scale Search**    | Phases 94 – 98 | Benchmark harness, execution profiling, postings traversal, segment indexing & scale metrics | `[MILESTONE 33 PASSED]` |
 | **Milestone 34** | **Tracker-Aware Search & Focus Lenses**  | Phases 99 – 102| Reviewable tracker registry, static subresource parsing, tracker-aware ranking signals, Focus Lens schema & initial profiles | `[MILESTONE 34 PASSED]` |
 | **Milestone 35** | **Instant Answers and Quick Answer**     | Phases 103 – 104| Modular instant-answer framework, provenance attribution, deterministic extractive Quick Answer panel, verifiable non-fabricated citations, privacy boundaries | `[MILESTONE 35 PASSED]` |
-| **Milestone 36** | **Optional Search Quality Feedback**    | Phases 105 – 107| Restrained feedback rating, explicit user consent, strict prohibition of queries/IPs, 30-day bounded retention, documented network limits | `[PHASE 105 PASSED]` |
+| **Milestone 36** | **Optional Search Quality Feedback**    | Phases 105 – 106| Restrained feedback rating, explicit user consent, strict prohibition of queries/IPs, 30-day retention, local review queue, held-out evaluation isolation, ranking safety guard | `[MILESTONE 36 PASSED]` |
 
 <br/>
 
@@ -952,13 +952,15 @@ $ npm test
 ✓ packages/ranking/tests/instant-answer-framework.test.ts (14 tests)
 ✓ packages/ranking/tests/quick-answer.test.ts (19 tests)
 ✓ packages/ranking/tests/privacy-conscious-feedback.test.ts (13 tests)
+✓ packages/ranking/tests/feedback-review-workflow.test.ts (16 tests)
+✓ apps/api/tests/feedback-review-api.test.ts (8 tests)
 ✓ apps/api/tests/lens-api.test.ts (7 tests)
 ...
-Test Files  98 passed (98)
-     Tests  1083 passed (1083)
-  Duration  13.17s -- 100% Passing Pass Rate
+Test Files  100 passed (100)
+     Tests  1107 passed (1107)
+  Duration  20.83s -- 100% Passing Pass Rate
 ────────────────────────────────────────────────────────────
-TOTAL RESULT: 1083 / 1083 TESTS PASSED (100.0%) -- V1.5.0 PHASE 105 VERIFIED
+TOTAL RESULT: 1107 / 1107 TESTS PASSED (100.0%) -- V1.5.0 PHASE 106 VERIFIED
 ```
 
 ---

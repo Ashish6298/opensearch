@@ -416,6 +416,165 @@ export function generateOpenApiSpec(options: OpenApiSpecOptions = {}): Record<st
           },
         },
       },
+      '/api/v1/feedback': {
+        get: {
+          tags: ['Feedback & Quality'],
+          summary: 'Export stored feedback and statistics',
+          description: 'Returns stored search quality feedback and aggregated sentiment statistics under 30-day retention.',
+          operationId: 'feedbackGet',
+          responses: {
+            '200': {
+              description: 'Feedback records and summary statistics.',
+            },
+          },
+        },
+        post: {
+          tags: ['Feedback & Quality'],
+          summary: 'Submit voluntary search feedback',
+          description: 'Submits voluntary rating and category with explicit user consent. Never collects raw queries, IPs, or identifiers.',
+          operationId: 'feedbackPost',
+          responses: {
+            '201': {
+              description: 'Feedback recorded successfully.',
+            },
+            '400': {
+              description: 'Invalid feedback payload or missing consent.',
+            },
+          },
+        },
+        delete: {
+          tags: ['Feedback & Quality'],
+          summary: 'Purge all feedback records',
+          description: 'Immediately purges all stored feedback records from the local system.',
+          operationId: 'feedbackDelete',
+          responses: {
+            '200': {
+              description: 'Feedback successfully purged.',
+            },
+          },
+        },
+      },
+      '/api/v1/feedback/privacy': {
+        get: {
+          tags: ['Feedback & Quality'],
+          summary: 'Feedback privacy notice & retention policy',
+          description: 'Discloses retention duration (30 days), purge policies, and network metadata limitations.',
+          operationId: 'feedbackPrivacyGet',
+          responses: {
+            '200': {
+              description: 'Privacy notice and retention specifications.',
+            },
+          },
+        },
+      },
+      '/api/v1/feedback/review': {
+        get: {
+          tags: ['Feedback & Quality'],
+          summary: 'List feedback review queue items',
+          description: 'Retrieves review queue items with optional status and clustering filters. Feedback items are strictly separated from ground truth.',
+          operationId: 'feedbackReviewList',
+          responses: {
+            '200': {
+              description: 'List of review items and total count.',
+            },
+          },
+        },
+      },
+      '/api/v1/feedback/review/import': {
+        post: {
+          tags: ['Feedback & Quality'],
+          summary: 'Import feedback into review queue',
+          description: 'Imports feedback submissions into the review queue with non-invasive burst detection.',
+          operationId: 'feedbackReviewImport',
+          responses: {
+            '200': {
+              description: 'Feedback imported into review queue.',
+            },
+          },
+        },
+      },
+      '/api/v1/feedback/review/stats': {
+        get: {
+          tags: ['Feedback & Quality'],
+          summary: 'Feedback review queue statistics and clusters',
+          description: 'Returns aggregated review queue metrics, burst counts, and metadata clusters.',
+          operationId: 'feedbackReviewStats',
+          responses: {
+            '200': {
+              description: 'Review queue statistics and cluster summaries.',
+            },
+          },
+        },
+      },
+      '/api/v1/feedback/review/{id}': {
+        patch: {
+          tags: ['Feedback & Quality'],
+          summary: 'Update review queue item status',
+          description: 'Updates review state (pending, under_investigation, approved_for_evaluation, rejected, archived) and attaches curator notes.',
+          operationId: 'feedbackReviewUpdate',
+          parameters: [
+            {
+              name: 'id',
+              in: 'path',
+              required: true,
+              description: 'Review queue item ID',
+              schema: { type: 'string' },
+            },
+          ],
+          responses: {
+            '200': {
+              description: 'Review item updated.',
+            },
+            '404': {
+              description: 'Item not found.',
+            },
+          },
+        },
+      },
+      '/api/v1/feedback/review/{id}/approve-case': {
+        post: {
+          tags: ['Feedback & Quality'],
+          summary: 'Approve feedback as candidate evaluation case',
+          description: 'Curates candidate case into evaluation dataset. Strictly blocks silent contamination into held-out split.',
+          operationId: 'feedbackReviewApproveCase',
+          parameters: [
+            {
+              name: 'id',
+              in: 'path',
+              required: true,
+              description: 'Review queue item ID',
+              schema: { type: 'string' },
+            },
+          ],
+          responses: {
+            '201': {
+              description: 'Candidate evaluation case approved for tuning.',
+            },
+            '400': {
+              description: 'Contamination attempt or invalid approval payload.',
+            },
+            '404': {
+              description: 'Item not found.',
+            },
+          },
+        },
+      },
+      '/api/v1/feedback/review/ranking-check': {
+        post: {
+          tags: ['Feedback & Quality'],
+          summary: 'Verify ranking parameter modification safety',
+          description: 'Enforces human review and reproducible benchmark verification before ranking adjustments.',
+          operationId: 'feedbackRankingCheck',
+          responses: {
+            '200': {
+              description: 'Ranking change proposal approved by safety gate.',
+            },
+            '400': {
+              description: 'Ranking safety violation or held-out regression.',
+            },
+          },
+        },
+      },
       '/api/v1/openapi.json': {
         get: {
           tags: ['Documentation'],

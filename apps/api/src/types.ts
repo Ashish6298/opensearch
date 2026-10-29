@@ -23,6 +23,7 @@ import {
   QuickAnswerEngine,
   QuickAnswerPayload,
   FeedbackService,
+  FeedbackReviewQueue,
   BangResult,
   ProviderRegistry,
 } from '@opensearch/ranking';
@@ -98,6 +99,7 @@ export interface SearchServices {
   queryCache?: LruQueryCache<SearchApiResponse>;
   providerRegistry?: ProviderRegistry;
   feedbackService?: FeedbackService;
+  feedbackReviewQueue?: FeedbackReviewQueue;
 }
 
 export interface ApiAppContext {
@@ -109,6 +111,7 @@ export interface ApiAppContext {
   queryCache?: LruQueryCache<SearchApiResponse>;
   providerRegistry?: ProviderRegistry;
   feedbackService?: FeedbackService;
+  feedbackReviewQueue?: FeedbackReviewQueue;
 }
 
 export interface ComponentHealth {

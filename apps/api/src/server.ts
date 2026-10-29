@@ -26,6 +26,7 @@ import {
   createInstantAnswerEngine,
   createQuickAnswerEngine,
   createFeedbackService,
+  createFeedbackReviewQueue,
 } from '@opensearch/ranking';
 import { AppConfig, createLogger, loadConfig, Logger } from '@opensearch/shared';
 import {
@@ -54,6 +55,12 @@ import {
   handleGetFeedback,
   handleDeleteFeedback,
   handleGetFeedbackPrivacy,
+  handleImportFeedbackReview,
+  handleListFeedbackReview,
+  handleGetFeedbackReviewStats,
+  handleUpdateFeedbackReviewItem,
+  handleApproveEvaluationCase,
+  handleRankingSafetyCheck,
 } from './routes.js';
 import { ApiAppContext, ApiServerOptions, SearchApiResponse, SearchServices } from './types.js';
 
@@ -131,6 +138,7 @@ export class ApiServer {
       rateLimiter: this.rateLimiter,
       queryCache: this.queryCache,
       feedbackService: this.services?.feedbackService,
+      feedbackReviewQueue: this.services?.feedbackReviewQueue,
     };
   }
 
@@ -152,6 +160,7 @@ export class ApiServer {
     const instantAnswerEngine = createInstantAnswerEngine();
     const quickAnswerEngine = createQuickAnswerEngine();
     const feedbackService = createFeedbackService();
+    const feedbackReviewQueue = createFeedbackReviewQueue();
     const resultGenerator = createResultGenerator({
       pagination: {
         pageSize: this.config.search.defaultPageSize,
@@ -170,7 +179,7 @@ export class ApiServer {
       resultGenerator,
       queryCache: this.queryCache,
       feedbackService,
-
+      feedbackReviewQueue,
     };
   }
 
@@ -285,6 +294,12 @@ export class ApiServer {
     this.router.post('/api/v1/feedback', handlePostFeedback);
     this.router.delete('/api/v1/feedback', handleDeleteFeedback);
     this.router.get('/api/v1/feedback/privacy', handleGetFeedbackPrivacy);
+    this.router.post('/api/v1/feedback/review/import', handleImportFeedbackReview);
+    this.router.get('/api/v1/feedback/review', handleListFeedbackReview);
+    this.router.get('/api/v1/feedback/review/stats', handleGetFeedbackReviewStats);
+    this.router.patch('/api/v1/feedback/review/:id', handleUpdateFeedbackReviewItem);
+    this.router.post('/api/v1/feedback/review/:id/approve-case', handleApproveEvaluationCase);
+    this.router.post('/api/v1/feedback/review/ranking-check', handleRankingSafetyCheck);
     this.router.get('/api/v1/openapi.json', handleOpenApiSpec);
     this.router.get('/openapi.json', handleOpenApiSpec);
   }

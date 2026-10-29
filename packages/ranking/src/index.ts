@@ -620,6 +620,33 @@ export {
   createFeedbackService,
 } from './feedback/index.js';
 
+// ── Phase 106: Feedback Review Workflow (Milestone 36) ─────────────────────
+export type {
+  ReviewStatus,
+  ProposedEvaluationCase,
+  ReviewQueueItem,
+  FeedbackClusterSummary,
+  ReviewQueueStats,
+  CaseApprovalParams,
+  RankingChangeReviewRecord,
+  AbuseFilterConfig,
+  AbuseEvaluationResult,
+  RankingChangeProposal,
+  ReviewQueueFilter,
+} from './feedback/index.js';
+
+export {
+  DEFAULT_ABUSE_FILTER_CONFIG,
+  NonInvasiveAbuseFilter,
+  RankingSafetyViolationError,
+  RankingSafetyGuard,
+  HeldOutContaminationError,
+  FeedbackNotFoundError,
+  FeedbackReviewQueue,
+  getSharedFeedbackReviewQueue,
+  createFeedbackReviewQueue,
+} from './feedback/index.js';
+
 
 
 

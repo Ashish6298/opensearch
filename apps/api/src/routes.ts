@@ -37,6 +37,13 @@ import {
   FocusLensProfile,
   getSharedQuickAnswerEngine,
   getSharedFeedbackService,
+  getSharedFeedbackReviewQueue,
+  RankingSafetyGuard,
+  RankingSafetyViolationError,
+  HeldOutContaminationError,
+  CaseApprovalParams,
+  RankingChangeProposal,
+  ReviewStatus,
 } from '@opensearch/ranking';
 import { generateOpenApiSpec } from './openapi-spec.js';
 import { generateDocsHtml } from './docs-html.js';
@@ -923,4 +930,219 @@ export const handleGetFeedbackPrivacy: RouteHandler = (_req, res, context) => {
     disclaimer: 'Feedback collection is strictly optional. OpenSearch never collects raw queries, IP addresses, accounts, or click histories.',
   });
 };
+
+// ── Phase 106: Feedback Review Workflow Endpoints (Milestone 36) ──────────
+
+export const handleImportFeedbackReview: RouteHandler = (req, res, context) => {
+  const queue = context.services?.feedbackReviewQueue ?? context.feedbackReviewQueue ?? getSharedFeedbackReviewQueue();
+  const rawBody = req.body as Record<string, unknown> | undefined;
+
+  let recordsToImport: any[] = [];
+  if (rawBody && Array.isArray(rawBody['records'])) {
+    recordsToImport = rawBody['records'];
+  } else {
+    const feedbackService = context.services?.feedbackService ?? context.feedbackService ?? getSharedFeedbackService();
+    recordsToImport = feedbackService.getRecords();
+  }
+
+  const result = queue.importRecords(recordsToImport);
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
+    importedCount: result.importedCount,
+    skippedCount: result.skippedCount,
+    totalQueueItems: queue.getStats().totalItems,
+  });
+};
+
+export const handleListFeedbackReview: RouteHandler = (req, res, context) => {
+  const queue = context.services?.feedbackReviewQueue ?? context.feedbackReviewQueue ?? getSharedFeedbackReviewQueue();
+
+  const status = typeof req.query['status'] === 'string' ? (req.query['status'] as ReviewStatus) : undefined;
+  const clusterKey = typeof req.query['clusterKey'] === 'string' ? req.query['clusterKey'] : undefined;
+  const burstQuery = req.query['isSuspiciousBurst'];
+  const isSuspiciousBurst = burstQuery === 'true' ? true : burstQuery === 'false' ? false : undefined;
+
+  const rawLimit = Number(req.query['limit']);
+  const limit = !isNaN(rawLimit) && rawLimit > 0 ? rawLimit : 50;
+
+  const rawOffset = Number(req.query['offset']);
+  const offset = !isNaN(rawOffset) && rawOffset >= 0 ? rawOffset : 0;
+
+  const { items, total } = queue.listItems({
+    status,
+    clusterKey,
+    isSuspiciousBurst,
+    limit,
+    offset,
+  });
+
+  res.status(HTTP_STATUS.OK).json({
+    items,
+    total,
+    limit,
+    offset,
+  });
+};
+
+export const handleGetFeedbackReviewStats: RouteHandler = (_req, res, context) => {
+  const queue = context.services?.feedbackReviewQueue ?? context.feedbackReviewQueue ?? getSharedFeedbackReviewQueue();
+  const stats = queue.getStats();
+  const clusters = queue.getClusters();
+
+  res.status(HTTP_STATUS.OK).json({
+    stats,
+    clusters,
+  });
+};
+
+export const handleUpdateFeedbackReviewItem: RouteHandler = (req, res, context) => {
+  const queue = context.services?.feedbackReviewQueue ?? context.feedbackReviewQueue ?? getSharedFeedbackReviewQueue();
+  const id = req.params['id'];
+
+  if (!id) {
+    res.status(HTTP_STATUS.BAD_REQUEST).json({
+      error: {
+        code: 'MISSING_QUEUE_ID',
+        message: 'Review queue item ID must be specified in the URL path.',
+        statusCode: HTTP_STATUS.BAD_REQUEST,
+      },
+    });
+    return;
+  }
+
+  const body = req.body as Record<string, unknown> | undefined;
+  const status = body?.['status'] as ReviewStatus | undefined;
+  if (!status) {
+    res.status(HTTP_STATUS.BAD_REQUEST).json({
+      error: {
+        code: 'MISSING_STATUS',
+        message: 'A valid review status must be provided in the request body.',
+        statusCode: HTTP_STATUS.BAD_REQUEST,
+      },
+    });
+    return;
+  }
+
+  const curatorId = typeof body?.['curatorId'] === 'string' ? body['curatorId'] : undefined;
+  const curatorNotes = typeof body?.['curatorNotes'] === 'string' ? body['curatorNotes'] : undefined;
+
+  try {
+    const updated = queue.updateStatus(id, status, curatorId, curatorNotes);
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      item: updated,
+    });
+  } catch (err) {
+    res.status(HTTP_STATUS.NOT_FOUND).json({
+      error: {
+        code: 'ITEM_NOT_FOUND',
+        message: (err as Error).message,
+        statusCode: HTTP_STATUS.NOT_FOUND,
+      },
+    });
+  }
+};
+
+export const handleApproveEvaluationCase: RouteHandler = (req, res, context) => {
+  const queue = context.services?.feedbackReviewQueue ?? context.feedbackReviewQueue ?? getSharedFeedbackReviewQueue();
+  const id = req.params['id'];
+
+  if (!id) {
+    res.status(HTTP_STATUS.BAD_REQUEST).json({
+      error: {
+        code: 'MISSING_QUEUE_ID',
+        message: 'Review queue item ID must be specified in the URL path.',
+        statusCode: HTTP_STATUS.BAD_REQUEST,
+      },
+    });
+    return;
+  }
+
+  const body = req.body as unknown as CaseApprovalParams | undefined;
+  if (!body || typeof body !== 'object') {
+    res.status(HTTP_STATUS.BAD_REQUEST).json({
+      error: {
+        code: 'INVALID_APPROVAL_PAYLOAD',
+        message: 'Request body must contain curator approval parameters.',
+        statusCode: HTTP_STATUS.BAD_REQUEST,
+      },
+    });
+    return;
+  }
+
+  try {
+    const candidateCase = queue.approveCandidateEvaluationCase(id, body);
+    const item = queue.getItem(id);
+
+    res.status(HTTP_STATUS.CREATED).json({
+      success: true,
+      candidateCase,
+      item,
+    });
+  } catch (err) {
+    if (err instanceof HeldOutContaminationError) {
+      res.status(HTTP_STATUS.BAD_REQUEST).json({
+        error: {
+          code: 'HELD_OUT_CONTAMINATION_ERROR',
+          message: err.message,
+          statusCode: HTTP_STATUS.BAD_REQUEST,
+        },
+      });
+      return;
+    }
+
+    res.status(HTTP_STATUS.BAD_REQUEST).json({
+      error: {
+        code: 'CASE_APPROVAL_FAILED',
+        message: (err as Error).message,
+        statusCode: HTTP_STATUS.BAD_REQUEST,
+      },
+    });
+  }
+};
+
+export const handleRankingSafetyCheck: RouteHandler = (req, res) => {
+  const body = req.body as unknown as RankingChangeProposal | undefined;
+  if (!body || typeof body !== 'object') {
+    res.status(HTTP_STATUS.BAD_REQUEST).json({
+      passed: false,
+      error: {
+        code: 'INVALID_PROPOSAL_PAYLOAD',
+        message: 'Request body must contain a ranking change proposal.',
+        statusCode: HTTP_STATUS.BAD_REQUEST,
+      },
+    });
+    return;
+  }
+
+  try {
+    const record = RankingSafetyGuard.assertSafeRankingModification(body);
+    res.status(HTTP_STATUS.OK).json({
+      passed: true,
+      record,
+    });
+  } catch (err) {
+    if (err instanceof RankingSafetyViolationError) {
+      res.status(HTTP_STATUS.BAD_REQUEST).json({
+        passed: false,
+        error: {
+          code: 'RANKING_SAFETY_VIOLATION',
+          message: err.message,
+          statusCode: HTTP_STATUS.BAD_REQUEST,
+        },
+      });
+      return;
+    }
+
+    res.status(HTTP_STATUS.BAD_REQUEST).json({
+      passed: false,
+      error: {
+        code: 'SAFETY_CHECK_ERROR',
+        message: (err as Error).message,
+        statusCode: HTTP_STATUS.BAD_REQUEST,
+      },
+    });
+  }
+};
+
 
