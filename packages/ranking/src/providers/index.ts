@@ -85,3 +85,15 @@ export {
   assertProviderPrivacyContract,
 } from './privacy-contract.js';
 export type { PrivacyContractValidationResult } from './privacy-contract.js';
+
+// ── Phase 111: Provider-Specific Rate Limiting (V1.5.0) ───────────────────
+export {
+  ProviderRateLimiter,
+  createProviderRateLimiter,
+} from './provider-rate-limiter.js';
+export type {
+  ProviderRateLimitRule,
+  ProviderRateLimiterOptions,
+  ProviderAcquireResult,
+} from './provider-rate-limiter.js';
+

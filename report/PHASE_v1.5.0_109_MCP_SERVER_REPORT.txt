@@ -1,0 +1,149 @@
+================================================================================
+OPENSEARCH V1.5.0 — VERIFICATION REPORT: PHASE 109 (MODEL CONTEXT PROTOCOL SERVER)
+================================================================================
+Timestamp: 2026-10-29T22:05:00+05:30
+Milestone: MILESTONE 37 — API, BROWSER SEARCH, AND MCP INTEGRATION
+Phase: Phase 109 — MCP server
+Status: VERIFIED & COMPLETED
+Branch: ashish
+Ready for Next Phase: YES (Ready for Milestone 38 — Phase 110: Security regression audit)
+
+--------------------------------------------------------------------------------
+1. EXECUTIVE SUMMARY & OBJECTIVES
+--------------------------------------------------------------------------------
+Phase 109 implements a standards-compliant Model Context Protocol (MCP 2024-11-05)
+server for OpenSearch, enabling safe, privacy-preserving AI coding agent and
+desktop assistant integration:
+- Optional MCP Server: Reusable `OpenSearchMcpServer` supporting both standard I/O
+  (`runStdioMcpServer`) for CLI/desktop AI agents (Claude Desktop, Antigravity) and
+  HTTP/SSE JSON-RPC 2.0 endpoints (`POST /api/v1/mcp` and `GET /api/v1/mcp/sse`).
+- Reused Core Abstractions: Integrated directly with `@opensearch/ranking` and
+  `@opensearch/indexer` (query parser, BM25 ranking, candidate retriever, result
+  generator, and deterministic Quick Answer engine).
+- Narrow, Documented Tools:
+  * `search`: Lexical search with strict input validation, provenance disclosure,
+    and verifiable Privacy Receipt summary.
+  * `quick_answer`: Deterministic extractive answer with cited sources; refuses to
+    hallucinate when evidence is insufficient.
+  * `get_status`: Engine health, document/vocabulary counts, active privacy mode.
+  * `get_privacy_policy`: OpenSearch zero-tracking, zero-cookie, zero-profiling policy.
+- Strict Schemas & Boundaries:
+  * Query length limit: strictly bounded to 200 characters.
+  * Result limits: strictly bounded to 20 results (default 5).
+  * Input parameter types validated predictably.
+- Server-Side Local-Only Mode Enforcement:
+  * When `isLocalOnly: true` is configured, client attempts to pass `mode: "standard"`
+    are strictly constrained to local search; zero outbound requests are dispatched.
+- Security Defense Against Dangerous Capabilities:
+  * Blocked shell execution (`exec`, `bash`, `cmd`, `shell`, `system`).
+  * Blocked filesystem reading/writing (`fs`, `readFile`, `writeFile`, `read_file`).
+  * Blocked arbitrary URL fetching (`fetch`, `curl`, `downloadUrl`, `http_request`).
+  * Blocked crawler administration (`crawl`, `crawlStart`, `manageSeeds`).
+  * Blocked secrets and credential access (`get_secret`, `credentials`, `read_env`).
+- Standard Mode Disclosure:
+  * In `initialize` instructions and `search` tool output, explicitly discloses that
+    standard mode may query upstream providers (Wikimedia, etc.) with strict IP
+    shielding and zero query logging.
+- Cancellation Support:
+  * Handles MCP `notifications/cancelled` by calling `AbortController.abort()`
+    on active requests.
+- Minimal Client Example:
+  * Created `examples/mcp-client.ts` demonstrating handshake, tool discovery, search,
+    status query, and security rejection.
+- Disablement Guarantee:
+  * Verified that configuring `enableMcp: false` disables MCP endpoints (HTTP 503)
+    while core search endpoints operate with 100% functionality and zero impact.
+
+--------------------------------------------------------------------------------
+2. IMPLEMENTED COMPONENTS
+--------------------------------------------------------------------------------
+A. MCP Subsystem Core (`apps/api/src/mcp/`)
+   - `mcp-types.ts`: Protocol definitions, error codes, JSON-RPC 2.0 interfaces,
+     and tool input schemas.
+   - `mcp-server.ts`: `OpenSearchMcpServer` class managing handlers, JSON-RPC dispatch,
+     request cancellation, schema validation, security filters, and privacy enforcement.
+   - `mcp-stdio.ts`: Stdio streaming transport using newline-delimited JSON-RPC 2.0.
+   - `mcp-http.ts`: Route handlers for `POST /api/v1/mcp` and `GET /api/v1/mcp/sse`.
+   - `index.ts`: Subsystem exports.
+
+B. Server & Router Integration (`apps/api/src/server.ts`, `routes.ts`, `types.ts`)
+   - Integrated `mcpServer` into `ApiServer` and `ApiAppContext`.
+   - Added `enableMcp` and `isLocalOnly` options to `ApiServerOptions`.
+   - Mounted `POST /api/v1/mcp` and `GET /api/v1/mcp/sse`.
+   - Cataloged MCP in `/` API root discovery.
+   - Documented MCP endpoints in OpenAPI 3.1.0 specification (`apps/api/src/openapi-spec.ts`).
+
+C. Minimal Client Example (`examples/mcp-client.ts`)
+   - Demonstrates complete client workflow: handshake, tools/list, get_status, search,
+     and verified security rejection.
+
+--------------------------------------------------------------------------------
+3. TEST EXECUTION & VERIFICATION RESULTS
+--------------------------------------------------------------------------------
+Full Monorepo Test Run (`npm test`):
+  Total Test Files: 104 passed (104 total)
+  Total Tests:      1,162 passed (1,162 total)
+  Failed Tests:     0
+  Success Rate:     100.0%
+  Execution Time:   14.91s
+
+Phase 109 Dedicated Suite (`apps/api/tests/mcp-server.test.ts` - 26 tests passed):
+  1. MCP Protocol Handshake & Metadata:
+     * initialize request with capabilities, serverInfo, and privacy disclosure
+     * ping request
+     * notifications/initialized notification
+     * -32601 for unsupported JSON-RPC method
+  2. Narrow Tools Definition (tools/list):
+     * Exposes exactly 4 narrow tools (search, quick_answer, get_status, get_privacy_policy)
+  3. Strict Input Validation & Limits:
+     * Rejects empty query string
+     * Rejects query exceeding 200 characters limit
+     * Rejects limit exceeding maximum 20
+     * Rejects limit below 1
+  4. Security & Isolation Boundaries:
+     * Blocks shell execution tools (exec, shell, bash, cmd, powershell, run_command, system)
+     * Blocks filesystem access tools (readFile, writeFile, fs, deleteFile, list_dir)
+     * Blocks arbitrary URL fetching tools (fetch, curl, downloadUrl, http_request)
+     * Blocks crawler administration tools (crawl, crawlStart, crawler_admin, manageSeeds)
+     * Blocks secrets extraction attempts (get_secret, secrets, credentials, read_env)
+  5. Server-Side Local-Only Mode Enforcement:
+     * Enforces local-only mode server-side even when client requests standard mode
+  6. Tool Execution with Search Services:
+     * Executes search and formats markdown with provenance and Privacy Receipt
+     * Executes quick_answer without hallucinating citations when evidence is absent
+     * Executes get_status returning indexing and privacy metadata
+     * Executes get_privacy_policy returning data minimization guarantees
+  7. Request Cancellation Handling:
+     * Handles notifications/cancelled without crashing
+  8. Stdio Transport Streaming:
+     * Processes newline-delimited JSON-RPC messages over streams
+  9. HTTP & SSE Transport Endpoints:
+     * Handles JSON-RPC POST /api/v1/mcp over HTTP
+     * Rejects malformed HTTP POST /api/v1/mcp bodies with 400
+     * Initiates SSE connection on GET /api/v1/mcp/sse with discovery event
+  10. MCP Disablement & Normal Search Isolation:
+     * Returns 503 on MCP endpoints when MCP is disabled
+     * Ensures core search endpoints are 100% functional when MCP is disabled
+
+--------------------------------------------------------------------------------
+4. ACCEPTANCE CRITERIA VERIFICATION
+--------------------------------------------------------------------------------
+[PASS] MCP tools are narrow, validated, and documented:
+       Exactly 4 tools exposed with strict input limits (query <= 200 chars, limit <= 20).
+[PASS] Privacy restrictions are tested:
+       Local-only enforcement verified server-side; standard mode external query
+       behavior clearly disclosed in instructions and output.
+[PASS] Dangerous capabilities blocked:
+       Shell execution, filesystem access, arbitrary URL fetching, crawl administration,
+       and secrets extraction are rejected unconditionally with access-denied errors.
+[PASS] MCP can be disabled without affecting ordinary search:
+       Verified that setting `enableMcp: false` disables MCP endpoints while
+       `/api/v1/search`, `/api/v1/suggest`, `/opensearch.xml`, and web UI remain fully functional.
+
+--------------------------------------------------------------------------------
+5. NEXT PHASE READINESS
+--------------------------------------------------------------------------------
+Status: READY FOR NEXT PHASE
+Next Milestone: MILESTONE 38 — SECURITY AND OPERATIONAL RESILIENCE
+Next Phase: Phase 110 — Security regression audit
+================================================================================

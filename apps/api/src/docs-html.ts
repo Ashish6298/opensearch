@@ -23,6 +23,7 @@ export function generateDocsHtml(options: DocsHtmlOptions = {}): string {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="OpenSearch REST API Documentation & Interactive Developer Sandbox. Zero-tracking search API reference.">
+  <link rel="search" type="application/opensearchdescription+xml" title="OpenSearch Web" href="/opensearch.xml">
   <title>Developer Docs & API Sandbox — OpenSearch</title>
   <style>
     :root {

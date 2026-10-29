@@ -22,8 +22,10 @@
   const resultsArea = document.getElementById('results-area');
   const resultsMeta = document.getElementById('results-meta');
   const instantAnswerCard = document.getElementById('instant-answer-card');
+  const quickAnswerCard = document.getElementById('quick-answer-card');
   const didYouMeanBanner = document.getElementById('did-you-mean-banner');
   const paginationArea = document.getElementById('pagination-area');
+  const searchFeedbackWidget = document.getElementById('search-feedback-widget');
   const a11yAnnouncer = document.getElementById('a11y-announcer');
   const shortcutsModal = document.getElementById('shortcuts-modal');
   const shortcutsToggleBtn = document.getElementById('shortcuts-toggle-btn');
@@ -1032,9 +1034,17 @@
       instantAnswerCard.style.display = 'none';
       instantAnswerCard.innerHTML = '';
     }
+    if (quickAnswerCard) {
+      quickAnswerCard.style.display = 'none';
+      quickAnswerCard.innerHTML = '';
+    }
     if (didYouMeanBanner) {
       didYouMeanBanner.style.display = 'none';
       didYouMeanBanner.innerHTML = '';
+    }
+    if (searchFeedbackWidget) {
+      searchFeedbackWidget.style.display = 'none';
+      searchFeedbackWidget.innerHTML = '';
     }
     clearActiveResultHighlight();
   }
@@ -1306,6 +1316,41 @@
       announceA11y(`Instant answer: ${instantAnswer.title || instantAnswer.primaryResult}`);
     }
 
+    // Phase 104: Render Quick Answer panel if present
+    const quickAnswer = data.quickAnswer;
+    if (quickAnswer && quickAnswer.hasSufficientEvidence && quickAnswer.summary && quickAnswerCard) {
+      const safeSummary = escapeHtml(quickAnswer.summary).replace(/\[(\d+)\]/g, (match, idx) => {
+        return `<a href="#quick-source-${idx}" class="quick-answer-citation-ref" aria-label="Citation ${idx}">[${idx}]</a>`;
+      });
+
+      let disagreementHtml = '';
+      if (quickAnswer.disagreement && quickAnswer.disagreement.detected && quickAnswer.disagreement.details) {
+        disagreementHtml = `<div class="quick-answer-disagreement">⚠️ <strong>Notice:</strong> ${escapeHtml(quickAnswer.disagreement.details)}</div>`;
+      }
+
+      let sourcesHtml = '';
+      if (Array.isArray(quickAnswer.citations) && quickAnswer.citations.length > 0) {
+        const sourceLinks = quickAnswer.citations.map(cit => {
+          const safeUrl = escapeHtml(cit.url);
+          const safeTitle = escapeHtml(cit.title || cit.domain);
+          const safeDomain = escapeHtml(cit.domain);
+          return `<a href="${safeUrl}" id="quick-source-${cit.index}" target="_blank" rel="noopener noreferrer" class="quick-answer-source-link" title="${safeTitle}">[${cit.index}] ${safeDomain}</a>`;
+        });
+        sourcesHtml = `<div class="quick-answer-sources"><span style="font-size:11px;color:var(--text-muted-50,#888);align-self:center;">Sources:</span> ${sourceLinks.join(' ')}</div>`;
+      }
+
+      quickAnswerCard.innerHTML = `
+        <div class="quick-answer-header">
+          <span class="quick-answer-badge">[quick-answer]</span>
+          <span class="quick-answer-model-badge">Extractive · 100% Local</span>
+        </div>
+        ${disagreementHtml}
+        <div class="quick-answer-summary">${safeSummary}</div>
+        ${sourcesHtml}
+      `;
+      quickAnswerCard.style.display = 'block';
+    }
+
     // Render Did You Mean banner if present
     if (didYouMean && didYouMean.suggestedQuery && didYouMeanBanner) {
       const safeSuggested = escapeHtml(didYouMean.suggestedQuery);
@@ -1440,6 +1485,7 @@
       }
       if (paginationArea && pagination) {
         paginationArea.innerHTML = renderPaginationBar(pagination);
+      renderSearchFeedbackWidget(hits.length, activeFilter);
       }
       return;
     }
@@ -1556,6 +1602,7 @@
     // Render terminal pagination bar
     if (paginationArea && pagination) {
       paginationArea.innerHTML = renderPaginationBar(pagination);
+      renderSearchFeedbackWidget(hits.length, activeFilter);
     }
   }
 
@@ -1587,6 +1634,112 @@
         next &gt;
       </button>
     `;
+  }
+
+  function renderSearchFeedbackWidget(resultCount, category) {
+    if (!searchFeedbackWidget) return;
+    if (resultCount === 0) {
+      searchFeedbackWidget.style.display = 'none';
+      return;
+    }
+
+    const bucket = resultCount === 0 ? '0' : resultCount <= 5 ? '1-5' : resultCount <= 10 ? '6-10' : '10+';
+    searchFeedbackWidget.innerHTML = `
+      <span>Was this search result helpful?</span>
+      <div class="feedback-actions">
+        <button type="button" class="feedback-btn" id="feedback-btn-helpful" aria-label="Rate search as helpful">[ 👍 helpful ]</button>
+        <button type="button" class="feedback-btn" id="feedback-btn-not-helpful" aria-label="Rate search as not helpful">[ 👎 not helpful ]</button>
+      </div>
+    `;
+    searchFeedbackWidget.style.display = 'flex';
+
+    const helpfulBtn = document.getElementById('feedback-btn-helpful');
+    const notHelpfulBtn = document.getElementById('feedback-btn-not-helpful');
+
+    function onVote(rating) {
+      const consentChoice = localStorage.getItem('opensearch_feedback_consent');
+      if (!consentChoice) {
+        searchFeedbackWidget.innerHTML = `
+          <div class="feedback-dialog">
+            <div style="font-weight:600;color:var(--text-color,#eee);">&gt; PRIVACY-CONSCIOUS FEEDBACK</div>
+            <div class="feedback-privacy-notice">
+              We never record your search queries, IP addresses, or device identifiers.<br/>
+              How would you like to handle your "${rating}" rating?
+            </div>
+            <div class="feedback-actions" style="margin-top:4px;">
+              <button type="button" class="feedback-btn" id="fb-consent-server" style="color:var(--accent-green,#30d158);">[ Send Minimal Rating ]</button>
+              <button type="button" class="feedback-btn" id="fb-consent-local">[ Save Locally Only ]</button>
+              <button type="button" class="feedback-btn" id="fb-consent-cancel" style="color:var(--text-muted-40,#666);">[ Cancel ]</button>
+            </div>
+          </div>
+        `;
+        document.getElementById('fb-consent-server')?.addEventListener('click', () => {
+          localStorage.setItem('opensearch_feedback_consent', 'consented_aggregate');
+          transmitFeedback(rating, bucket, category, 'consented_aggregate');
+        });
+        document.getElementById('fb-consent-local')?.addEventListener('click', () => {
+          localStorage.setItem('opensearch_feedback_consent', 'local_only');
+          saveLocalFeedback(rating, bucket, category);
+        });
+        document.getElementById('fb-consent-cancel')?.addEventListener('click', () => {
+          searchFeedbackWidget.style.display = 'none';
+        });
+      } else if (consentChoice === 'consented_aggregate') {
+        transmitFeedback(rating, bucket, category, 'consented_aggregate');
+      } else {
+        saveLocalFeedback(rating, bucket, category);
+      }
+    }
+
+    helpfulBtn?.addEventListener('click', () => onVote('helpful'));
+    notHelpfulBtn?.addEventListener('click', () => onVote('not_helpful'));
+  }
+
+  function saveLocalFeedback(rating, bucket, category) {
+    try {
+      const existing = JSON.parse(localStorage.getItem('opensearch_local_feedback_items') || '[]');
+      existing.push({
+        timestamp: new Date().toISOString(),
+        rating,
+        bucket,
+        category,
+        mode: 'local_only',
+      });
+      localStorage.setItem('opensearch_local_feedback_items', JSON.stringify(existing.slice(-100)));
+    } catch (_) {}
+    if (searchFeedbackWidget) {
+      searchFeedbackWidget.innerHTML = '<span style="color:var(--accent-green,#30d158);">[ feedback saved locally on device · zero network egress ]</span>';
+    }
+  }
+
+  function transmitFeedback(rating, bucket, category, mode) {
+    fetch('/api/v1/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        rating,
+        category,
+        resultCountBucket: bucket,
+        consent: {
+          explicitConsentGranted: true,
+          consentTimestamp: new Date().toISOString(),
+          mode,
+          disclosureVersion: '1.0.0',
+        },
+      }),
+    }).then(res => {
+      if (searchFeedbackWidget) {
+        if (res.ok) {
+          searchFeedbackWidget.innerHTML = '<span style="color:var(--accent-green,#30d158);">[ thank you · feedback recorded under privacy retention policy ]</span>';
+        } else {
+          searchFeedbackWidget.innerHTML = '<span style="color:var(--text-muted-50,#888);">[ feedback could not be transmitted ]</span>';
+        }
+      }
+    }).catch(() => {
+      if (searchFeedbackWidget) {
+        searchFeedbackWidget.innerHTML = '<span style="color:var(--text-muted-50,#888);">[ network offline · saved locally ]</span>';
+      }
+    });
   }
 
   function showError(msg) {

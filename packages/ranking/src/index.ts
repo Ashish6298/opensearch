@@ -154,8 +154,30 @@ export type {
 } from './answers/conversion-evaluator.js';
 export { ConversionEvaluator } from './answers/conversion-evaluator.js';
 
-export type { InstantAnswerPayload } from './answers/instant-answer-engine.js';
-export { InstantAnswerEngine, createInstantAnswerEngine } from './answers/instant-answer-engine.js';
+export type {
+  InstantAnswerAttribution,
+  InstantAnswerPrivacyBehavior,
+  InstantAnswerProvenance,
+  InstantAnswerContext,
+  InstantAnswerType,
+  InstantAnswerPayload,
+  InstantAnswerProviderMetadata,
+  InstantAnswerProvider,
+  InstantAnswerRegistryOptions,
+  WeatherProviderOptions,
+} from './answers/index.js';
+export {
+  InstantAnswerEngine,
+  createInstantAnswerEngine,
+  InstantAnswerRegistry,
+  getDefaultInstantAnswerRegistry,
+  UnitConversionProvider,
+  MathCalculationProvider,
+  CurrencyInstantAnswerProvider,
+  OpenMeteoWeatherProvider,
+  DefinitionInstantAnswerProvider,
+  PlacesInstantAnswerProvider,
+} from './answers/index.js';
 
 // ── Phase 49: Knowledge Graph & Entity Info-Cards (V1.3.0) ───────────────
 export type {
@@ -542,6 +564,90 @@ export {
   FIXED_SAMPLE_QUERIES,
   previewLensEffects,
 } from './lens/index.js';
+
+// ── Phase 104: Quick Answer Panel & Extractive Summarizer (Milestone 35) ──
+export type {
+  QuickAnswerStatus,
+  QuickAnswerCitation,
+  QuickAnswerStatement,
+  QuickAnswerDisagreement,
+  QuickAnswerModelInfo,
+  QuickAnswerProvenance,
+  QuickAnswerPayload,
+  QuickAnswerOptions,
+  IQuickAnswerEngine,
+} from './answers/quick-answer/index.js';
+
+export {
+  sanitizeUntrustedText,
+  validateSourceUrl,
+  detectDisagreement,
+  tokenizeText,
+  calculateJaccardSimilarity,
+  splitIntoSentences,
+  isBoilerplateOrLowQuality,
+  scoreCandidateSentence,
+  selectTopExtractiveSentences,
+  DEFAULT_QUICK_ANSWER_OPTIONS,
+  QuickAnswerEngine,
+  createQuickAnswerEngine,
+  getSharedQuickAnswerEngine,
+} from './answers/quick-answer/index.js';
+
+// ── Phase 105: Privacy-Conscious Feedback (Milestone 36) ──────────────────
+export type {
+  FeedbackRating,
+  FeedbackReasonCode,
+  ResultCountBucket,
+  FeedbackMode,
+  FeedbackConsent,
+  FeedbackSubmissionPayload,
+  StoredFeedbackRecord,
+  FeedbackValidationResult,
+  FeedbackRetentionPolicy,
+  FeedbackExportPayload,
+  FeedbackStats,
+  SubmitFeedbackResult,
+} from './feedback/index.js';
+
+export {
+  CURRENT_DISCLOSURE_VERSION,
+  DEFAULT_RETENTION_POLICY,
+  validateFeedbackPayload,
+  FeedbackStorage,
+  FeedbackService,
+  getSharedFeedbackService,
+  createFeedbackService,
+} from './feedback/index.js';
+
+// ── Phase 106: Feedback Review Workflow (Milestone 36) ─────────────────────
+export type {
+  ReviewStatus,
+  ProposedEvaluationCase,
+  ReviewQueueItem,
+  FeedbackClusterSummary,
+  ReviewQueueStats,
+  CaseApprovalParams,
+  RankingChangeReviewRecord,
+  AbuseFilterConfig,
+  AbuseEvaluationResult,
+  RankingChangeProposal,
+  ReviewQueueFilter,
+} from './feedback/index.js';
+
+export {
+  DEFAULT_ABUSE_FILTER_CONFIG,
+  NonInvasiveAbuseFilter,
+  RankingSafetyViolationError,
+  RankingSafetyGuard,
+  HeldOutContaminationError,
+  FeedbackNotFoundError,
+  FeedbackReviewQueue,
+  getSharedFeedbackReviewQueue,
+  createFeedbackReviewQueue,
+} from './feedback/index.js';
+
+
 
 
 

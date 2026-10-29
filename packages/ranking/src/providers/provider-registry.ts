@@ -140,6 +140,32 @@ export class ProviderRegistry {
   }
 
   /**
+   * Returns operational status summary for all registered providers (Phase 112).
+   * Does not expose any query text, user identifiers, or private data.
+   */
+  getAllProviderStatuses(): Array<{
+    id: string;
+    displayName: string;
+    enabled: boolean;
+    available: boolean;
+    circuitState: import('./resilience-manager.js').CircuitState;
+    reason?: string;
+  }> {
+    return this.getAllProviders().map(provider => {
+      const can = this.resilienceManager.canExecute(provider.metadata.id);
+      const circuit = this.resilienceManager.getCircuitStatus(provider.metadata.id);
+      return {
+        id: provider.metadata.id,
+        displayName: provider.metadata.displayName,
+        enabled: provider.isEnabled(),
+        available: can.allowed,
+        circuitState: circuit?.state ?? 'CLOSED',
+        reason: can.reason,
+      };
+    });
+  }
+
+  /**
    * Finds enabled providers capable of serving the specified categories.
    */
   getProvidersForCategories(categories: QueryCategory[]): SearchProvider[] {

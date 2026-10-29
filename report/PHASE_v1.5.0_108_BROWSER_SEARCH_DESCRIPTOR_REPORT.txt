@@ -1,0 +1,126 @@
+================================================================================
+OPENSEARCH V1.5.0 — VERIFICATION REPORT: PHASE 108 (BROWSER SEARCH DESCRIPTOR)
+================================================================================
+Timestamp: 2026-10-29T21:50:00+05:30
+Milestone: MILESTONE 37 — API, BROWSER SEARCH, AND MCP INTEGRATION
+Phase: Phase 108 — Browser search descriptor
+Status: VERIFIED & COMPLETED
+Branch: ashish
+Ready for Next Phase: YES (Ready for Milestone 37 — Phase 109: MCP server)
+
+--------------------------------------------------------------------------------
+1. EXECUTIVE SUMMARY & OBJECTIVES
+--------------------------------------------------------------------------------
+Phase 108 implements standards-compatible OpenSearch Description Document (OSDD)
+support and browser address-bar autodiscovery across the search engine:
+- Standards-Compatible OSDD: Implemented XML generator strictly conforming to
+  the OpenSearch 1.1 Draft 6 specification (http://a9.com/-/spec/opensearch/1.1/).
+- Correct Public Paths: Exposed descriptor endpoints at `/opensearch.xml` and
+  standard alias `/opensearchdescription.xml` on both API and Web servers.
+- Verified MIME Type & Cache Headers: Serves with standard MIME type
+  `application/opensearchdescription+xml; charset=utf-8` and cache-control
+  `public, max-age=86400`.
+- URL Templates & Address-Bar Suggestions: Generates compliant `{searchTerms}` URL
+  templates for HTML query navigation (`/?q={searchTerms}`) and interactive address-bar
+  autocompletion suggestions (`/api/v1/suggest?q={searchTerms}&format=opensearch`)
+  returning standard OpenSearch 2-tuple JSON `[query, [completions...]]`.
+- Dynamic Base Path Resolution: Resolves deployment origin dynamically via
+  `X-Forwarded-Host`, `X-Forwarded-Proto`, and standard `Host` request headers.
+- Distinct Product Identity: Explicitly uses `<ShortName>OpenSearch Web</ShortName>`
+  (<= 16 char limit) and includes a prominent disclaimer in descriptions and documentation
+  clarifying zero affiliation with Amazon Web Services or Amazon OpenSearch Service.
+- Browser Autodiscovery & Documentation: Added `<link rel="search">` autodiscovery tags
+  to web homepages, results shells, and API documentation, and provided a comprehensive
+  browser installation guide at `/browser-search` and `docs/browser-search-integration.md`.
+- Automated Verification: Added 17 automated tests across 2 new test suites covering XML
+  structure, constraints, autocompletion format, dynamic base resolution, and UI guides.
+
+--------------------------------------------------------------------------------
+2. IMPLEMENTED COMPONENTS
+--------------------------------------------------------------------------------
+A. OpenSearch Description Document Generator (`apps/api/src/opensearch-descriptor.ts`)
+   - Fully customizable generator `generateOpenSearchDescriptor(baseUrlOrOptions, extraOptions)`.
+   - OpenSearch 1.1 XML namespace `http://a9.com/-/spec/opensearch/1.1/`.
+   - Strict ShortName length truncation to <= 16 characters.
+   - Comprehensive XML entity escaping preventing injection.
+   - Distinct product identity disclaimer embedded in description and attribution.
+   - Re-exported in package index (`apps/api/src/index.ts`).
+
+B. API Server Routes (`apps/api/src/routes.ts`, `apps/api/src/server.ts`)
+   - `handleOpenSearchDescriptor`: Serves `/opensearch.xml` and `/opensearchdescription.xml`
+     with dynamic base URL resolution and proper MIME type.
+   - `handleSuggest`: Updated to support `format=opensearch`, streaming back
+     standard OpenSearch JSON array format `[query, [suggestions]]` with
+     `Content-Type: application/x-suggestions+json`.
+   - Documented `/opensearch.xml` in OpenAPI 3.1.0 specification (`apps/api/src/openapi-spec.ts`).
+   - Added autodiscovery `<link rel="search">` in interactive API documentation (`apps/api/src/docs-html.ts`).
+
+C. Web Application Server & UI (`apps/web/src/server.ts`, `apps/web/src/html-template.ts`)
+   - Served `/opensearch.xml` and `/opensearchdescription.xml` with dynamic host headers.
+   - Added `<link rel="search" type="application/opensearchdescription+xml" title="OpenSearch Web" href="/opensearch.xml">`
+     in the `<head>` of all generated HTML responses.
+   - Built dedicated `/browser-search` installation guide page with step-by-step
+     instructions for Mozilla Firefox, Google Chrome, Brave Browser, Microsoft Edge,
+     Apple Safari, and Vivaldi.
+   - Added "browser search" discovery link in the search engine footer.
+
+D. Documentation (`docs/browser-search-integration.md`)
+   - Complete technical manual for users and developers detailing OpenSearch 1.1
+     specification compliance, browser address-bar shortcuts, autocompletion,
+     reverse-proxy base path configuration, and brand distinction.
+
+--------------------------------------------------------------------------------
+3. TEST EXECUTION & VERIFICATION RESULTS
+--------------------------------------------------------------------------------
+Full Monorepo Test Run (`npm test`):
+  Total Test Files: 103 passed (103 total)
+  Total Tests:      1,136 passed (1,136 total)
+  Failed Tests:     0
+  Success Rate:     100.0%
+  Execution Time:   14.64s
+
+Phase 108 Test Suites:
+  - `apps/api/tests/browser-search-descriptor.test.ts` (11 tests passed)
+    * Generates compliant XML with default options
+    * Enforces ShortName constraint (<= 16 characters)
+    * Handles custom base URLs and path prefixes safely
+    * Escapes XML special characters in custom properties
+    * Maintains distinct product identity from Amazon OpenSearch
+    * Serves descriptor at /opensearch.xml with proper MIME type and cache header
+    * Serves descriptor at alias /opensearchdescription.xml
+    * Reflects request Host and Forwarded Proto for dynamic base path resolution
+    * Returns OpenSearch 1.1 JSON format [query, [suggestions]] when format=opensearch is requested
+    * Returns standard JSON object when format is omitted
+    * Includes autodiscovery link in /docs HTML
+  - `apps/web/tests/browser-search-descriptor.test.ts` (6 tests passed)
+    * Serves <link rel="search"> in the HTML head
+    * Contains link to /browser-search guide in the page footer
+    * Serves descriptor at /opensearch.xml with application/opensearchdescription+xml
+    * Serves descriptor at alias /opensearchdescription.xml
+    * Resolves dynamic host when X-Forwarded-Proto and X-Forwarded-Host headers are provided
+    * Serves comprehensive instructions for major browsers (/browser-search)
+
+--------------------------------------------------------------------------------
+4. ACCEPTANCE CRITERIA VERIFICATION
+--------------------------------------------------------------------------------
+[PASS] Browser integration works at the configured base URL:
+       Verified dynamic host detection using `X-Forwarded-Host` / `Host` and
+       `X-Forwarded-Proto`, rendering correct `{baseUrl}/?q={searchTerms}` templates.
+[PASS] Correct MIME type and path:
+       Served at `/opensearch.xml` and `/opensearchdescription.xml` with
+       `application/opensearchdescription+xml; charset=utf-8`.
+[PASS] Distinct product identity:
+       ShortName set to "OpenSearch Web" (14 chars), disclaiming affiliation
+       with AWS / Amazon OpenSearch Service.
+[PASS] Documentation does not advertise unsupported behavior:
+       Detailed manual configuration and OSDD autodiscovery instructions accurately
+       describe standard browser behavior without claiming non-existent capabilities.
+[PASS] Zero UI/Ranking Regressions:
+       All existing web UI, ranking, and API features remain fully functional.
+
+--------------------------------------------------------------------------------
+5. NEXT PHASE READINESS
+--------------------------------------------------------------------------------
+Status: READY FOR NEXT PHASE
+Next Target: Milestone 37 — Phase 109: MCP server
+================================================================================

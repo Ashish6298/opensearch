@@ -56,6 +56,7 @@ export {
   isPrivateOrLoopbackIp,
   validateTargetHostSync,
   validateTargetHostDns,
+  decodeNumericOrHexIp,
 } from './fetcher/ssrf-guard.js';
 export type { DnsCheckResult } from './fetcher/ssrf-guard.js';
 

@@ -20,10 +20,14 @@ import {
   QueryFilter,
   InstantAnswerEngine,
   InstantAnswerPayload,
+  QuickAnswerEngine,
+  QuickAnswerPayload,
+  FeedbackService,
+  FeedbackReviewQueue,
   BangResult,
   ProviderRegistry,
 } from '@opensearch/ranking';
-import { AppConfig, Logger, SystemStatus, PrivacyReceipt } from '@opensearch/shared';
+import { AppConfig, Logger, SystemStatus, PrivacyReceipt, MetricsRegistry } from '@opensearch/shared';
 import { MemoryRateLimiter } from './rate-limiter.js';
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'OPTIONS' | 'HEAD' | string;
@@ -45,6 +49,8 @@ export interface ApiRequest {
   body: unknown;
   /** Client IP address */
   ip: string;
+  /** Matched route pattern for low-cardinality metrics (e.g. /items/:id) */
+  routePattern?: string;
 }
 
 export interface ApiResponse {
@@ -80,6 +86,7 @@ export interface RouteDefinition {
   pattern: string | RegExp;
   paramNames?: string[];
   handler: RouteHandler;
+  pathPattern?: string;
 }
 
 export interface SearchServices {
@@ -87,12 +94,42 @@ export interface SearchServices {
   prefixTrie?: PrefixTrie;
   typoEngine?: TypoToleranceEngine;
   instantAnswerEngine?: InstantAnswerEngine;
+  quickAnswerEngine?: QuickAnswerEngine;
   queryParser: QueryParser;
   candidateRetriever: CandidateRetriever;
   rankingEngine: RankingEngine;
   resultGenerator: ResultGenerator;
   queryCache?: LruQueryCache<SearchApiResponse>;
   providerRegistry?: ProviderRegistry;
+  feedbackService?: FeedbackService;
+  feedbackReviewQueue?: FeedbackReviewQueue;
+}
+
+export interface McpServerLike {
+  isEnabled(): boolean;
+  handleMessage(rawMessage: unknown): Promise<unknown>;
+}
+
+export type TrustProxyConfig = boolean | string[] | ((ip: string) => boolean);
+export type DeploymentModel = 'standalone' | 'cluster' | 'serverless';
+export type ServerLifecycleState = 'initializing' | 'ready' | 'shutting_down' | 'stopped';
+
+export interface ReadinessResponse {
+  status: 'ready' | 'not_ready' | 'shutting_down';
+  ready: boolean;
+  timestamp: string;
+  uptimeSeconds: number;
+  deploymentModel: DeploymentModel;
+  index: {
+    status: 'ok' | 'degraded' | 'error';
+    documentsIndexed: number;
+    termsIndexed: number;
+  };
+  providers: {
+    availableCount: number;
+    totalRegistered: number;
+  };
+  reason?: string;
 }
 
 export interface ApiAppContext {
@@ -103,6 +140,15 @@ export interface ApiAppContext {
   rateLimiter?: MemoryRateLimiter;
   queryCache?: LruQueryCache<SearchApiResponse>;
   providerRegistry?: ProviderRegistry;
+  feedbackService?: FeedbackService;
+  feedbackReviewQueue?: FeedbackReviewQueue;
+  mcpServer?: McpServerLike;
+  enableMcp?: boolean;
+  trustProxy?: TrustProxyConfig;
+  deploymentModel?: DeploymentModel;
+  isShuttingDown?: boolean;
+  lifecycleState?: ServerLifecycleState;
+  metrics?: MetricsRegistry;
 }
 
 export interface ComponentHealth {
@@ -122,6 +168,8 @@ export interface HealthCheckResponse extends SystemStatus {
     rateLimiter: ComponentHealth;
     memory: ComponentHealth;
     queryCache?: ComponentHealth;
+    providers?: ComponentHealth;
+    storage?: ComponentHealth;
   };
 }
 
@@ -145,6 +193,7 @@ export interface SearchApiResponse {
     filters?: QueryFilter;
   };
   instantAnswer?: InstantAnswerPayload | null;
+  quickAnswer?: QuickAnswerPayload | null;
   bang?: BangResult | null;
   didYouMean?: DidYouMeanResult | null;
   results: Array<SearchResultItem & { explanation?: unknown }>;
@@ -181,8 +230,25 @@ export interface ApiServerOptions {
   services?: SearchServices;
   index?: InvertedIndex;
   providerRegistry?: ProviderRegistry;
+  feedbackService?: FeedbackService;
   rateLimitPerMinute?: number;
   searchTimeoutMs?: number;
+  /** Whether the Model Context Protocol (MCP) server endpoints are enabled. Default: true */
+  enableMcp?: boolean;
+  /** Whether to enforce Local-only mode server-side. Default: false */
+  isLocalOnly?: boolean;
+  /** Reverse proxy trust configuration (false = ignore X-Forwarded-For, true = trust, or list of trusted IPs). Default: false */
+  trustProxy?: TrustProxyConfig;
+  /** Hosting deployment model. Default: 'standalone' */
+  deploymentModel?: DeploymentModel;
+  /** Storage backend for rate limiter (in-memory or file-backed) */
+  rateLimitStore?: import('./rate-limiter.js').RateLimitStore;
+  /** Custom route rate limit rules */
+  routeRateLimits?: import('./rate-limiter.js').RouteRateLimitRule[];
+  /** Metrics registry instance (Phase 113) */
+  metrics?: MetricsRegistry;
+  /** Whether Prometheus metrics are enabled (default: true) */
+  enableMetrics?: boolean;
 }
 
 export type ApiApplicationContext = ApiAppContext;

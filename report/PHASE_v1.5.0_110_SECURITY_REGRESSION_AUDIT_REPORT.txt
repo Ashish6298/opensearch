@@ -1,0 +1,157 @@
+================================================================================
+OPENSEARCH V1.5.0 — VERIFICATION REPORT: PHASE 110 (SECURITY REGRESSION AUDIT)
+================================================================================
+Timestamp: 2026-10-29T22:15:00+05:30
+Milestone: MILESTONE 38 — SECURITY AND OPERATIONAL RESILIENCE
+Phase: Phase 110 — Security regression audit
+Status: VERIFIED & COMPLETED
+Branch: ashish
+Ready for Next Phase: YES (Ready for Milestone 38 — Phase 111: Rate limiting and hosting compatibility)
+
+--------------------------------------------------------------------------------
+1. EXECUTIVE SUMMARY & AUDIT OBJECTIVES
+--------------------------------------------------------------------------------
+Phase 110 performs an end-to-end security regression audit across the entire
+OpenSearch platform (crawler, indexer, ranking, storage, API, web frontend,
+CLI, and shared utilities) with zero relaxation of existing safety boundaries:
+
+- SSRF Defense Hardening:
+  * Tested loopback (`127.0.0.1`, `::1`), RFC-1918 private spaces (`10.0.0.0/8`,
+    `172.16.0.0/12`, `192.168.0.0/16`), Carrier-Grade NAT (`100.64.0.0/10`),
+    Link-local / cloud IMDS (`169.254.0.0/16`, `169.254.169.254`), and IPv6
+    link-local/unique-local (`fe80::/10`, `fc00::/7`).
+  * Hardened and verified IPv4 Multicast (`224.0.0.0/4`) and Reserved/Broadcast
+    ranges (`240.0.0.0/4`), plus IPv6 Multicast (`ff00::/8`).
+  * Added decoding and testing for alternative IP encodings (integer `http://2130706433/`,
+    hexadecimal `0x7f000001`, dotted octal `0177.0.0.1`), IPv4-mapped IPv6
+    (`::ffff:127.0.0.1`), zero-IPs (`0.0.0.0`), and forbidden local TLDs (`.local`,
+    `.internal`, `.lan`, `.home`, `.corp`).
+
+- Mixed DNS Answers & Redirect Target Security:
+  * Evaluated multi-A/AAAA record resolutions; any presence of a private,
+    loopback, or multicast IP triggers rejection.
+  * Verified that HTTP redirects (301, 302, 307, 308) re-validate target URLs
+    and resolved IP addresses against SSRF filters prior to following.
+
+- Protocol & Redirect Boundaries:
+  * Strict scheme allowlist: only `http:` and `https:` are permitted.
+  * Explicit rejection of dangerous schemes: `file:`, `ftp:`, `gopher:`,
+    `javascript:`, `data:`, `blob:`, `ws:`, `wss:`.
+  * Redirect loop and chain bounding: limits maximum redirect hops (default 5)
+    and detects circular redirect cycles without memory leaks or hanging.
+
+- Crawl Policy, MIME Types, & Resource Limits:
+  * Strict RFC 9309 robots.txt compliance (`Disallow`, crawl-delay, user-agent grouping).
+  * Payload size limits: strict enforcement of `maxPageBytes` (default 2 MB) truncating
+    or rejecting oversized responses.
+  * MIME type validation: rejection of executables (`application/octet-stream`,
+    `application/x-msdownload`, `.exe`, `.bin`), media streams (`video/*`, `audio/*`),
+    and binary assets before parsing.
+  * Concurrency and politeness limits: domain-level concurrency bounded, default politeness
+    delay strictly respected.
+
+- Zero Script Execution Guarantees:
+  * Static parsing only (`cheerio` / custom AST); headless browser or JS runtimes
+    are intentionally absent from the indexing pipeline.
+  * `<script>` tags, inline event handlers (`onload`, `onerror`), and `<iframe>`
+    tags are stripped or neutralized; no remote or local JavaScript is ever executed.
+
+- Transport & Web Defensive Security Headers:
+  * HTTP security headers verified: `X-Content-Type-Options: nosniff`,
+    `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`,
+    and strict Content-Security-Policy (CSP).
+  * Zero-Cookie Behavior: Zero `Set-Cookie` headers are ever emitted across API
+    and Web responses; zero tracking tokens or browser fingerprints are gathered.
+  * CORS: Restricted to safe HTTP methods (`GET`, `POST`, `OPTIONS`) with explicit
+    preflight validation.
+
+- Dependency Advisories & Production Zero-Dependency Audit:
+  * Verified that all 8 core packages (`shared`, `crawler`, `indexer`, `ranking`,
+    `storage`, `api`, `web`, `cli`) have ZERO external production runtime dependencies.
+  * All production operations rely exclusively on vetted TypeScript modules and Node.js
+    built-ins (`node:crypto`, `node:net`, `node:http`, `node:dns`).
+
+--------------------------------------------------------------------------------
+2. RESIDUAL RISKS & OPERATIONAL CONSIDERATIONS
+--------------------------------------------------------------------------------
+While existing and newly hardened safety controls provide robust defense-in-depth,
+the following residual risks and operational boundaries are documented:
+
+1. DNS Rebinding Window:
+   - Risk: An attacker-controlled nameserver could return a benign public IP on
+     the initial pre-flight DNS lookup, and then resolve to `127.0.0.1` or `169.254.169.254`
+     during the actual TCP socket connection if the HTTP client re-resolves the host.
+   - Mitigation in place: OpenSearch's NodeFetcher validates URLs, and the crawler's
+     SSRF guard checks both hostname and resolved IPs.
+   - Recommendation: For production enterprise deployments in hostile intranet
+     environments, configure custom HTTP Agents with pin-to-IP / custom `lookup`
+     functions that lock the socket connection to the exact IP validated in pre-flight.
+
+2. Standard Mode Upstream Provider Trust:
+   - Risk: Standard mode optionally queries public upstream providers (e.g. Wikimedia)
+     for augmented public knowledge.
+   - Mitigation in place: Local-only mode can be enforced via configuration (`isLocalOnly: true`),
+     completely disabling all outbound provider network calls. In standard mode,
+     outgoing requests strip identifying headers, omit cookies, and generate verifiable
+     Privacy Receipts with zero query logging.
+
+3. Distributed Denial-of-Service / Rate Limiting:
+   - Risk: While single-node in-memory rate limiting protects individual API instances,
+     a distributed attack against multiple API cluster instances requires coordinated
+     rate limiting.
+   - Status: Scheduled for full implementation and testing in Phase 111 (Rate limiting
+     and hosting compatibility).
+
+--------------------------------------------------------------------------------
+3. TEST SUITE & AUTOMATED VERIFICATION RESULTS
+--------------------------------------------------------------------------------
+Full Monorepo Test Run (`npm test`):
+  Total Test Files: 105 passed (105 total)
+  Total Tests:      1,187 passed (1,187 total)
+  Failed Tests:     0
+  Success Rate:     100.0%
+  Execution Time:   15.03s
+
+Phase 110 Dedicated Suite (`packages/crawler/tests/security-regression-audit.test.ts` - 25 tests passed):
+  1. SSRF Defenses & IP Address Validation:
+     * Blocks IPv4 loopback (127.0.0.1, 127.0.0.2, 127.255.255.254)
+     * Blocks IPv6 loopback (::1)
+     * Blocks RFC-1918 Class A private IP (10.0.0.1, 10.254.0.1)
+     * Blocks RFC-1918 Class B private IP (172.16.0.1, 172.31.255.254)
+     * Blocks RFC-1918 Class C private IP (192.168.1.1, 192.168.0.254)
+     * Blocks Cloud Metadata / IMDS IP (169.254.169.254, 169.254.1.1)
+     * Blocks IPv4 Multicast (224.0.0.1, 239.255.255.250) and Reserved (240.0.0.1)
+     * Blocks IPv6 Link-Local (fe80::1) and Unique-Local (fc00::1, fd00::1)
+     * Blocks IPv4-mapped IPv6 addresses (::ffff:127.0.0.1, ::ffff:192.168.1.1)
+     * Blocks all-zeroes address (0.0.0.0)
+     * Decodes and blocks integer and hex encoded IP addresses (2130706433, 0x7f000001, 0177.0.0.1)
+     * Blocks forbidden internal TLDs (.local, .internal, .lan, .corp, .home)
+  2. Mixed DNS Answers & Redirect SSRF Defenses:
+     * Rejects mixed DNS resolution if any resolved IP is private or loopback
+     * Validates redirect target URLs and blocks redirects to private or loopback addresses
+  3. Protocol Scheme & Redirect Limit Boundaries:
+     * Rejects non-HTTP/HTTPS schemes (file, ftp, gopher, javascript, data, blob, ws, wss)
+     * Enforces maximum redirect hop limit (rejects chains exceeding limit)
+     * Detects and terminates circular redirect loops
+  4. Crawl Limits, Robots Policy, and Content Types:
+     * Honors RFC 9309 robots.txt disallow rules
+     * Rejects binary, executable, and streaming media MIME types
+     * Enforces payload body-size limits
+  5. Script Execution Defenses:
+     * Does not execute scripts during HTML extraction; strips or ignores executable code
+  6. HTTP Security Headers, CORS, and Cookie Behavior:
+     * Verifies critical defensive headers (nosniff, X-Frame-Options, strict Referrer-Policy)
+     * Verifies CORS preflight headers and safe methods
+     * Enforces zero-cookie policy (no Set-Cookie emitted)
+  7. Production Dependency Architecture:
+     * All 8 core packages maintain 0 production runtime dependencies
+
+--------------------------------------------------------------------------------
+4. CONCLUSION & READINESS
+--------------------------------------------------------------------------------
+Phase 110 is fully verified with 100% test pass rate across all 105 test files
+(1,187 passing tests). All security boundaries are automated and documented.
+Residual risks are clearly identified with actionable mitigations.
+
+OpenSearch is READY for Milestone 38 — Phase 111: Rate limiting and hosting compatibility.
+================================================================================

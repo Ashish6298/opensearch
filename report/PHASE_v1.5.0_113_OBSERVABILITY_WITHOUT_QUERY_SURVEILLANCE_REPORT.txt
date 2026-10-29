@@ -1,0 +1,137 @@
+================================================================================
+OPENSEARCH V1.5.0 — VERIFICATION REPORT: PHASE 113 (OBSERVABILITY WITHOUT QUERY SURVEILLANCE)
+================================================================================
+Timestamp: 2026-10-29T23:35:00+05:30
+Milestone: MILESTONE 38 — SECURITY AND OPERATIONAL RESILIENCE
+Phase: Phase 113 — Observability without query surveillance
+Status: VERIFIED & COMPLETED
+Branch: ashish
+Ready for Next Phase: YES (Ready for Milestone 39 — Phase 114: Product identity)
+
+--------------------------------------------------------------------------------
+1. EXECUTIVE SUMMARY & OBJECTIVES
+--------------------------------------------------------------------------------
+Phase 113 successfully delivers privacy-conscious observability and telemetry across
+OpenSearch, completing Milestone 38 (Security and Operational Resilience):
+
+- Operational Metrics Catalog:
+  * Latency: HTTP request duration (`opensearch_http_request_duration_seconds`),
+    internal search pipeline duration (`opensearch_search_pipeline_duration_seconds`),
+    and upstream search provider latency (`opensearch_provider_request_duration_seconds`).
+  * Provider Health: Total outbound provider requests (`opensearch_provider_requests_total`)
+    and circuit breaker states (`opensearch_provider_circuit_breaker_state`: 0=closed,
+    1=half-open, 2=open).
+  * Result Counts: Client result count histogram (`opensearch_search_results_count`)
+    binned into buckets [0, 1, 5, 10, 20, 50, 100].
+  * Index Status: Total indexed documents (`opensearch_index_documents_total`), total
+    unique terms (`opensearch_index_terms_total`), and index segments (`opensearch_index_segments_total`).
+  * Queue Depth: Asynchronous queue depth gauge (`opensearch_queue_depth`) tracking
+    pending background items (crawl queue, feedback review queue).
+  * Errors: Standardized error code telemetry (`opensearch_errors_total` with codes
+    `RATE_LIMITED`, `NOT_FOUND`, `VALIDATION_ERROR`, `UNAUTHORIZED`, `SERVICE_UNAVAILABLE`, `INTERNAL_ERROR`).
+  * System Footprint: Node.js process uptime (`opensearch_process_uptime_seconds`) and
+    V8 memory utilization (`opensearch_memory_heap_used_bytes`, `heap_total`, `rss`).
+
+- Zero Query Surveillance Guarantee:
+  * Raw search queries (`q`, `query`), search terms, and full query-bearing URLs are
+    strictly prohibited from appearing as metric labels or names.
+  * User identifiers, account IDs, session cookies, browser fingerprints, and client IPs
+    are forbidden from metric dimensions.
+
+- Low-Cardinality Label Enforcers:
+  * Strict label key whitelist (`validateMetricLabels`): Allowed keys are bounded to
+    `['method', 'path', 'status', 'status_family', 'provider', 'queue', 'mode', 'code', 'error_type', 'tier', 'le', 'quantile', 'format']`.
+  * Dynamic Route Normalization (`normalizeRoutePath`): Parameterized endpoints
+    (e.g., `/api/v1/lenses/:id`, `/api/v1/feedback/review/:id`) are collapsed into
+    static templates, while unknown paths map to `/other`, preventing label explosion attacks.
+
+- URL & Credential Redaction:
+  * `redactSensitiveUrl`: Sanitizes query parameters (`q`, `query`, `search`, `token`,
+    `key`, `secret`, `password`, `auth`, `apikey`) and HTTP basic auth credentials.
+  * `stripQueryParams`: Strips query strings entirely when extracting route paths.
+
+- Prometheus Text & JSON Snapshot Exposition:
+  * Standard Prometheus exposition endpoint at `GET /metrics` (`Content-Type: text/plain; version=0.0.4; charset=utf-8`).
+  * Programmatic JSON snapshot support when requested with `Accept: application/json`.
+
+- Data Retention & Privacy Review:
+  * Documented in `docs/observability-and-retention.md`.
+  * In-memory metrics are strictly transient for process lifetime.
+  * Operational logs never persist user search queries or client IP addresses.
+
+--------------------------------------------------------------------------------
+2. IMPLEMENTED & UPDATED COMPONENTS
+--------------------------------------------------------------------------------
+A. Operational Metrics Subsystem (`packages/shared/src/metrics/` & `index.ts`):
+   - `types.ts`: CounterMetric, GaugeMetric, HistogramMetric, MetricDefinition, Snapshot interfaces.
+   - `privacy-guards.ts`: `validateMetricLabels`, `normalizeRoutePath`, `redactSensitiveUrl`,
+     `stripQueryParams`, and forbidden key blacklist (`q`, `query`, `ip`, `user`, etc.).
+   - `registry.ts`: Low-cardinality in-memory Prometheus registry with `# HELP`, `# TYPE`,
+     bucket tracking, sum/count accumulators, and serialization.
+   - `index.ts`: Unified package export.
+
+B. API Server & Middleware Instrumentation (`apps/api/src/`):
+   - `router.ts`: Stores `pathPattern` on routes, assigns `req.routePattern` during dispatch,
+     and captures error telemetry in `handleError`.
+   - `middlewares.ts`: Records HTTP request counter, latency histogram, and error counter
+     with normalized low-cardinality route paths in `createLoggingMiddleware`.
+   - `routes.ts`:
+     * Adds `handleMetrics` for Prometheus text and JSON snapshot exposition.
+     * Records query counters, pipeline duration histograms, and result count histograms in `handleSearch`.
+     * Tracks provider calls and latencies in `handleSearch`.
+     * Exposes `GET /metrics` in `handleHealthCheck` and `handleApiRoot`.
+   - `server.ts`: Wires `MetricsRegistry`, registers `GET /metrics`, and provides `getMetrics()`.
+   - `openapi-spec.ts`: Formally documents `GET /metrics` in OpenAPI 3.1.0 specification.
+
+C. Policy Documentation & Privacy Review:
+   - Authored `docs/observability-and-retention.md`.
+
+--------------------------------------------------------------------------------
+3. TEST SUITE & VERIFICATION RESULTS
+--------------------------------------------------------------------------------
+Automated test suite created at `apps/api/tests/observability-metrics.test.ts`:
+- Suite 1: Privacy Guards & Low-Cardinality Label Enforcement (6 tests)
+  * Rejects forbidden keys (`q`, `query`, `ip`, `user_id`, `token`, etc.) with privacy violation errors.
+  * Rejects unapproved high-cardinality label keys.
+  * Permits approved low-cardinality labels (`method`, `path`, `status`, `provider`, `mode`, etc.).
+  * Sanitizes label values containing URLs, queries, emails, or excess length.
+  * Normalizes dynamic and unknown paths to canonical route templates.
+  * Redacts sensitive query parameters from URLs.
+- Suite 2: In-Memory Prometheus Metrics Registry & Formatting (4 tests)
+  * Increments counters and formats to Prometheus 0.0.4 text with HELP and TYPE headers.
+  * Updates gauges and exports current values.
+  * Observes histogram values and calculates cumulative buckets, sum, and count.
+  * Generates structured JSON snapshot for programmatic auditing.
+- Suite 3: Live Server Endpoint & Privacy Invariants (4 tests)
+  * GET /metrics returns 200 with standard Prometheus text/plain format.
+  * GET /metrics with Accept: application/json returns valid JSON snapshot.
+  * Records search metrics without leaking query text or IP address in labels.
+  * Records error metrics with low-cardinality codes for 404 and 400 responses.
+
+Vitest Results:
+- Suite: `apps/api/tests/observability-metrics.test.ts`
+  Tests: 14 passed, 0 failed (100% pass)
+- Full Monorepo:
+  Test Files: 108 passed (108)
+  Tests: 1233 passed (1233)
+  Pass Rate: 100.0%
+
+--------------------------------------------------------------------------------
+4. ACCEPTANCE CRITERIA CHECKLIST
+--------------------------------------------------------------------------------
+[x] Metrics support troubleshooting without retaining search histories:
+    - Provides real-time visibility into latency, errors, provider circuits, and queue depths.
+    - Zero query text retained in memory or emitted in metrics output.
+[x] Labels remain low-cardinality:
+    - Label whitelist strictly enforced by `validateMetricLabels`.
+    - Dynamic paths normalized to canonical route templates by `normalizeRoutePath`.
+[x] Observability is covered by a privacy review:
+    - Privacy invariants documented and certified in `docs/observability-and-retention.md`.
+
+--------------------------------------------------------------------------------
+5. CONCLUSION & READINESS
+--------------------------------------------------------------------------------
+Milestone 38 (Security and Operational Resilience) is fully completed with all 4 phases
+(Phase 110, 111, 112, 113) verified and passing 100%.
+Ready for Next Phase: YES (Milestone 39 — Phase 114: Product identity).
+================================================================================

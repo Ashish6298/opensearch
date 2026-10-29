@@ -29,6 +29,7 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="theme-color" content="#0d0d0d">
   <link rel="manifest" href="/manifest.json">
+  <link rel="search" type="application/opensearchdescription+xml" title="OpenSearch Web" href="/opensearch.xml">
   <title>${title}</title>
   <style>
     ${options.cssContent || '/* Inlined CSS */'}
@@ -285,10 +286,14 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
           <div class="results-meta" id="results-meta" role="status" aria-live="polite"></div>
           <!-- Phase 38: Instant Answers & Direct Calculation/Bang Card -->
           <div class="instant-answer-card" id="instant-answer-card" role="region" aria-label="Instant answer" style="display:none;"></div>
+          <!-- Phase 104: Quick Answer Panel (Extractive Summary from Retrieved Results) -->
+          <div class="quick-answer-card" id="quick-answer-card" role="region" aria-label="Quick answer" style="display:none;"></div>
           <!-- Phase 36: Did You Mean Notification Banner -->
           <div class="did-you-mean-banner" id="did-you-mean-banner" role="status" aria-live="polite" style="display:none;"></div>
           <section class="results-container" id="results-area" role="feed" aria-label="Search Results"></section>
           <div id="pagination-area" role="navigation" aria-label="Search pagination"></div>
+          <!-- Phase 105: Privacy-Conscious Search Quality Feedback Widget -->
+          <div class="search-feedback-widget" id="search-feedback-widget" role="region" aria-label="Search feedback" style="display:none;"></div>
         </div>
       </div>
     </main>
@@ -296,7 +301,7 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
     <!-- Terminal Footer -->
     <footer class="terminal-footer">
       <div class="footer-container">
-        <span class="footer-text"><a href="/about">about</a> · <a href="/docs">docs</a> · <a href="/privacy">privacy</a> · <a href="/health" target="_blank" rel="noopener noreferrer">status</a> · <button type="button" class="footer-settings-btn" id="footer-settings-btn" aria-label="Open search settings">settings</button> · <button type="button" class="footer-shortcuts-btn" id="shortcuts-toggle-btn" aria-label="Keyboard Shortcuts (Press ?)">shortcuts [?]</button> · <a href="https://github.com/Ashish6298/opensearch" target="_blank" rel="noopener noreferrer">source</a> — v1.2.0</span>
+        <span class="footer-text"><a href="/about">about</a> · <a href="/docs">docs</a> · <a href="/privacy">privacy</a> · <a href="/browser-search">browser search</a> · <a href="/health" target="_blank" rel="noopener noreferrer">status</a> · <button type="button" class="footer-settings-btn" id="footer-settings-btn" aria-label="Open search settings">settings</button> · <button type="button" class="footer-shortcuts-btn" id="shortcuts-toggle-btn" aria-label="Keyboard Shortcuts (Press ?)">shortcuts [?]</button> · <a href="https://github.com/Ashish6298/opensearch" target="_blank" rel="noopener noreferrer">source</a> — v1.2.0</span>
       </div>
     </footer>
 

@@ -9,12 +9,15 @@
  */
 
 import { IncomingMessage, ServerResponse } from 'node:http';
+import * as net from 'node:net';
 import {
   HTTP_STATUS,
   NotFoundError,
   OpenSearchError,
   toSafeErrorResponse,
   ValidationError,
+  normalizeRoutePath,
+  anonymizeIpAddress,
 } from '@opensearch/shared';
 import {
   ApiAppContext,
@@ -24,11 +27,73 @@ import {
   MiddlewareHandler,
   RouteDefinition,
   RouteHandler,
+  TrustProxyConfig,
 } from './types.js';
+
+export interface RouterOptions {
+  trustProxy?: TrustProxyConfig;
+}
+
+/**
+ * Resolves the client IP address safely, preventing X-Forwarded-For spoofing
+ * unless the direct connecting socket is an explicitly trusted proxy.
+ */
+export function resolveClientIp(
+  req: IncomingMessage,
+  trustProxy?: TrustProxyConfig,
+): string {
+  const socketIp = req.socket.remoteAddress || '127.0.0.1';
+
+  // If proxy is not trusted (default), never trust X-Forwarded-For header
+  if (!trustProxy) {
+    return socketIp;
+  }
+
+  // If trustProxy is an array or function, verify socketIp first
+  if (typeof trustProxy === 'function') {
+    if (!trustProxy(socketIp)) {
+      return socketIp;
+    }
+  } else if (Array.isArray(trustProxy)) {
+    if (!trustProxy.includes(socketIp)) {
+      return socketIp;
+    }
+  }
+
+  // Socket is trusted proxy, parse X-Forwarded-For safely
+  const xForwardedFor = req.headers['x-forwarded-for'];
+  if (typeof xForwardedFor === 'string' && xForwardedFor.trim().length > 0) {
+    const rawIps = xForwardedFor.split(',');
+    for (const raw of rawIps) {
+      let candidate = raw.trim();
+      // Handle port if present (e.g. 1.2.3.4:8080 or [::1]:8080)
+      if (candidate.startsWith('[') && candidate.includes(']')) {
+        candidate = candidate.slice(1, candidate.indexOf(']'));
+      } else if (
+        candidate.includes(':') &&
+        !candidate.includes('::') &&
+        candidate.indexOf(':') === candidate.lastIndexOf(':')
+      ) {
+        candidate = candidate.split(':')[0]!;
+      }
+
+      if (net.isIP(candidate)) {
+        return candidate;
+      }
+    }
+  }
+
+  return socketIp;
+}
 
 export class Router {
   private readonly routes: RouteDefinition[] = [];
   private readonly middlewares: MiddlewareHandler[] = [];
+  private readonly trustProxy?: TrustProxyConfig;
+
+  constructor(options: RouterOptions = {}) {
+    this.trustProxy = options.trustProxy;
+  }
 
   /**
    * Registers a middleware function to run on all requests.
@@ -48,6 +113,7 @@ export class Router {
       pattern: regex,
       paramNames,
       handler,
+      pathPattern,
     });
     return this;
   }
@@ -62,6 +128,10 @@ export class Router {
 
   put(path: string, handler: RouteHandler): this {
     return this.addRoute('PUT', path, handler);
+  }
+
+  patch(path: string, handler: RouteHandler): this {
+    return this.addRoute('PATCH', path, handler);
   }
 
   delete(path: string, handler: RouteHandler): this {
@@ -81,9 +151,10 @@ export class Router {
     context: ApiAppContext,
   ): Promise<void> {
     const apiRes = this.createResponseWrapper(res);
+    let apiReq: ApiRequest | undefined;
 
     try {
-      const apiReq = await this.createRequestWrapper(req, context);
+      apiReq = await this.createRequestWrapper(req, context);
 
       // Execute middleware chain
       let index = 0;
@@ -91,16 +162,16 @@ export class Router {
         if (index < this.middlewares.length) {
           const mw = this.middlewares[index++];
           if (mw) {
-            await mw(apiReq, apiRes, next, context);
+            await mw(apiReq!, apiRes, next, context);
           }
         } else {
-          await this.dispatchRoute(apiReq, apiRes, context);
+          await this.dispatchRoute(apiReq!, apiRes, context);
         }
       };
 
       await next();
     } catch (err: unknown) {
-      this.handleError(err, apiRes, context);
+      this.handleError(err, apiRes, context, apiReq);
     }
   }
 
@@ -130,6 +201,7 @@ export class Router {
             }
           }
           req.params = params;
+          req.routePattern = route.pathPattern;
           await route.handler(req, res, context);
           return;
         }
@@ -154,7 +226,12 @@ export class Router {
     });
   }
 
-  private handleError(err: unknown, res: ApiResponse, context: ApiAppContext): void {
+  private handleError(
+    err: unknown,
+    res: ApiResponse,
+    context: ApiAppContext,
+    req?: ApiRequest,
+  ): void {
     const safeError = toSafeErrorResponse(err);
     const statusCode =
       err instanceof OpenSearchError ? err.statusCode : HTTP_STATUS.INTERNAL_SERVER_ERROR;
@@ -170,6 +247,55 @@ export class Router {
         message: safeError.error.message,
         statusCode,
       });
+    }
+
+    if (req) {
+      context.logger.info('HTTP Request handled', {
+        method: req.method,
+        path: req.pathname,
+        ip: anonymizeIpAddress(req.ip),
+        statusCode,
+        durationMs: 0,
+      });
+    }
+
+    if (context.metrics) {
+      try {
+        const normPath = req ? (req.routePattern || normalizeRoutePath(req.pathname)) : '/other';
+        const method = req?.method?.toUpperCase() || 'GET';
+        const statusStr = String(statusCode);
+
+        context.metrics
+          .counter(
+            'opensearch_http_requests_total',
+            'Total number of HTTP requests processed by method, normalized route path, and status code',
+            ['method', 'path', 'status'],
+          )
+          .inc({ method, path: normPath, status: statusStr });
+
+        const errorType =
+          statusCode === 429
+            ? 'RATE_LIMITED'
+            : statusCode === 404
+            ? 'NOT_FOUND'
+            : statusCode === 400
+            ? 'VALIDATION_ERROR'
+            : statusCode === 401 || statusCode === 403
+            ? 'UNAUTHORIZED'
+            : statusCode === 503
+            ? 'SERVICE_UNAVAILABLE'
+            : 'INTERNAL_ERROR';
+
+        context.metrics
+          .counter(
+            'opensearch_errors_total',
+            'Total number of error responses categorized by error type code and normalized path',
+            ['code', 'path'],
+          )
+          .inc({ code: errorType, path: normPath });
+      } catch {
+        // Non-fatal
+      }
     }
 
     res.status(statusCode).json(safeError);
@@ -200,10 +326,7 @@ export class Router {
       headers[key.toLowerCase()] = val;
     }
 
-    const ip =
-      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
-      req.socket.remoteAddress ||
-      '127.0.0.1';
+    const ip = resolveClientIp(req, context.trustProxy ?? this.trustProxy);
 
     // Parse body for POST / PUT / PATCH requests
     let body: unknown = undefined;

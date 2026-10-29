@@ -19,6 +19,9 @@ import {
   SkippedProviderRecord,
   getProviderMetadataDefaults,
   ProviderExecutionStatus,
+  DEFAULT_LATENCY_BUCKETS,
+  DEFAULT_COUNT_BUCKETS,
+  getDefaultRegistry,
 } from '@opensearch/shared';
 import {
   HealthCheckResponse,
@@ -35,16 +38,26 @@ import {
   validateLensProfile,
   previewLensEffects,
   FocusLensProfile,
+  getSharedQuickAnswerEngine,
+  getSharedFeedbackService,
+  getSharedFeedbackReviewQueue,
+  RankingSafetyGuard,
+  RankingSafetyViolationError,
+  HeldOutContaminationError,
+  CaseApprovalParams,
+  RankingChangeProposal,
+  ReviewStatus,
 } from '@opensearch/ranking';
 import { generateOpenApiSpec } from './openapi-spec.js';
 import { generateDocsHtml } from './docs-html.js';
+import { generateOpenSearchDescriptor, OPENSEARCH_DESCRIPTOR_MIME_TYPE } from './opensearch-descriptor.js';
 
 export const handleHealthCheck: RouteHandler = (_req, res, context) => {
   const uptimeSeconds = Math.floor((Date.now() - context.startTime) / 1000);
   const mem = process.memoryUsage();
   const memoryUsageMb = Math.round((mem.heapUsed / 1024 / 1024) * 100) / 100;
-  const totalDocumentsIndexed = context.services?.index.getStats().totalDocuments ?? 0;
-  const totalTermsIndexed = context.services?.index.getStats().totalTerms ?? 0;
+  const totalDocumentsIndexed = context.services?.index ? context.services.index.getStats().totalDocuments : 0;
+  const totalTermsIndexed = context.services?.index ? context.services.index.getStats().totalTerms : 0;
 
   // Determine component readiness
   const isIndexReady = Boolean(context.services?.index);
@@ -60,13 +73,23 @@ export const handleHealthCheck: RouteHandler = (_req, res, context) => {
   const memoryStatus: 'ok' | 'degraded' | 'error' = memoryUsageMb > 512 ? 'degraded' : 'ok';
   const queryCacheStatus: 'ok' | 'degraded' | 'error' = context.queryCache ? 'ok' : 'degraded';
 
+  // Provider health summary (Phase 112: never expose query text or user identifiers)
+  const registeredProviders = context.services?.providerRegistry?.getAllProviders() ?? [];
+  const enabledProviders = context.services?.providerRegistry?.getEnabledProviders() ?? [];
+  const resilience = context.services?.providerRegistry?.getResilienceManager();
+  const availableProviders = enabledProviders.filter(p => resilience ? resilience.canExecute(p.metadata.id).allowed : true);
+  const providersStatus: 'ok' | 'degraded' | 'error' =
+    registeredProviders.length === 0 || availableProviders.length > 0 ? 'ok' : 'degraded';
+
   let overallStatus: 'ok' | 'degraded' | 'error' = 'ok';
   if (indexStatus === 'error') {
     overallStatus = 'error';
   } else if (
+    context.isShuttingDown ||
     indexStatus === 'degraded' ||
     rateLimiterStatus === 'degraded' ||
-    memoryStatus === 'degraded'
+    memoryStatus === 'degraded' ||
+    providersStatus === 'degraded'
   ) {
     overallStatus = 'degraded';
   }
@@ -86,14 +109,31 @@ export const handleHealthCheck: RouteHandler = (_req, res, context) => {
       'GET /',
       'GET /docs',
       'GET /health',
+      'GET /healthz',
+      'GET /ready',
+      'GET /readyz',
       'GET /api/v1/status',
       'GET /api/v1/search',
       'POST /api/v1/search',
+      'GET /api/v1/search/stream',
       'GET /api/v1/suggest',
       'GET /api/v1/lenses',
       'GET /api/v1/lenses/:id',
       'POST /api/v1/lenses/validate',
       'POST /api/v1/lenses/preview',
+      'GET /api/v1/feedback',
+      'POST /api/v1/feedback',
+      'DELETE /api/v1/feedback',
+      'GET /api/v1/feedback/privacy',
+      'POST /api/v1/feedback/review/import',
+      'GET /api/v1/feedback/review',
+      'GET /api/v1/feedback/review/stats',
+      'PATCH /api/v1/feedback/review/:id',
+      'POST /api/v1/feedback/review/:id/approve-case',
+      'POST /api/v1/feedback/review/ranking-check',
+      'GET /opensearch.xml',
+      'GET /opensearchdescription.xml',
+      'GET /metrics',
       'GET /api/v1/openapi.json',
       'GET /openapi.json',
     ],
@@ -123,6 +163,20 @@ export const handleHealthCheck: RouteHandler = (_req, res, context) => {
             }
           : {},
       },
+      providers: {
+        status: providersStatus,
+        details: {
+          totalRegistered: registeredProviders.length,
+          availableCount: availableProviders.length,
+        },
+      },
+      storage: {
+        status: 'ok',
+        details: {
+          storageDir: context.config.storage.storageDir,
+          deploymentModel: context.deploymentModel ?? 'standalone',
+        },
+      },
       memory: {
         status: memoryStatus,
         details: {
@@ -134,8 +188,67 @@ export const handleHealthCheck: RouteHandler = (_req, res, context) => {
     },
   };
 
-  const statusCode = overallStatus === 'error' ? 503 : 200;
+  // /health answers liveness: returns 200 as long as the process is alive (503 only on critical fatal state)
+  const statusCode = indexStatus === 'error' ? 503 : 200;
   res.status(statusCode).json(response);
+};
+
+/**
+ * Readiness probe endpoint (GET /ready and /readyz - Phase 112).
+ * Answers: Is this server instance ready to receive search traffic right now?
+ * Returns 503 if shutting down or if core index is not ready.
+ */
+export const handleReadinessCheck: RouteHandler = (_req, res, context) => {
+  const uptimeSeconds = Math.floor((Date.now() - context.startTime) / 1000);
+  const totalDocumentsIndexed = context.services?.index ? context.services.index.getStats().totalDocuments : 0;
+  const totalTermsIndexed = context.services?.index ? context.services.index.getStats().totalTerms : 0;
+  const isIndexReady = Boolean(context.services?.index);
+
+  const registeredProviders = context.services?.providerRegistry?.getAllProviders() ?? [];
+  const enabledProviders = context.services?.providerRegistry?.getEnabledProviders() ?? [];
+  const resilience = context.services?.providerRegistry?.getResilienceManager();
+  const availableProviders = enabledProviders.filter(p => resilience ? resilience.canExecute(p.metadata.id).allowed : true);
+
+  if (context.isShuttingDown) {
+    res.status(HTTP_STATUS.SERVICE_UNAVAILABLE).json({
+      status: 'shutting_down',
+      ready: false,
+      timestamp: new Date().toISOString(),
+      uptimeSeconds,
+      deploymentModel: context.deploymentModel ?? 'standalone',
+      reason: 'Server is currently shutting down and draining active connections.',
+    });
+    return;
+  }
+
+  if (!isIndexReady) {
+    res.status(HTTP_STATUS.SERVICE_UNAVAILABLE).json({
+      status: 'not_ready',
+      ready: false,
+      timestamp: new Date().toISOString(),
+      uptimeSeconds,
+      deploymentModel: context.deploymentModel ?? 'standalone',
+      reason: 'Search index subsystem is not initialized or in an error state.',
+    });
+    return;
+  }
+
+  res.status(HTTP_STATUS.OK).json({
+    status: 'ready',
+    ready: true,
+    timestamp: new Date().toISOString(),
+    uptimeSeconds,
+    deploymentModel: context.deploymentModel ?? 'standalone',
+    index: {
+      status: totalDocumentsIndexed === 0 ? 'degraded' : 'ok',
+      documentsIndexed: totalDocumentsIndexed,
+      termsIndexed: totalTermsIndexed,
+    },
+    providers: {
+      availableCount: availableProviders.length,
+      totalRegistered: registeredProviders.length,
+    },
+  });
 };
 
 export const handleApiRoot: RouteHandler = (_req, res, context) => {
@@ -149,7 +262,14 @@ export const handleApiRoot: RouteHandler = (_req, res, context) => {
       health: '/health',
       status: '/api/v1/status',
       search: '/api/v1/search',
+      stream: '/api/v1/search/stream',
       suggest: '/api/v1/suggest',
+      lenses: '/api/v1/lenses',
+      feedback: '/api/v1/feedback',
+      feedbackReview: '/api/v1/feedback/review',
+      mcp: '/api/v1/mcp',
+      metrics: '/metrics',
+      opensearch: '/opensearch.xml',
       openapi: '/api/v1/openapi.json',
       docs: '/docs',
     },
@@ -161,6 +281,19 @@ export const handleApiRoot: RouteHandler = (_req, res, context) => {
 export const handleOpenApiSpec: RouteHandler = (_req, res, _context) => {
   const spec = generateOpenApiSpec();
   res.status(200).json(spec);
+};
+
+export const handleOpenSearchDescriptor: RouteHandler = (req, res, context) => {
+  const hostHeader = (req.headers['x-forwarded-host'] as string) || (req.headers['host'] as string) || `${context.config.api.server.host}:${context.config.api.server.port}`;
+  const proto = (req.headers['x-forwarded-proto'] as string) || 'http';
+  const baseUrl = `${proto}://${hostHeader}`;
+
+  const xml = generateOpenSearchDescriptor({
+    baseUrl,
+  });
+
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.status(HTTP_STATUS.OK).text(xml, OPENSEARCH_DESCRIPTOR_MIME_TYPE);
 };
 
 export const handleApiDocs: RouteHandler = (_req, res, _context) => {
@@ -185,6 +318,13 @@ export const handleSuggest: RouteHandler = (req, res, context) => {
   const prefixTrie = context.services?.prefixTrie;
   const suggestions = prefixTrie ? prefixTrie.suggest(rawQuery, limit) : [];
 
+  // OpenSearch 1.1 JSON suggestion format for browser address bars: ["query", ["s1", "s2", ...]]
+  if (req.query['format'] === 'opensearch') {
+    const suggestionTexts = suggestions.map(s => s.text);
+    res.status(HTTP_STATUS.OK).text(JSON.stringify([rawQuery, suggestionTexts]), 'application/x-suggestions+json; charset=utf-8');
+    return;
+  }
+
   const payload: SuggestApiResponse = {
     query: rawQuery,
     suggestions,
@@ -199,24 +339,164 @@ export const handleSuggest: RouteHandler = (req, res, context) => {
 };
 
 export const handleSystemStatus: RouteHandler = (_req, res, context) => {
-  const totalDocs = context.services?.index.getStats().totalDocuments ?? 0;
-  const status = !context.services ? 'error' : totalDocs === 0 ? 'degraded' : 'ok';
+  const totalDocs = context.services?.index ? context.services.index.getStats().totalDocuments : 0;
+  const totalTerms = context.services?.index ? context.services.index.getStats().totalTerms : 0;
+  const uptimeSeconds = Math.floor((Date.now() - context.startTime) / 1000);
+  const mem = process.memoryUsage();
+  const heapUsedMb = Math.round((mem.heapUsed / 1024 / 1024) * 100) / 100;
 
-  res.status(200).json({
+  const registeredProviders = context.services?.providerRegistry?.getAllProviders() ?? [];
+  const resilience = context.services?.providerRegistry?.getResilienceManager();
+
+  const providerList = registeredProviders.map(p => {
+    const can = resilience?.canExecute(p.metadata.id) ?? { allowed: true };
+    const circuit = resilience?.getCircuitStatus(p.metadata.id);
+    return {
+      id: p.metadata.id,
+      displayName: p.metadata.displayName,
+      enabled: p.isEnabled(),
+      available: can.allowed,
+      circuitState: circuit?.state ?? 'CLOSED',
+      reason: can.reason,
+    };
+  });
+  const availableProviders = providerList.filter(p => p.available && p.enabled);
+
+  let status = 'ok';
+  if (context.isShuttingDown) {
+    status = 'shutting_down';
+  } else if (!context.services) {
+    status = 'error';
+  } else if (totalDocs === 0 || (registeredProviders.length > 0 && availableProviders.length === 0)) {
+    status = 'degraded';
+  }
+
+  res.status(status === 'error' ? 503 : 200).json({
     name: PROJECT_NAME,
     version: PROJECT_VERSION,
-    phase: 'Milestone 8 — Security, Reliability & Privacy (Phase 26: Reliability)',
+    phase: 'Milestone 38 — Security & Operational Resilience (Phase 112: Health, Status & Graceful Shutdown)',
     status,
     timestamp: new Date().toISOString(),
+    uptimeSeconds,
+    environment: context.config.env,
+    deploymentModel: context.deploymentModel ?? 'standalone',
     server: {
       host: context.config.api.server.host,
       port: context.config.api.server.port,
+      lifecycleState: context.lifecycleState ?? (context.isShuttingDown ? 'shutting_down' : 'ready'),
     },
     index: {
+      status: totalDocs === 0 ? 'degraded' : 'ok',
       totalDocuments: totalDocs,
-      totalTerms: context.services?.index.getStats().totalTerms ?? 0,
+      totalTerms,
+    },
+    providers: {
+      totalRegistered: registeredProviders.length,
+      availableCount: availableProviders.length,
+      list: providerList,
+    },
+    memory: {
+      heapUsedMb,
+    },
+    privacy: {
+      zeroTracking: true,
+      zeroCookies: true,
+      noQueryStorage: true,
     },
   });
+};
+
+/**
+ * Prometheus operational metrics endpoint (GET /metrics - Phase 113).
+ * Exposes low-cardinality, privacy-safe metrics in standard Prometheus text exposition format (0.0.4)
+ * or JSON snapshot (when requested via Accept: application/json).
+ * Strictly guarantees zero collection of raw user queries, user IDs, or IPs.
+ */
+export const handleMetrics: RouteHandler = async (req, res, context) => {
+  const registry = context.metrics || getDefaultRegistry();
+
+  // 1. Process runtime metrics
+  registry
+    .gauge('opensearch_process_uptime_seconds', 'Process uptime in seconds')
+    .set(process.uptime());
+
+  const mem = process.memoryUsage();
+  registry
+    .gauge('opensearch_memory_heap_used_bytes', 'Process heap memory used in bytes')
+    .set(mem.heapUsed);
+  registry
+    .gauge('opensearch_memory_heap_total_bytes', 'Process heap memory total in bytes')
+    .set(mem.heapTotal);
+  registry
+    .gauge('opensearch_memory_rss_bytes', 'Process resident set size in bytes')
+    .set(mem.rss);
+
+  // 2. Index metrics
+  if (context.services?.index) {
+    try {
+      const stats = context.services.index.getStats();
+      registry
+        .gauge('opensearch_index_documents_total', 'Total number of documents indexed')
+        .set(stats.totalDocuments);
+      registry
+        .gauge('opensearch_index_terms_total', 'Total number of unique terms indexed')
+        .set(stats.totalTerms || 0);
+      registry
+        .gauge('opensearch_index_segments_total', 'Total number of active index segments')
+        .set(1);
+    } catch {
+      // Non-fatal if index is not loaded
+    }
+  }
+
+  // 3. Provider circuit breaker state metrics
+  const activeRegistry = context.services?.providerRegistry || context.providerRegistry;
+  if (activeRegistry) {
+    try {
+      const statuses = activeRegistry.getAllProviderStatuses();
+      const breakerGauge = registry.gauge(
+        'opensearch_provider_circuit_breaker_state',
+        'Current circuit breaker state per provider (0=closed/healthy, 1=half-open, 2=open/tripped)',
+        ['provider'],
+      );
+      for (const p of statuses) {
+        const stateVal = p.circuitState === 'OPEN' ? 2 : p.circuitState === 'HALF_OPEN' ? 1 : 0;
+        breakerGauge.set({ provider: p.id }, stateVal);
+      }
+    } catch {
+      // Non-fatal
+    }
+  }
+
+  // 4. Queue depth metrics
+  const reviewQueue = context.services?.feedbackReviewQueue || context.feedbackReviewQueue;
+  if (reviewQueue) {
+    try {
+      const stats = reviewQueue.getStats();
+      registry
+        .gauge(
+          'opensearch_queue_depth',
+          'Current pending queue depth for asynchronous background processing',
+          ['queue'],
+        )
+        .set({ queue: 'feedback_review' }, stats.pendingCount);
+    } catch {
+      // Non-fatal
+    }
+  }
+
+  // 5. Check Accept header: return JSON snapshot or standard Prometheus text format
+  const accept = (req.headers['accept'] as string) || '';
+  if (accept.includes('application/json')) {
+    res.status(HTTP_STATUS.OK).json(registry.getSnapshot());
+    return;
+  }
+
+  const output = registry.toPrometheusFormat();
+  res.raw.setHeader('Content-Type', 'text/plain; version=0.0.4; charset=utf-8');
+  res.raw.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  res.raw.statusCode = HTTP_STATUS.OK;
+  res.raw.end(output);
 };
 
 export const handleSearch: RouteHandler = async (req, res, context) => {
@@ -282,6 +562,9 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
 
   const explainParam = req.query['explain'];
   const explain = explainParam === 'true' || explainParam === '1';
+
+  const rawMode = ((req.query['mode'] as string) || ((req.body as Record<string, unknown>)?.['mode'] as string) || '').toLowerCase().trim();
+  const isLocalOnly = req.query['localOnly'] === 'true' || rawMode === 'local' || rawMode === 'local-only';
 
   // 2. Validate input constraints
   if (page < 1) {
@@ -356,6 +639,23 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
         },
       };
       res.setHeader('X-Cache', 'HIT');
+      if (context.metrics) {
+        const mode = isLocalOnly ? 'local_only' : 'standard';
+        context.metrics
+          .counter('opensearch_search_queries_total', 'Total search queries executed partitioned by privacy mode', ['mode'])
+          .inc({ mode });
+        context.metrics
+          .histogram(
+            'opensearch_search_pipeline_duration_seconds',
+            'Search query execution latency in seconds from start to result generation',
+            ['mode'],
+            DEFAULT_LATENCY_BUCKETS,
+          )
+          .observe({ mode }, (Date.now() - startMs) / 1000);
+        context.metrics
+          .histogram('opensearch_search_results_count', 'Distribution of search result item counts returned to clients', [], DEFAULT_COUNT_BUCKETS)
+          .observe(cached.results.length);
+      }
       res.status(HTTP_STATUS.OK).json(cachedResponse);
       return;
     }
@@ -410,8 +710,6 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
   const rawSafeSearch = ((req.query['safeSearch'] as string) || (req.query['safe'] as string) || 'moderate').toLowerCase().trim();
   const safeSearchLevel: SafeSearchLevel = rawSafeSearch === 'strict' || rawSafeSearch === 'off' ? rawSafeSearch : 'moderate';
 
-  const isLocalOnly = req.query['localOnly'] === 'true' || req.query['mode'] === 'local';
-
   // Query live web search when local indexed results are insufficient (unless in local-only mode)
   // In Local-Only mode: query planner strictly suppresses external search providers
   const providerRegistry = context.services.providerRegistry ?? context.providerRegistry;
@@ -422,6 +720,7 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
   const skippedProviders: SkippedProviderRecord[] = [];
   let isPartialResult = false;
   let searchDeadlineExceeded = false;
+  let liveExecution: Awaited<ReturnType<typeof fetchExternalWebWithTelemetry>> | undefined;
 
   const activeRegistry = providerRegistry ?? getSharedProviderRegistry();
 
@@ -447,7 +746,7 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
     }
   } else if (canFetchExternal && page === 1 && finalResults.length < pageSize) {
     try {
-      const liveExecution = await fetchExternalWebWithTelemetry(
+      liveExecution = await fetchExternalWebWithTelemetry(
         rawQuery,
         pageSize - finalResults.length,
         providerRegistry,
@@ -543,7 +842,13 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
 
   // 7. Instant Answers & Bang Shortcuts Evaluation (Phase 38)
   const instantAnswerEngine = context.services.instantAnswerEngine;
-  const instantAnswer = instantAnswerEngine ? instantAnswerEngine.evaluate(rawQuery) : null;
+  const instantAnswer = instantAnswerEngine
+    ? await instantAnswerEngine.evaluateAsync(rawQuery, {
+        isLocalOnly,
+        privacyMode: isLocalOnly ? 'local-only' : 'standard',
+        timeoutMs: 2000,
+      })
+    : null;
   const bang =
     instantAnswer && instantAnswer.type === 'bang'
       ? {
@@ -565,6 +870,17 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
   if (typoEngine && (totalHits === 0 || totalHits < pageSize / 2) && !instantAnswer) {
     didYouMean = typoEngine.suggestCorrection(rawQuery);
   }
+
+  // Phase 104 — Quick Answer Extractive Summarizer from Retrieved Results
+  const quickAnswerEngine = context.services.quickAnswerEngine ?? getSharedQuickAnswerEngine();
+  const quickAnswer = quickAnswerEngine
+    ? quickAnswerEngine.generate(rawQuery, finalResults, {
+        isLocalOnly,
+        maxInputDocuments: 5,
+        maxOutputSentences: 3,
+        minRelevanceThreshold: 0.20,
+      })
+    : null;
 
   // Phase 84 — Generate Verifiable Privacy Receipt from Real Execution Telemetry
   const clientIp = (req.ip as string) || (req.raw?.socket?.remoteAddress as string) || '127.0.0.1';
@@ -594,6 +910,7 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
       filters: parsedQuery.filters,
     },
     instantAnswer,
+    quickAnswer,
     bang,
     didYouMean,
     results: explain
@@ -644,6 +961,56 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
     queryCache.set(cacheKey, responsePayload);
   }
 
+  // Operational metrics without query surveillance (Phase 113)
+  if (context.metrics) {
+    const mode = isLocalOnly ? 'local_only' : 'standard';
+    const durationSeconds = (Date.now() - startMs) / 1000;
+
+    context.metrics
+      .counter('opensearch_search_queries_total', 'Total search queries executed partitioned by privacy mode', ['mode'])
+      .inc({ mode });
+
+    context.metrics
+      .histogram(
+        'opensearch_search_pipeline_duration_seconds',
+        'Search query execution latency in seconds from start to result generation',
+        ['mode'],
+        DEFAULT_LATENCY_BUCKETS,
+      )
+      .observe({ mode }, durationSeconds);
+
+    context.metrics
+      .histogram(
+        'opensearch_search_results_count',
+        'Distribution of search result item counts returned to clients',
+        [],
+        DEFAULT_COUNT_BUCKETS,
+      )
+      .observe(finalResults.length);
+
+    if (liveExecution?.summary?.providerResults) {
+      for (const pResult of liveExecution.summary.providerResults) {
+        const provStatus = pResult.cached ? 'cached' : pResult.error || pResult.errorCode ? 'failure' : 'success';
+        context.metrics
+          .counter(
+            'opensearch_provider_requests_total',
+            'Total outbound requests made to search providers by provider ID and result status',
+            ['provider', 'status'],
+          )
+          .inc({ provider: pResult.providerId, status: provStatus });
+
+        context.metrics
+          .histogram(
+            'opensearch_provider_request_duration_seconds',
+            'Outbound search provider response latency in seconds',
+            ['provider'],
+            DEFAULT_LATENCY_BUCKETS,
+          )
+          .observe({ provider: pResult.providerId }, (pResult.durationMs || 0) / 1000);
+      }
+    }
+  }
+
   res.setHeader('X-Cache', 'MISS');
   res.status(HTTP_STATUS.OK).json(responsePayload);
 };
@@ -686,9 +1053,16 @@ export const handleSearchStream: RouteHandler = async (req, res, context) => {
 
   const { queryParser, candidateRetriever, rankingEngine, resultGenerator, instantAnswerEngine } = context.services;
 
+  const rawMode = ((req.query['mode'] as string) || '').toLowerCase().trim();
+  const isLocalOnly = req.query['localOnly'] === 'true' || rawMode === 'local' || rawMode === 'local-only';
+
   // 1. Instant Answer evaluation & streaming (first event)
   if (instantAnswerEngine) {
-    const instantAnswer = instantAnswerEngine.evaluate(rawQuery);
+    const instantAnswer = await instantAnswerEngine.evaluateAsync(rawQuery, {
+      isLocalOnly,
+      privacyMode: isLocalOnly ? 'local-only' : 'standard',
+      timeoutMs: 2000,
+    });
     if (instantAnswer) {
       sendEvent('answer', instantAnswer);
     }
@@ -719,6 +1093,17 @@ export const handleSearchStream: RouteHandler = async (req, res, context) => {
     items: searchResultSet.items,
     totalHits: searchResultSet.pagination.totalHits,
   });
+
+  // 5.5. Stream extractive quick answer if evidence is sufficient (Phase 104)
+  const quickAnswerEngine = context.services.quickAnswerEngine ?? getSharedQuickAnswerEngine();
+  if (quickAnswerEngine && searchResultSet.items.length > 0) {
+    const quickAnswer = quickAnswerEngine.generate(rawQuery, searchResultSet.items, {
+      isLocalOnly: false,
+    });
+    if (quickAnswer && quickAnswer.hasSufficientEvidence) {
+      sendEvent('quick_answer', quickAnswer);
+    }
+  }
 
   // 6. Complete SSE Stream
   sendEvent('done', {
@@ -813,3 +1198,292 @@ export const handlePreviewLens: RouteHandler = (req, res) => {
   const previewReport = previewLensEffects(lensProfile);
   res.status(HTTP_STATUS.OK).json(previewReport);
 };
+
+// ── Phase 105: Privacy-Conscious Feedback Endpoints (Milestone 36) ────────
+
+export const handlePostFeedback: RouteHandler = (req, res, context) => {
+  const feedbackService = context.services?.feedbackService ?? context.feedbackService ?? getSharedFeedbackService();
+  const rawBody = req.body;
+
+  if (!rawBody || typeof rawBody !== 'object') {
+    res.status(HTTP_STATUS.BAD_REQUEST).json({
+      error: {
+        code: 'INVALID_FEEDBACK_PAYLOAD',
+        message: 'Request body must be a JSON object containing the feedback submission and consent.',
+        statusCode: HTTP_STATUS.BAD_REQUEST,
+      },
+    });
+    return;
+  }
+
+  const result = feedbackService.submitFeedback(rawBody);
+
+  if (!result.success || !result.record) {
+    res.status(HTTP_STATUS.BAD_REQUEST).json({
+      error: {
+        code: 'FEEDBACK_VALIDATION_FAILED',
+        message: (result.errors || ['Invalid feedback payload']).join('; '),
+        statusCode: HTTP_STATUS.BAD_REQUEST,
+      },
+    });
+    return;
+  }
+
+  res.status(HTTP_STATUS.CREATED).json({
+    success: true,
+    message: 'Feedback recorded successfully under privacy-conscious retention policy.',
+    recordId: result.record.feedbackId,
+    timestamp: result.record.timestamp,
+    expiresAt: result.record.expiresAt,
+  });
+};
+
+export const handleGetFeedback: RouteHandler = (_req, res, context) => {
+  const feedbackService = context.services?.feedbackService ?? context.feedbackService ?? getSharedFeedbackService();
+  const exported = feedbackService.exportFeedback();
+  const stats = feedbackService.getStats();
+
+  res.status(HTTP_STATUS.OK).json({
+    ...exported,
+    stats,
+  });
+};
+
+export const handleDeleteFeedback: RouteHandler = (_req, res, context) => {
+  const feedbackService = context.services?.feedbackService ?? context.feedbackService ?? getSharedFeedbackService();
+  const purgedCount = feedbackService.purgeAllRecords();
+
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
+    message: `Successfully purged ${purgedCount} feedback record(s).`,
+    purgedCount,
+  });
+};
+
+export const handleGetFeedbackPrivacy: RouteHandler = (_req, res, context) => {
+  const feedbackService = context.services?.feedbackService ?? context.feedbackService ?? getSharedFeedbackService();
+  const policy = feedbackService.getPrivacyNotice();
+
+  res.status(HTTP_STATUS.OK).json({
+    policy,
+    disclaimer: 'Feedback collection is strictly optional. OpenSearch never collects raw queries, IP addresses, accounts, or click histories.',
+  });
+};
+
+// ── Phase 106: Feedback Review Workflow Endpoints (Milestone 36) ──────────
+
+export const handleImportFeedbackReview: RouteHandler = (req, res, context) => {
+  const queue = context.services?.feedbackReviewQueue ?? context.feedbackReviewQueue ?? getSharedFeedbackReviewQueue();
+  const rawBody = req.body as Record<string, unknown> | undefined;
+
+  let recordsToImport: any[] = [];
+  if (rawBody && Array.isArray(rawBody['records'])) {
+    recordsToImport = rawBody['records'];
+  } else {
+    const feedbackService = context.services?.feedbackService ?? context.feedbackService ?? getSharedFeedbackService();
+    recordsToImport = feedbackService.getRecords();
+  }
+
+  const result = queue.importRecords(recordsToImport);
+  res.status(HTTP_STATUS.OK).json({
+    success: true,
+    importedCount: result.importedCount,
+    skippedCount: result.skippedCount,
+    totalQueueItems: queue.getStats().totalItems,
+  });
+};
+
+export const handleListFeedbackReview: RouteHandler = (req, res, context) => {
+  const queue = context.services?.feedbackReviewQueue ?? context.feedbackReviewQueue ?? getSharedFeedbackReviewQueue();
+
+  const status = typeof req.query['status'] === 'string' ? (req.query['status'] as ReviewStatus) : undefined;
+  const clusterKey = typeof req.query['clusterKey'] === 'string' ? req.query['clusterKey'] : undefined;
+  const burstQuery = req.query['isSuspiciousBurst'];
+  const isSuspiciousBurst = burstQuery === 'true' ? true : burstQuery === 'false' ? false : undefined;
+
+  const rawLimit = Number(req.query['limit']);
+  const limit = !isNaN(rawLimit) && rawLimit > 0 ? rawLimit : 50;
+
+  const rawOffset = Number(req.query['offset']);
+  const offset = !isNaN(rawOffset) && rawOffset >= 0 ? rawOffset : 0;
+
+  const { items, total } = queue.listItems({
+    status,
+    clusterKey,
+    isSuspiciousBurst,
+    limit,
+    offset,
+  });
+
+  res.status(HTTP_STATUS.OK).json({
+    items,
+    total,
+    limit,
+    offset,
+  });
+};
+
+export const handleGetFeedbackReviewStats: RouteHandler = (_req, res, context) => {
+  const queue = context.services?.feedbackReviewQueue ?? context.feedbackReviewQueue ?? getSharedFeedbackReviewQueue();
+  const stats = queue.getStats();
+  const clusters = queue.getClusters();
+
+  res.status(HTTP_STATUS.OK).json({
+    stats,
+    clusters,
+  });
+};
+
+export const handleUpdateFeedbackReviewItem: RouteHandler = (req, res, context) => {
+  const queue = context.services?.feedbackReviewQueue ?? context.feedbackReviewQueue ?? getSharedFeedbackReviewQueue();
+  const id = req.params['id'];
+
+  if (!id) {
+    res.status(HTTP_STATUS.BAD_REQUEST).json({
+      error: {
+        code: 'MISSING_QUEUE_ID',
+        message: 'Review queue item ID must be specified in the URL path.',
+        statusCode: HTTP_STATUS.BAD_REQUEST,
+      },
+    });
+    return;
+  }
+
+  const body = req.body as Record<string, unknown> | undefined;
+  const status = body?.['status'] as ReviewStatus | undefined;
+  if (!status) {
+    res.status(HTTP_STATUS.BAD_REQUEST).json({
+      error: {
+        code: 'MISSING_STATUS',
+        message: 'A valid review status must be provided in the request body.',
+        statusCode: HTTP_STATUS.BAD_REQUEST,
+      },
+    });
+    return;
+  }
+
+  const curatorId = typeof body?.['curatorId'] === 'string' ? body['curatorId'] : undefined;
+  const curatorNotes = typeof body?.['curatorNotes'] === 'string' ? body['curatorNotes'] : undefined;
+
+  try {
+    const updated = queue.updateStatus(id, status, curatorId, curatorNotes);
+    res.status(HTTP_STATUS.OK).json({
+      success: true,
+      item: updated,
+    });
+  } catch (err) {
+    res.status(HTTP_STATUS.NOT_FOUND).json({
+      error: {
+        code: 'ITEM_NOT_FOUND',
+        message: (err as Error).message,
+        statusCode: HTTP_STATUS.NOT_FOUND,
+      },
+    });
+  }
+};
+
+export const handleApproveEvaluationCase: RouteHandler = (req, res, context) => {
+  const queue = context.services?.feedbackReviewQueue ?? context.feedbackReviewQueue ?? getSharedFeedbackReviewQueue();
+  const id = req.params['id'];
+
+  if (!id) {
+    res.status(HTTP_STATUS.BAD_REQUEST).json({
+      error: {
+        code: 'MISSING_QUEUE_ID',
+        message: 'Review queue item ID must be specified in the URL path.',
+        statusCode: HTTP_STATUS.BAD_REQUEST,
+      },
+    });
+    return;
+  }
+
+  const body = req.body as unknown as CaseApprovalParams | undefined;
+  if (!body || typeof body !== 'object') {
+    res.status(HTTP_STATUS.BAD_REQUEST).json({
+      error: {
+        code: 'INVALID_APPROVAL_PAYLOAD',
+        message: 'Request body must contain curator approval parameters.',
+        statusCode: HTTP_STATUS.BAD_REQUEST,
+      },
+    });
+    return;
+  }
+
+  try {
+    const candidateCase = queue.approveCandidateEvaluationCase(id, body);
+    const item = queue.getItem(id);
+
+    res.status(HTTP_STATUS.CREATED).json({
+      success: true,
+      candidateCase,
+      item,
+    });
+  } catch (err) {
+    if (err instanceof HeldOutContaminationError) {
+      res.status(HTTP_STATUS.BAD_REQUEST).json({
+        error: {
+          code: 'HELD_OUT_CONTAMINATION_ERROR',
+          message: err.message,
+          statusCode: HTTP_STATUS.BAD_REQUEST,
+        },
+      });
+      return;
+    }
+
+    res.status(HTTP_STATUS.BAD_REQUEST).json({
+      error: {
+        code: 'CASE_APPROVAL_FAILED',
+        message: (err as Error).message,
+        statusCode: HTTP_STATUS.BAD_REQUEST,
+      },
+    });
+  }
+};
+
+export const handleRankingSafetyCheck: RouteHandler = (req, res) => {
+  const body = req.body as unknown as RankingChangeProposal | undefined;
+  if (!body || typeof body !== 'object') {
+    res.status(HTTP_STATUS.BAD_REQUEST).json({
+      passed: false,
+      error: {
+        code: 'INVALID_PROPOSAL_PAYLOAD',
+        message: 'Request body must contain a ranking change proposal.',
+        statusCode: HTTP_STATUS.BAD_REQUEST,
+      },
+    });
+    return;
+  }
+
+  try {
+    const record = RankingSafetyGuard.assertSafeRankingModification(body);
+    res.status(HTTP_STATUS.OK).json({
+      passed: true,
+      record,
+    });
+  } catch (err) {
+    if (err instanceof RankingSafetyViolationError) {
+      res.status(HTTP_STATUS.BAD_REQUEST).json({
+        passed: false,
+        error: {
+          code: 'RANKING_SAFETY_VIOLATION',
+          message: err.message,
+          statusCode: HTTP_STATUS.BAD_REQUEST,
+        },
+      });
+      return;
+    }
+
+    res.status(HTTP_STATUS.BAD_REQUEST).json({
+      passed: false,
+      error: {
+        code: 'SAFETY_CHECK_ERROR',
+        message: (err as Error).message,
+        statusCode: HTTP_STATUS.BAD_REQUEST,
+      },
+    });
+  }
+};
+
+export { handleMcpPost, handleMcpSse } from './mcp/index.js';
+
+
