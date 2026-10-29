@@ -63,8 +63,47 @@ export function generateOpenApiSpec(options: OpenApiSpecOptions = {}): Record<st
         name: 'Documentation',
         description: 'OpenAPI specification and schema discovery.',
       },
+      {
+        name: 'Focus Lenses',
+        description: 'Curated and custom ranking profiles, domain boost/demote rules, and re-ranking previews.',
+      },
+      {
+        name: 'Feedback & Quality',
+        description: 'Voluntary privacy-conscious feedback, review queue management, evaluation case approval, and ranking change safety checks.',
+      },
     ],
     paths: {
+      '/': {
+        get: {
+          tags: ['Documentation'],
+          summary: 'API discovery root',
+          description:
+            'Returns API service identity, version, discovery links to interactive documentation, OpenAPI specification, and endpoint catalog.',
+          operationId: 'rootGet',
+          responses: {
+            '200': {
+              description: 'API discovery payload.',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      name: { type: 'string', example: PROJECT_NAME },
+                      version: { type: 'string', example: PROJECT_VERSION },
+                      description: { type: 'string' },
+                      documentation: { type: 'string', example: '/docs' },
+                      openapi: { type: 'string', example: '/api/v1/openapi.json' },
+                      endpoints: { type: 'object' },
+                      timestamp: { type: 'string', format: 'date-time' },
+                      environment: { type: 'string', example: 'production' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
       '/api/v1/search': {
         get: {
           tags: ['Search'],
@@ -150,6 +189,51 @@ export function generateOpenApiSpec(options: OpenApiSpecOptions = {}): Record<st
                 example: 'pdf',
               },
             },
+            {
+              name: 'lens',
+              in: 'query',
+              required: false,
+              description: 'Focus Lens ranking profile ID (e.g., developer, student, no-trackers).',
+              schema: {
+                type: 'string',
+                example: 'developer',
+              },
+            },
+            {
+              name: 'mode',
+              in: 'query',
+              required: false,
+              description: 'Privacy mode: "local-only" disables all outbound remote provider queries.',
+              schema: {
+                type: 'string',
+                enum: ['local-only', 'standard'],
+                default: 'standard',
+                example: 'local-only',
+              },
+            },
+            {
+              name: 'explain',
+              in: 'query',
+              required: false,
+              description: 'Include detailed scoring explanations and factor breakdowns.',
+              schema: {
+                type: 'boolean',
+                default: false,
+                example: false,
+              },
+            },
+            {
+              name: 'safeSearch',
+              in: 'query',
+              required: false,
+              description: 'Safe search filter level.',
+              schema: {
+                type: 'string',
+                enum: ['strict', 'moderate', 'off'],
+                default: 'moderate',
+                example: 'moderate',
+              },
+            },
           ],
           responses: {
             '200': {
@@ -172,8 +256,28 @@ export function generateOpenApiSpec(options: OpenApiSpecOptions = {}): Record<st
                 },
               },
             },
+            '413': {
+              description: 'Request payload exceeds maximum allowed size.',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/ErrorResponse',
+                  },
+                },
+              },
+            },
             '429': {
               description: 'Rate limit exceeded (sliding-window IP limit).',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/ErrorResponse',
+                  },
+                },
+              },
+            },
+            '504': {
+              description: 'Search deadline or execution timeout exceeded.',
               content: {
                 'application/json': {
                   schema: {
@@ -233,6 +337,28 @@ export function generateOpenApiSpec(options: OpenApiSpecOptions = {}): Record<st
                     filetype: {
                       type: 'string',
                     },
+                    lens: {
+                      type: 'string',
+                      description: 'Focus Lens profile ID',
+                      example: 'developer',
+                    },
+                    mode: {
+                      type: 'string',
+                      enum: ['local-only', 'standard'],
+                      description: 'Privacy mode',
+                      example: 'standard',
+                    },
+                    explain: {
+                      type: 'boolean',
+                      description: 'Include ranking explanation breakdown',
+                      example: false,
+                    },
+                    safeSearch: {
+                      type: 'string',
+                      enum: ['strict', 'moderate', 'off'],
+                      description: 'Safe search filter level',
+                      example: 'moderate',
+                    },
                   },
                 },
               },
@@ -259,8 +385,28 @@ export function generateOpenApiSpec(options: OpenApiSpecOptions = {}): Record<st
                 },
               },
             },
+            '413': {
+              description: 'Request payload exceeds maximum allowed size (1MB limit).',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/ErrorResponse',
+                  },
+                },
+              },
+            },
             '429': {
               description: 'Rate limit exceeded.',
+              content: {
+                'application/json': {
+                  schema: {
+                    $ref: '#/components/schemas/ErrorResponse',
+                  },
+                },
+              },
+            },
+            '504': {
+              description: 'Search deadline or execution timeout exceeded.',
               content: {
                 'application/json': {
                   schema: {
@@ -285,7 +431,7 @@ export function generateOpenApiSpec(options: OpenApiSpecOptions = {}): Record<st
               in: 'query',
               required: true,
               description: 'Search query string',
-              schema: { type: 'string', minLength: 1, maxLength: 200, example: 'python' },
+              schema: { type: 'string', minLength: 1, maxLength: 500, example: 'python' },
             },
             {
               name: 'limit',
@@ -294,10 +440,41 @@ export function generateOpenApiSpec(options: OpenApiSpecOptions = {}): Record<st
               description: 'Maximum ranked items to stream',
               schema: { type: 'integer', default: 10, minimum: 1, maximum: 50 },
             },
+            {
+              name: 'category',
+              in: 'query',
+              required: false,
+              description: 'Filter search to a specific category (all, images, news, developer, etc.)',
+              schema: { type: 'string', example: 'developer' },
+            },
+            {
+              name: 'lens',
+              in: 'query',
+              required: false,
+              description: 'Focus Lens profile ID to customize ranking weights and domain boosts',
+              schema: { type: 'string', example: 'developer' },
+            },
+            {
+              name: 'mode',
+              in: 'query',
+              required: false,
+              description: 'Privacy mode: "local-only" disables all outbound remote requests',
+              schema: { type: 'string', enum: ['local-only', 'standard'], default: 'standard', example: 'local-only' },
+            },
           ],
           responses: {
             '200': {
-              description: 'Server-Sent Events text stream emitting answer, results, and done events.',
+              description: 'Server-Sent Events text stream emitting typed events:\n- `event: answer`: Instant calculations, definitions, or quick answers\n- `event: results`: Chunks of ranked search result items\n- `event: done`: Stream completion stats, total hits, and verifiable privacy receipt\n- `event: error`: Error payload if stream fails',
+              headers: {
+                'Content-Type': {
+                  schema: { type: 'string', example: 'text/event-stream; charset=utf-8' },
+                  description: 'SSE event stream content type',
+                },
+                'Cache-Control': {
+                  schema: { type: 'string', example: 'no-cache' },
+                  description: 'Prevents intermediate proxy caching of stream chunks',
+                },
+              },
               content: {
                 'text/event-stream': {
                   schema: {
@@ -408,6 +585,154 @@ export function generateOpenApiSpec(options: OpenApiSpecOptions = {}): Record<st
                       version: { type: 'string', example: PROJECT_VERSION },
                       uptimeSeconds: { type: 'integer', example: 3600 },
                       timestamp: { type: 'string', format: 'date-time' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      '/api/v1/lenses': {
+        get: {
+          tags: ['Focus Lenses'],
+          summary: 'List available Focus Lens ranking profiles',
+          description: 'Returns all built-in and active Focus Lens profiles (general, student, developer, research, trusted-health, no-trackers) with versioned schemas, boost rules, and ranking weights.',
+          operationId: 'lensesListGet',
+          responses: {
+            '200': {
+              description: 'List of available Focus Lens profiles.',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      lenses: {
+                        type: 'array',
+                        items: { $ref: '#/components/schemas/FocusLensProfile' },
+                      },
+                      total: { type: 'integer', example: 6 },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      '/api/v1/lenses/{id}': {
+        get: {
+          tags: ['Focus Lenses'],
+          summary: 'Get Focus Lens profile by ID',
+          description: 'Retrieves a single Focus Lens profile definition by ID.',
+          operationId: 'lensGetById',
+          parameters: [
+            {
+              name: 'id',
+              in: 'path',
+              required: true,
+              description: 'The lens identifier (e.g. developer, student, no-trackers).',
+              schema: { type: 'string', example: 'developer' },
+            },
+          ],
+          responses: {
+            '200': {
+              description: 'Focus Lens profile.',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      lens: { $ref: '#/components/schemas/FocusLensProfile' },
+                    },
+                  },
+                },
+              },
+            },
+            '404': {
+              description: 'Lens profile not found.',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/ErrorResponse' },
+                },
+              },
+            },
+          },
+        },
+      },
+      '/api/v1/lenses/validate': {
+        post: {
+          tags: ['Focus Lenses'],
+          summary: 'Validate Focus Lens JSON profile',
+          description: 'Validates a custom Focus Lens JSON schema definition for syntax errors, weight bounds, blocklists, and size limits.',
+          operationId: 'lensValidatePost',
+          requestBody: {
+            required: true,
+            content: {
+              'application/json': {
+                schema: { type: 'object' },
+              },
+            },
+          },
+          responses: {
+            '200': {
+              description: 'Validation result indicating whether the lens profile is valid.',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      valid: { type: 'boolean', example: true },
+                      errors: { type: 'array', items: { type: 'string' } },
+                      profile: { $ref: '#/components/schemas/FocusLensProfile' },
+                    },
+                  },
+                },
+              },
+            },
+            '400': {
+              description: 'Invalid JSON body or missing profile.',
+              content: {
+                'application/json': {
+                  schema: { $ref: '#/components/schemas/ErrorResponse' },
+                },
+              },
+            },
+          },
+        },
+      },
+      '/api/v1/lenses/preview': {
+        post: {
+          tags: ['Focus Lenses'],
+          summary: 'Preview Focus Lens effect on sample benchmark queries',
+          description: 'Previews the effects of a Focus Lens profile against fixed sample queries, explaining why results were boosted, demoted, or excluded.',
+          operationId: 'lensPreviewPost',
+          requestBody: {
+            required: false,
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    lensId: { type: 'string', example: 'developer' },
+                    profile: { type: 'object' },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            '200': {
+              description: 'Lens preview report with per-result effect explanations.',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      lensId: { type: 'string', example: 'developer' },
+                      lensName: { type: 'string', example: 'Developer' },
+                      totalQueriesTested: { type: 'integer', example: 3 },
+                      samples: { type: 'array', items: { type: 'object' } },
                     },
                   },
                 },
@@ -647,6 +972,9 @@ export function generateOpenApiSpec(options: OpenApiSpecOptions = {}): Record<st
             pagination: {
               $ref: '#/components/schemas/PaginationMeta',
             },
+            privacyReceipt: {
+              $ref: '#/components/schemas/PrivacyReceipt',
+            },
             meta: {
               type: 'object',
               properties: {
@@ -654,6 +982,31 @@ export function generateOpenApiSpec(options: OpenApiSpecOptions = {}): Record<st
                 candidateCount: { type: 'integer', example: 120 },
                 durationMs: { type: 'number', example: 4.5 },
                 timestamp: { type: 'string', format: 'date-time' },
+                explainPlan: { type: 'boolean', example: false },
+                category: { type: 'string', example: 'developer' },
+                categoryAvailable: { type: 'boolean', example: true },
+                localOnly: { type: 'boolean', example: false },
+                limitedResultsNotice: { type: 'string', nullable: true },
+                lens: {
+                  type: 'object',
+                  nullable: true,
+                  properties: {
+                    id: { type: 'string', example: 'developer' },
+                    name: { type: 'string', example: 'Developer' },
+                    disclaimer: { type: 'string' },
+                    isMedicalEndorsement: { type: 'boolean', example: false },
+                  },
+                },
+                safeSearch: {
+                  type: 'object',
+                  properties: {
+                    level: { type: 'string', example: 'moderate' },
+                    filteredCount: { type: 'integer', example: 0 },
+                    explanation: { type: 'string' },
+                    whatItCovers: { type: 'string' },
+                    whatItDoesNotCover: { type: 'string' },
+                  },
+                },
               },
             },
           },
@@ -663,16 +1016,48 @@ export function generateOpenApiSpec(options: OpenApiSpecOptions = {}): Record<st
           required: ['id', 'url', 'title', 'snippet', 'score'],
           properties: {
             id: { type: 'string', example: 'doc_9832749237' },
+            documentId: { type: 'string', example: 'doc_9832749237' },
             url: { type: 'string', format: 'uri', example: 'https://www.typescriptlang.org/docs/' },
+            displayUrl: { type: 'string', example: 'typescriptlang.org › docs' },
             title: { type: 'string', example: 'TypeScript: JavaScript With Syntax For Types' },
+            highlightedTitle: { type: 'string', example: '<mark>TypeScript</mark>: JavaScript With Syntax For Types' },
             snippet: {
               type: 'string',
               example: 'TypeScript extends JavaScript by adding types to the language...',
             },
+            highlightedSnippet: {
+              type: 'string',
+              example: '<mark>TypeScript</mark> extends JavaScript by adding types...',
+            },
             score: { type: 'number', example: 8.45 },
+            rank: { type: 'integer', example: 1 },
             domain: { type: 'string', example: 'typescriptlang.org' },
             category: { type: 'string', example: 'Programming' },
-            lastCrawledAt: { type: 'string', format: 'date-time' },
+            source: {
+              type: 'string',
+              enum: ['local-index', 'local_index', 'google_fallback', 'duckduckgo_fallback', 'external'],
+              example: 'local-index',
+              description: 'Result provenance identifying the origin index or fallback provider.',
+            },
+            language: { type: 'string', nullable: true, example: 'en' },
+            indexedAt: { type: 'string', format: 'date-time' },
+            thumbnailUrl: { type: 'string', format: 'uri', nullable: true },
+            publishedAt: { type: 'string', format: 'date-time', nullable: true },
+            trackerIndicator: {
+              type: 'object',
+              nullable: true,
+              description: 'Tracker classification and privacy indicator for the document domain.',
+            },
+            lensExplain: {
+              type: 'object',
+              nullable: true,
+              description: 'Explanation of Focus Lens boost, demotion, or exclusion.',
+            },
+            explanation: {
+              type: 'object',
+              nullable: true,
+              description: 'Detailed scoring factor breakdown when explain=true.',
+            },
           },
         },
         InstantAnswerResult: {
@@ -759,13 +1144,122 @@ export function generateOpenApiSpec(options: OpenApiSpecOptions = {}): Record<st
         },
         PaginationMeta: {
           type: 'object',
+          required: ['page', 'pageSize', 'totalHits', 'totalPages'],
           properties: {
-            page: { type: 'integer', example: 1 },
-            limit: { type: 'integer', example: 10 },
-            totalHits: { type: 'integer', example: 42 },
-            totalPages: { type: 'integer', example: 5 },
-            hasNext: { type: 'boolean', example: true },
-            hasPrev: { type: 'boolean', example: false },
+            page: { type: 'integer', example: 1, description: 'Current 1-based page index' },
+            pageSize: { type: 'integer', example: 10, description: 'Number of results per page' },
+            limit: { type: 'integer', example: 10, description: 'Backward-compatible alias for pageSize' },
+            totalHits: { type: 'integer', example: 42, description: 'Total matching documents across index' },
+            totalPages: { type: 'integer', example: 5, description: 'Total number of available pages' },
+            hasNextPage: { type: 'boolean', example: true, description: 'Whether subsequent pages exist' },
+            hasPrevPage: { type: 'boolean', example: false, description: 'Whether previous pages exist' },
+            hasNext: { type: 'boolean', example: true, description: 'Backward-compatible alias for hasNextPage' },
+            hasPrev: { type: 'boolean', example: false, description: 'Backward-compatible alias for hasPrevPage' },
+            nextPage: { type: 'integer', nullable: true, example: 2 },
+            prevPage: { type: 'integer', nullable: true, example: null },
+            startIndex: { type: 'integer', example: 0 },
+            endIndex: { type: 'integer', example: 9 },
+          },
+        },
+        PrivacyReceipt: {
+          type: 'object',
+          required: ['schemaVersion', 'receiptId', 'timestamp', 'mode', 'networkDispatch', 'hostTelemetry', 'browserTelemetry', 'summary'],
+          properties: {
+            schemaVersion: { type: 'string', example: '1.0.0' },
+            receiptId: { type: 'string', example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' },
+            timestamp: { type: 'string', format: 'date-time' },
+            mode: { type: 'string', enum: ['standard', 'local-only'], example: 'local-only' },
+            networkDispatch: {
+              type: 'object',
+              properties: {
+                totalOutboundRequests: { type: 'integer', example: 0 },
+                externalProvidersContacted: { type: 'array', items: { type: 'object' } },
+                externalProvidersSkipped: { type: 'array', items: { type: 'object' } },
+                isPartialResult: { type: 'boolean', example: false },
+                searchDeadlineExceeded: { type: 'boolean', example: false },
+              },
+            },
+            hostTelemetry: {
+              type: 'object',
+              properties: {
+                clientIpHandling: {
+                  type: 'object',
+                  properties: {
+                    received: { type: 'boolean', example: true },
+                    anonymizedInMemory: { type: 'boolean', example: true },
+                    maskApplied: { type: 'string', example: 'loopback' },
+                    loggedToDisk: { type: 'boolean', example: false },
+                  },
+                },
+                dataPersistence: {
+                  type: 'object',
+                  properties: {
+                    cookiesIssued: { type: 'boolean', example: false },
+                    localStorageUsedForPreferencesOnly: { type: 'boolean', example: true },
+                    sessionIdentifiersCreated: { type: 'boolean', example: false },
+                    rawQueryStoredInDatabase: { type: 'boolean', example: false },
+                    rawQueryLoggedToDisk: { type: 'boolean', example: false },
+                  },
+                },
+              },
+            },
+            browserTelemetry: {
+              type: 'object',
+              properties: {
+                thirdPartyScriptsExecuted: { type: 'boolean', example: false },
+                thirdPartyAnalyticsLoaded: { type: 'boolean', example: false },
+                remoteSuggestionsRequested: { type: 'boolean', example: false },
+                remoteThumbnailsRequested: { type: 'boolean', example: false },
+                referrerPolicyEnforced: { type: 'string', example: 'strict-origin-when-cross-origin' },
+              },
+            },
+            summary: { type: 'string' },
+          },
+        },
+        FocusLensProfile: {
+          type: 'object',
+          required: ['id', 'name', 'schemaVersion'],
+          properties: {
+            id: { type: 'string', example: 'developer' },
+            name: { type: 'string', example: 'Developer' },
+            description: { type: 'string', example: 'Boosts developer documentation, code repositories, and technical specs.' },
+            schemaVersion: { type: 'string', example: '1.0.0' },
+            weights: {
+              type: 'object',
+              properties: {
+                bm25: { type: 'number', example: 1.0 },
+                pageRank: { type: 'number', example: 0.8 },
+                freshness: { type: 'number', example: 0.5 },
+                lensBoost: { type: 'number', example: 1.5 },
+              },
+            },
+            boostRules: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  domain: { type: 'string', example: 'github.com' },
+                  factor: { type: 'number', example: 1.8 },
+                  rationale: { type: 'string' },
+                },
+              },
+            },
+            demoteRules: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  domain: { type: 'string' },
+                  factor: { type: 'number' },
+                  rationale: { type: 'string' },
+                },
+              },
+            },
+            excludeDomains: {
+              type: 'array',
+              items: { type: 'string' },
+            },
+            disclaimer: { type: 'string' },
           },
         },
         SuggestApiResponse: {
@@ -809,11 +1303,37 @@ export function generateOpenApiSpec(options: OpenApiSpecOptions = {}): Record<st
         },
         ErrorResponse: {
           type: 'object',
-          required: ['error', 'statusCode'],
+          required: ['error'],
           properties: {
             error: {
-              type: 'string',
-              example: 'Query parameter "q" is required and cannot be empty.',
+              type: 'object',
+              required: ['message', 'code'],
+              properties: {
+                message: {
+                  type: 'string',
+                  example: 'Query parameter "page" must be a positive integer greater than or equal to 1.',
+                },
+                code: {
+                  type: 'string',
+                  example: 'INVALID_PAGE_NUMBER',
+                },
+                category: {
+                  type: 'string',
+                  example: 'VALIDATION',
+                },
+                statusCode: {
+                  type: 'integer',
+                  example: 400,
+                },
+                timestamp: {
+                  type: 'string',
+                  format: 'date-time',
+                },
+                details: {
+                  type: 'object',
+                  nullable: true,
+                },
+              },
             },
             statusCode: {
               type: 'integer',
@@ -822,10 +1342,6 @@ export function generateOpenApiSpec(options: OpenApiSpecOptions = {}): Record<st
             timestamp: {
               type: 'string',
               format: 'date-time',
-            },
-            details: {
-              type: 'object',
-              nullable: true,
             },
           },
         },

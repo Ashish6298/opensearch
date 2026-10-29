@@ -98,6 +98,7 @@ export const handleHealthCheck: RouteHandler = (_req, res, context) => {
       'GET /api/v1/status',
       'GET /api/v1/search',
       'POST /api/v1/search',
+      'GET /api/v1/search/stream',
       'GET /api/v1/suggest',
       'GET /api/v1/lenses',
       'GET /api/v1/lenses/:id',
@@ -107,6 +108,12 @@ export const handleHealthCheck: RouteHandler = (_req, res, context) => {
       'POST /api/v1/feedback',
       'DELETE /api/v1/feedback',
       'GET /api/v1/feedback/privacy',
+      'POST /api/v1/feedback/review/import',
+      'GET /api/v1/feedback/review',
+      'GET /api/v1/feedback/review/stats',
+      'PATCH /api/v1/feedback/review/:id',
+      'POST /api/v1/feedback/review/:id/approve-case',
+      'POST /api/v1/feedback/review/ranking-check',
       'GET /api/v1/openapi.json',
       'GET /openapi.json',
     ],
@@ -162,7 +169,11 @@ export const handleApiRoot: RouteHandler = (_req, res, context) => {
       health: '/health',
       status: '/api/v1/status',
       search: '/api/v1/search',
+      stream: '/api/v1/search/stream',
       suggest: '/api/v1/suggest',
+      lenses: '/api/v1/lenses',
+      feedback: '/api/v1/feedback',
+      feedbackReview: '/api/v1/feedback/review',
       openapi: '/api/v1/openapi.json',
       docs: '/docs',
     },
@@ -423,7 +434,8 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
   const rawSafeSearch = ((req.query['safeSearch'] as string) || (req.query['safe'] as string) || 'moderate').toLowerCase().trim();
   const safeSearchLevel: SafeSearchLevel = rawSafeSearch === 'strict' || rawSafeSearch === 'off' ? rawSafeSearch : 'moderate';
 
-  const isLocalOnly = req.query['localOnly'] === 'true' || req.query['mode'] === 'local';
+  const rawMode = ((req.query['mode'] as string) || ((req.body as Record<string, unknown>)?.['mode'] as string) || '').toLowerCase().trim();
+  const isLocalOnly = req.query['localOnly'] === 'true' || rawMode === 'local' || rawMode === 'local-only';
 
   // Query live web search when local indexed results are insufficient (unless in local-only mode)
   // In Local-Only mode: query planner strictly suppresses external search providers
@@ -717,11 +729,14 @@ export const handleSearchStream: RouteHandler = async (req, res, context) => {
 
   const { queryParser, candidateRetriever, rankingEngine, resultGenerator, instantAnswerEngine } = context.services;
 
+  const rawMode = ((req.query['mode'] as string) || '').toLowerCase().trim();
+  const isLocalOnly = req.query['localOnly'] === 'true' || rawMode === 'local' || rawMode === 'local-only';
+
   // 1. Instant Answer evaluation & streaming (first event)
   if (instantAnswerEngine) {
     const instantAnswer = await instantAnswerEngine.evaluateAsync(rawQuery, {
-      isLocalOnly: false,
-      privacyMode: 'standard',
+      isLocalOnly,
+      privacyMode: isLocalOnly ? 'local-only' : 'standard',
       timeoutMs: 2000,
     });
     if (instantAnswer) {
