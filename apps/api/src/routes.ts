@@ -53,8 +53,8 @@ export const handleHealthCheck: RouteHandler = (_req, res, context) => {
   const uptimeSeconds = Math.floor((Date.now() - context.startTime) / 1000);
   const mem = process.memoryUsage();
   const memoryUsageMb = Math.round((mem.heapUsed / 1024 / 1024) * 100) / 100;
-  const totalDocumentsIndexed = context.services?.index.getStats().totalDocuments ?? 0;
-  const totalTermsIndexed = context.services?.index.getStats().totalTerms ?? 0;
+  const totalDocumentsIndexed = context.services?.index ? context.services.index.getStats().totalDocuments : 0;
+  const totalTermsIndexed = context.services?.index ? context.services.index.getStats().totalTerms : 0;
 
   // Determine component readiness
   const isIndexReady = Boolean(context.services?.index);
@@ -70,13 +70,23 @@ export const handleHealthCheck: RouteHandler = (_req, res, context) => {
   const memoryStatus: 'ok' | 'degraded' | 'error' = memoryUsageMb > 512 ? 'degraded' : 'ok';
   const queryCacheStatus: 'ok' | 'degraded' | 'error' = context.queryCache ? 'ok' : 'degraded';
 
+  // Provider health summary (Phase 112: never expose query text or user identifiers)
+  const registeredProviders = context.services?.providerRegistry?.getAllProviders() ?? [];
+  const enabledProviders = context.services?.providerRegistry?.getEnabledProviders() ?? [];
+  const resilience = context.services?.providerRegistry?.getResilienceManager();
+  const availableProviders = enabledProviders.filter(p => resilience ? resilience.canExecute(p.metadata.id).allowed : true);
+  const providersStatus: 'ok' | 'degraded' | 'error' =
+    registeredProviders.length === 0 || availableProviders.length > 0 ? 'ok' : 'degraded';
+
   let overallStatus: 'ok' | 'degraded' | 'error' = 'ok';
   if (indexStatus === 'error') {
     overallStatus = 'error';
   } else if (
+    context.isShuttingDown ||
     indexStatus === 'degraded' ||
     rateLimiterStatus === 'degraded' ||
-    memoryStatus === 'degraded'
+    memoryStatus === 'degraded' ||
+    providersStatus === 'degraded'
   ) {
     overallStatus = 'degraded';
   }
@@ -96,6 +106,9 @@ export const handleHealthCheck: RouteHandler = (_req, res, context) => {
       'GET /',
       'GET /docs',
       'GET /health',
+      'GET /healthz',
+      'GET /ready',
+      'GET /readyz',
       'GET /api/v1/status',
       'GET /api/v1/search',
       'POST /api/v1/search',
@@ -146,6 +159,20 @@ export const handleHealthCheck: RouteHandler = (_req, res, context) => {
             }
           : {},
       },
+      providers: {
+        status: providersStatus,
+        details: {
+          totalRegistered: registeredProviders.length,
+          availableCount: availableProviders.length,
+        },
+      },
+      storage: {
+        status: 'ok',
+        details: {
+          storageDir: context.config.storage.storageDir,
+          deploymentModel: context.deploymentModel ?? 'standalone',
+        },
+      },
       memory: {
         status: memoryStatus,
         details: {
@@ -157,8 +184,67 @@ export const handleHealthCheck: RouteHandler = (_req, res, context) => {
     },
   };
 
-  const statusCode = overallStatus === 'error' ? 503 : 200;
+  // /health answers liveness: returns 200 as long as the process is alive (503 only on critical fatal state)
+  const statusCode = indexStatus === 'error' ? 503 : 200;
   res.status(statusCode).json(response);
+};
+
+/**
+ * Readiness probe endpoint (GET /ready and /readyz - Phase 112).
+ * Answers: Is this server instance ready to receive search traffic right now?
+ * Returns 503 if shutting down or if core index is not ready.
+ */
+export const handleReadinessCheck: RouteHandler = (_req, res, context) => {
+  const uptimeSeconds = Math.floor((Date.now() - context.startTime) / 1000);
+  const totalDocumentsIndexed = context.services?.index ? context.services.index.getStats().totalDocuments : 0;
+  const totalTermsIndexed = context.services?.index ? context.services.index.getStats().totalTerms : 0;
+  const isIndexReady = Boolean(context.services?.index);
+
+  const registeredProviders = context.services?.providerRegistry?.getAllProviders() ?? [];
+  const enabledProviders = context.services?.providerRegistry?.getEnabledProviders() ?? [];
+  const resilience = context.services?.providerRegistry?.getResilienceManager();
+  const availableProviders = enabledProviders.filter(p => resilience ? resilience.canExecute(p.metadata.id).allowed : true);
+
+  if (context.isShuttingDown) {
+    res.status(HTTP_STATUS.SERVICE_UNAVAILABLE).json({
+      status: 'shutting_down',
+      ready: false,
+      timestamp: new Date().toISOString(),
+      uptimeSeconds,
+      deploymentModel: context.deploymentModel ?? 'standalone',
+      reason: 'Server is currently shutting down and draining active connections.',
+    });
+    return;
+  }
+
+  if (!isIndexReady) {
+    res.status(HTTP_STATUS.SERVICE_UNAVAILABLE).json({
+      status: 'not_ready',
+      ready: false,
+      timestamp: new Date().toISOString(),
+      uptimeSeconds,
+      deploymentModel: context.deploymentModel ?? 'standalone',
+      reason: 'Search index subsystem is not initialized or in an error state.',
+    });
+    return;
+  }
+
+  res.status(HTTP_STATUS.OK).json({
+    status: 'ready',
+    ready: true,
+    timestamp: new Date().toISOString(),
+    uptimeSeconds,
+    deploymentModel: context.deploymentModel ?? 'standalone',
+    index: {
+      status: totalDocumentsIndexed === 0 ? 'degraded' : 'ok',
+      documentsIndexed: totalDocumentsIndexed,
+      termsIndexed: totalTermsIndexed,
+    },
+    providers: {
+      availableCount: availableProviders.length,
+      totalRegistered: registeredProviders.length,
+    },
+  });
 };
 
 export const handleApiRoot: RouteHandler = (_req, res, context) => {
@@ -248,22 +334,69 @@ export const handleSuggest: RouteHandler = (req, res, context) => {
 };
 
 export const handleSystemStatus: RouteHandler = (_req, res, context) => {
-  const totalDocs = context.services?.index.getStats().totalDocuments ?? 0;
-  const status = !context.services ? 'error' : totalDocs === 0 ? 'degraded' : 'ok';
+  const totalDocs = context.services?.index ? context.services.index.getStats().totalDocuments : 0;
+  const totalTerms = context.services?.index ? context.services.index.getStats().totalTerms : 0;
+  const uptimeSeconds = Math.floor((Date.now() - context.startTime) / 1000);
+  const mem = process.memoryUsage();
+  const heapUsedMb = Math.round((mem.heapUsed / 1024 / 1024) * 100) / 100;
 
-  res.status(200).json({
+  const registeredProviders = context.services?.providerRegistry?.getAllProviders() ?? [];
+  const resilience = context.services?.providerRegistry?.getResilienceManager();
+
+  const providerList = registeredProviders.map(p => {
+    const can = resilience?.canExecute(p.metadata.id) ?? { allowed: true };
+    const circuit = resilience?.getCircuitStatus(p.metadata.id);
+    return {
+      id: p.metadata.id,
+      displayName: p.metadata.displayName,
+      enabled: p.isEnabled(),
+      available: can.allowed,
+      circuitState: circuit?.state ?? 'CLOSED',
+      reason: can.reason,
+    };
+  });
+  const availableProviders = providerList.filter(p => p.available && p.enabled);
+
+  let status = 'ok';
+  if (context.isShuttingDown) {
+    status = 'shutting_down';
+  } else if (!context.services) {
+    status = 'error';
+  } else if (totalDocs === 0 || (registeredProviders.length > 0 && availableProviders.length === 0)) {
+    status = 'degraded';
+  }
+
+  res.status(status === 'error' ? 503 : 200).json({
     name: PROJECT_NAME,
     version: PROJECT_VERSION,
-    phase: 'Milestone 8 — Security, Reliability & Privacy (Phase 26: Reliability)',
+    phase: 'Milestone 38 — Security & Operational Resilience (Phase 112: Health, Status & Graceful Shutdown)',
     status,
     timestamp: new Date().toISOString(),
+    uptimeSeconds,
+    environment: context.config.env,
+    deploymentModel: context.deploymentModel ?? 'standalone',
     server: {
       host: context.config.api.server.host,
       port: context.config.api.server.port,
+      lifecycleState: context.lifecycleState ?? (context.isShuttingDown ? 'shutting_down' : 'ready'),
     },
     index: {
+      status: totalDocs === 0 ? 'degraded' : 'ok',
       totalDocuments: totalDocs,
-      totalTerms: context.services?.index.getStats().totalTerms ?? 0,
+      totalTerms,
+    },
+    providers: {
+      totalRegistered: registeredProviders.length,
+      availableCount: availableProviders.length,
+      list: providerList,
+    },
+    memory: {
+      heapUsedMb,
+    },
+    privacy: {
+      zeroTracking: true,
+      zeroCookies: true,
+      noQueryStorage: true,
     },
   });
 };

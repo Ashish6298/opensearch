@@ -109,6 +109,25 @@ export interface McpServerLike {
 
 export type TrustProxyConfig = boolean | string[] | ((ip: string) => boolean);
 export type DeploymentModel = 'standalone' | 'cluster' | 'serverless';
+export type ServerLifecycleState = 'initializing' | 'ready' | 'shutting_down' | 'stopped';
+
+export interface ReadinessResponse {
+  status: 'ready' | 'not_ready' | 'shutting_down';
+  ready: boolean;
+  timestamp: string;
+  uptimeSeconds: number;
+  deploymentModel: DeploymentModel;
+  index: {
+    status: 'ok' | 'degraded' | 'error';
+    documentsIndexed: number;
+    termsIndexed: number;
+  };
+  providers: {
+    availableCount: number;
+    totalRegistered: number;
+  };
+  reason?: string;
+}
 
 export interface ApiAppContext {
   config: AppConfig;
@@ -124,6 +143,8 @@ export interface ApiAppContext {
   enableMcp?: boolean;
   trustProxy?: TrustProxyConfig;
   deploymentModel?: DeploymentModel;
+  isShuttingDown?: boolean;
+  lifecycleState?: ServerLifecycleState;
 }
 
 export interface ComponentHealth {
@@ -143,6 +164,8 @@ export interface HealthCheckResponse extends SystemStatus {
     rateLimiter: ComponentHealth;
     memory: ComponentHealth;
     queryCache?: ComponentHealth;
+    providers?: ComponentHealth;
+    storage?: ComponentHealth;
   };
 }
 

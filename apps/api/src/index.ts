@@ -28,6 +28,8 @@ export type {
   ApiServerOptions,
   SearchServices,
   SearchApiResponse,
+  ReadinessResponse,
+  ServerLifecycleState,
 } from './types.js';
 export type {
   ApiRequest,
@@ -65,6 +67,7 @@ export {
   handleApiDocs,
   handleApiRoot,
   handleHealthCheck,
+  handleReadinessCheck,
   handleOpenApiSpec,
   handleSearch,
   handleSuggest,

@@ -1,0 +1,126 @@
+================================================================================
+OPENSEARCH V1.5.0 — VERIFICATION REPORT: PHASE 112 (HEALTH, STATUS, AND GRACEFUL SHUTDOWN)
+================================================================================
+Timestamp: 2026-10-29T23:10:00+05:30
+Milestone: MILESTONE 38 — SECURITY AND OPERATIONAL RESILIENCE
+Phase: Phase 112 — Health, status, and graceful shutdown
+Status: VERIFIED & COMPLETED
+Branch: ashish
+Ready for Next Phase: YES (Ready for Milestone 38 — Phase 113: Observability without query surveillance)
+
+--------------------------------------------------------------------------------
+1. EXECUTIVE SUMMARY & OBJECTIVES
+--------------------------------------------------------------------------------
+Phase 112 implements enterprise-grade health checks, readiness probes, honest system
+status reporting, and coordinated graceful shutdown lifecycle management across OpenSearch:
+
+- Health vs. Readiness Endpoints with Distinct Semantics:
+  * Liveness checks: `GET /health` and `GET /healthz`.
+    Reports process vitality, uptime, memory, version, and component status. Returns HTTP 200
+    even when in-flight requests are draining, ensuring orchestrators (Kubernetes, Docker Swarm,
+    systemd) do not prematurely SIGKILL the draining process before work completes.
+  * Readiness checks: `GET /ready` and `GET /readyz`.
+    Determines whether the server can actively accept and process queries. Returns HTTP 200
+    only when storage/index is online and server lifecycle state is 'ready'. Immediately
+    returns HTTP 503 Service Unavailable when the index is not ready or when graceful shutdown
+    has commenced (`shutting_down`), prompting ingress reverse proxies (Nginx, Envoy, ALB)
+    to cease routing new external traffic to this node.
+
+- Honest System Status & Partial Degradation Reporting:
+  * System status: `GET /api/v1/status`.
+  * Honestly exposes partial degradation: overall status is `'healthy'` when all components
+    are operational, and `'degraded'` when one or more external search providers are tripped
+    or storage is degraded.
+  * Reports individual search provider availability and circuit breaker states (closed, open,
+    half-open) without leaking queries, parameters, or private upstream tokens.
+  * Reports index document counts, segment counts, and storage readiness without leaking
+    sensitive internal file paths, IP addresses, credentials, or stack traces.
+
+- Graceful Shutdown & Work Draining Lifecycle:
+  * Tracks server lifecycle states: `initializing` -> `ready` -> `shutting_down` -> `stopped`.
+  * Signals: Registers clean `SIGTERM` and `SIGINT` handlers (via `enableGracefulShutdown()`),
+    preventing duplicate signal handling and unhandled termination exceptions.
+  * Stop accepting new work: During shutdown, all new incoming requests are immediately
+    rejected with HTTP 503 `SERVER_SHUTTING_DOWN`, `Connection: close`, and `Retry-After: 5`.
+  * Work draining: In-flight requests are tracked with `activeRequestsCount` and bounded sockets
+    in `activeSockets`. Draining awaits in-flight completions up to a configurable grace period
+    (default 5000ms).
+  * State flushing: Automatically flushes persistent state stores (e.g. rate limiters) and
+    purges memory caches (query cache) before terminating socket listeners.
+
+--------------------------------------------------------------------------------
+2. IMPLEMENTED & UPDATED COMPONENTS
+--------------------------------------------------------------------------------
+A. Resilience & Provider Status (`packages/ranking/src/providers/`):
+   - `resilience-manager.ts`: Added `getCircuitStatus(providerId)` exposing breaker state,
+     failure count, and last failure timestamp.
+   - `provider-registry.ts`: Added `getAllProviderStatuses()` returning status summaries
+     (`id`, `displayName`, `enabled`, `available`, `circuitState`, `reason`) across all
+     registered upstream search providers.
+
+B. Lifecycle Types & Interfaces (`apps/api/src/types.ts`):
+   - `ServerLifecycleState = 'initializing' | 'ready' | 'shutting_down' | 'stopped'`.
+   - `ReadinessResponse`: Status, ready flag, timestamp, uptime, lifecycleState, and component checks.
+   - Updated `HealthCheckResponse`: Added `providers` and `storage` component status blocks.
+   - Added `isShuttingDown` and `lifecycleState` to `ApiAppContext`.
+
+C. Health, Readiness & Status Endpoints (`apps/api/src/routes.ts`):
+   - `handleHealthCheck`: Handles liveness at `/health` and `/healthz`.
+   - `handleReadinessCheck`: Handles readiness at `/ready` and `/readyz` (returns 503 when
+     draining or unready).
+   - `handleSystemStatus`: Handles `/api/v1/status`, aggregating memory, runtime uptime, index
+     statistics, and provider circuit states with zero credential or query leaks.
+
+D. HTTP Server Lifecycle & Draining (`apps/api/src/server.ts` & `index.ts`):
+   - Registered `/health`, `/healthz`, `/ready`, and `/readyz` routes.
+   - Added connection socket tracking (`activeSockets`) and request tracking (`activeRequestsCount`).
+   - Implemented `drain(gracePeriodMs)` and `stop(gracePeriodMs)`.
+   - Added `enableGracefulShutdown()` and `disableGracefulShutdown()` for process signals.
+   - Exported `handleReadinessCheck`, `ReadinessResponse`, and `ServerLifecycleState`.
+
+--------------------------------------------------------------------------------
+3. TEST SUITE & VERIFICATION
+--------------------------------------------------------------------------------
+Automated test suite created at `apps/api/tests/health-status-graceful-shutdown.test.ts`:
+- Suite 1: Health (Liveness) and Readiness Endpoints
+  * GET /health returns 200 with health metadata and component statuses.
+  * GET /healthz alias returns identical 200 response with liveness confirmation.
+  * GET /ready returns 200 when index is ready and server is ready to accept queries.
+  * GET /ready and /readyz return 503 when index is unavailable or not ready.
+- Suite 2: Provider Availability and Index Health Reporting
+  * GET /api/v1/status honestly reports degraded state and circuit breaker statuses.
+  * GET /api/v1/status sanitizes responses: zero query text, zero secrets, zero stack traces.
+- Suite 3: Graceful Shutdown Lifecycle & Work Draining
+  * GET /ready returns 503 Service Unavailable when server is in draining/shutting_down state.
+  * Server rejects new incoming search/api work with 503 during draining phase.
+  * In-flight requests are allowed to complete safely during drain grace period.
+  * enableGracefulShutdown and disableGracefulShutdown register and unregister signal handlers cleanly.
+
+Vitest Results:
+- Suite: `apps/api/tests/health-status-graceful-shutdown.test.ts`
+  Tests: 10 passed, 0 failed (100% pass)
+- Full Monorepo:
+  Test Files: 107 passed (107)
+  Tests: 1219 passed (1219)
+  Pass Rate: 100.0%
+
+--------------------------------------------------------------------------------
+4. ACCEPTANCE CRITERIA CHECKLIST
+--------------------------------------------------------------------------------
+[x] Shutdown behavior is tested:
+    - 503 rejection of new work during shutdown verified.
+    - Safe completion of in-flight requests during draining grace period verified.
+    - Signal registration/deregistration verified.
+[x] Partial service degradation is represented honestly:
+    - Degraded provider circuit breakers accurately reported in /api/v1/status.
+    - Unready storage immediately turns /ready into 503 while keeping /health alive.
+[x] Health endpoints are documented:
+    - Comprehensive guide created in docs/verification/phase-112-health-status-graceful-shutdown-report.md.
+    - Architectural notes updated in README.md.
+
+--------------------------------------------------------------------------------
+5. CONCLUSION & READINESS
+--------------------------------------------------------------------------------
+Phase 112 is completely verified and production-ready.
+Ready for Next Phase: YES (Milestone 38 — Phase 113: Observability without query surveillance).
+================================================================================

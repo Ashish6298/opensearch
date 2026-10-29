@@ -256,6 +256,13 @@ export class ResilienceManager {
   }
 
   /**
+   * Returns active circuit status for a provider if tracked.
+   */
+  public getCircuitStatus(providerId: string): ProviderCircuitStatus | undefined {
+    return this.circuits.get(providerId.toLowerCase().trim());
+  }
+
+  /**
    * Resets all circuit states and rate limit timers (for testing).
    */
   public reset(): void {

@@ -6,6 +6,7 @@
  */
 
 import { createServer, Server } from 'node:http';
+import { Socket } from 'node:net';
 import path from 'node:path';
 import fs from 'node:fs';
 import {
@@ -42,6 +43,7 @@ import {
   handleApiDocs,
   handleApiRoot,
   handleHealthCheck,
+  handleReadinessCheck,
   handleOpenApiSpec,
   handleSearch,
   handleSearchStream,
@@ -71,6 +73,7 @@ import {
   DeploymentModel,
   SearchApiResponse,
   SearchServices,
+  ServerLifecycleState,
   TrustProxyConfig,
 } from './types.js';
 import { OpenSearchMcpServer } from './mcp/index.js';
@@ -89,6 +92,11 @@ export class ApiServer {
   private readonly trustProxy: TrustProxyConfig;
   private readonly deploymentModel: DeploymentModel;
   private server: Server | null = null;
+  private state: ServerLifecycleState = 'initializing';
+  private activeRequestsCount = 0;
+  private readonly sockets = new Set<Socket>();
+  private sigtermHandler: (() => void) | null = null;
+  private sigintHandler: (() => void) | null = null;
 
   constructor(options: ApiServerOptions = {}) {
     this.config = options.config ?? loadConfig();
@@ -180,7 +188,16 @@ export class ApiServer {
     return this.mcpServer;
   }
 
+  getState(): ServerLifecycleState {
+    return this.state;
+  }
+
+  getActiveRequestsCount(): number {
+    return this.activeRequestsCount;
+  }
+
   getContext(): ApiAppContext {
+    const self = this;
     return {
       config: this.config,
       logger: this.logger,
@@ -194,6 +211,12 @@ export class ApiServer {
       enableMcp: this.enableMcp,
       trustProxy: this.trustProxy,
       deploymentModel: this.deploymentModel,
+      get isShuttingDown() {
+        return self.state === 'shutting_down';
+      },
+      get lifecycleState() {
+        return self.state;
+      },
     };
   }
 
@@ -336,6 +359,9 @@ export class ApiServer {
     this.router.get('/', handleApiRoot);
     this.router.get('/docs', handleApiDocs);
     this.router.get('/health', handleHealthCheck);
+    this.router.get('/healthz', handleHealthCheck);
+    this.router.get('/ready', handleReadinessCheck);
+    this.router.get('/readyz', handleReadinessCheck);
     this.router.get('/api/v1/status', handleSystemStatus);
     this.router.get('/api/v1/search', handleSearch);
     this.router.post('/api/v1/search', handleSearch);
@@ -379,11 +405,61 @@ export class ApiServer {
     // Ensure active search index is loaded before accepting traffic
     await this.loadActiveIndex();
 
+    this.state = 'ready';
+    this.activeRequestsCount = 0;
     const context = this.getContext();
 
     return new Promise((resolve, reject) => {
       this.server = createServer((req, res) => {
+        // Stop accepting new work during shutdown (allow health & readiness probes)
+        if (this.state === 'shutting_down') {
+          const pathname = (req.url || '').split('?')[0];
+          if (
+            pathname === '/health' ||
+            pathname === '/healthz' ||
+            pathname === '/ready' ||
+            pathname === '/readyz'
+          ) {
+            this.router.handleRequest(req, res, context);
+            return;
+          }
+
+          res.setHeader('Connection', 'close');
+          res.setHeader('Retry-After', '5');
+          res.writeHead(503, { 'Content-Type': 'application/json' });
+          res.end(
+            JSON.stringify({
+              error: {
+                message: 'Server is shutting down and cannot accept new requests.',
+                code: 'SERVER_SHUTTING_DOWN',
+                category: 'INTERNAL',
+                statusCode: 503,
+                timestamp: new Date().toISOString(),
+              },
+            }),
+          );
+          return;
+        }
+
+        this.activeRequestsCount++;
+        let decremented = false;
+        const decrement = () => {
+          if (!decremented) {
+            decremented = true;
+            this.activeRequestsCount = Math.max(0, this.activeRequestsCount - 1);
+          }
+        };
+        res.on('finish', decrement);
+        res.on('close', decrement);
+
         this.router.handleRequest(req, res, context);
+      });
+
+      this.server.on('connection', socket => {
+        this.sockets.add(socket);
+        socket.on('close', () => {
+          this.sockets.delete(socket);
+        });
       });
 
       this.server.on('error', err => {
@@ -431,27 +507,124 @@ export class ApiServer {
   }
 
   /**
-   * Gracefully stops the HTTP server and cleans up resources.
+   * Transitions server into draining mode. While draining:
+   * - New requests to operational routes receive HTTP 503 (SERVER_SHUTTING_DOWN).
+   * - /ready reports 503 (shutting_down) so load balancers stop sending traffic.
+   * - /health remains 200 (alive).
+   * - In-flight requests are allowed to finish up to gracePeriodMs.
    */
-  async stop(): Promise<void> {
-    this.rateLimiter.destroy();
+  async drain(gracePeriodMs = 1000): Promise<void> {
+    if (this.state === 'shutting_down' || this.state === 'stopped') {
+      return;
+    }
+    this.state = 'shutting_down';
+    this.logger.info('Initiating graceful draining...', {
+      activeRequests: this.activeRequestsCount,
+      gracePeriodMs,
+    });
 
-    if (!this.server) {
+    const startWait = Date.now();
+    while (this.activeRequestsCount > 0 && Date.now() - startWait < gracePeriodMs) {
+      await new Promise(r => setTimeout(r, 20));
+    }
+  }
+
+  /**
+   * Gracefully stops the HTTP server, draining in-flight requests and flushing state.
+   */
+  async stop(gracePeriodMs = 1000): Promise<void> {
+    if (this.state === 'stopped') {
       return;
     }
 
-    return new Promise((resolve, reject) => {
-      this.server?.close(err => {
-        if (err) {
-          this.logger.error('Error closing HTTP server', { error: err.message });
-          reject(err);
-        } else {
-          this.logger.info('HTTP API server stopped successfully');
-          this.server = null;
-          resolve();
-        }
+    if (this.state !== 'shutting_down') {
+      await this.drain(gracePeriodMs);
+    }
+
+    if (this.activeRequestsCount > 0) {
+      this.logger.warn('Grace period expired with active requests remaining; forcing termination', {
+        remainingActiveRequests: this.activeRequestsCount,
       });
-    });
+    }
+
+    // Destroy remaining open sockets
+    for (const socket of this.sockets) {
+      try {
+        socket.destroy();
+      } catch {
+        // Best effort
+      }
+    }
+    this.sockets.clear();
+
+    // Flush rate limiter and query cache state
+    this.rateLimiter.destroy();
+    this.queryCache.clear();
+
+    // Close the HTTP server
+    if (this.server) {
+      await new Promise<void>((resolve, reject) => {
+        this.server?.close(err => {
+          if (err) {
+            this.logger.error('Error closing HTTP server', { error: err.message });
+            reject(err);
+          } else {
+            this.logger.info('HTTP API server stopped successfully');
+            this.server = null;
+            resolve();
+          }
+        });
+      });
+    }
+
+    this.state = 'stopped';
+    this.disableGracefulShutdown();
+  }
+
+  /**
+   * Binds graceful shutdown signal handlers (SIGTERM and SIGINT).
+   */
+  enableGracefulShutdown(options?: { timeoutMs?: number; exitOnComplete?: boolean }): void {
+    if (this.sigtermHandler || this.sigintHandler) {
+      return;
+    }
+    const timeoutMs = options?.timeoutMs ?? 5000;
+    const exitOnComplete = options?.exitOnComplete ?? false;
+
+    const handler = async (signal: string) => {
+      this.logger.info(`Received ${signal}, initiating graceful shutdown...`, { signal });
+      try {
+        await this.stop(timeoutMs);
+        if (exitOnComplete) {
+          process.exit(0);
+        }
+      } catch (e) {
+        this.logger.error('Error during graceful shutdown', { error: (e as Error).message });
+        if (exitOnComplete) {
+          process.exit(1);
+        }
+      }
+    };
+
+    this.sigtermHandler = () => void handler('SIGTERM');
+    this.sigintHandler = () => void handler('SIGINT');
+
+    process.on('SIGTERM', this.sigtermHandler);
+    process.on('SIGINT', this.sigintHandler);
+  }
+
+  /**
+   * Removes graceful shutdown signal handlers.
+   */
+  disableGracefulShutdown(): void {
+    if (this.sigtermHandler) {
+      process.removeListener('SIGTERM', this.sigtermHandler);
+      this.sigtermHandler = null;
+    }
+    if (this.sigintHandler) {
+      process.removeListener('SIGINT', this.sigintHandler);
+      this.sigintHandler = null;
+    }
   }
 }
 
