@@ -61,6 +61,7 @@ import {
   handleUpdateFeedbackReviewItem,
   handleApproveEvaluationCase,
   handleRankingSafetyCheck,
+  handleOpenSearchDescriptor,
 } from './routes.js';
 import { ApiAppContext, ApiServerOptions, SearchApiResponse, SearchServices } from './types.js';
 
@@ -300,6 +301,8 @@ export class ApiServer {
     this.router.patch('/api/v1/feedback/review/:id', handleUpdateFeedbackReviewItem);
     this.router.post('/api/v1/feedback/review/:id/approve-case', handleApproveEvaluationCase);
     this.router.post('/api/v1/feedback/review/ranking-check', handleRankingSafetyCheck);
+    this.router.get('/opensearch.xml', handleOpenSearchDescriptor);
+    this.router.get('/opensearchdescription.xml', handleOpenSearchDescriptor);
     this.router.get('/api/v1/openapi.json', handleOpenApiSpec);
     this.router.get('/openapi.json', handleOpenApiSpec);
   }

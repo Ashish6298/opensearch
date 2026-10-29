@@ -47,6 +47,7 @@ import {
 } from '@opensearch/ranking';
 import { generateOpenApiSpec } from './openapi-spec.js';
 import { generateDocsHtml } from './docs-html.js';
+import { generateOpenSearchDescriptor, OPENSEARCH_DESCRIPTOR_MIME_TYPE } from './opensearch-descriptor.js';
 
 export const handleHealthCheck: RouteHandler = (_req, res, context) => {
   const uptimeSeconds = Math.floor((Date.now() - context.startTime) / 1000);
@@ -114,6 +115,8 @@ export const handleHealthCheck: RouteHandler = (_req, res, context) => {
       'PATCH /api/v1/feedback/review/:id',
       'POST /api/v1/feedback/review/:id/approve-case',
       'POST /api/v1/feedback/review/ranking-check',
+      'GET /opensearch.xml',
+      'GET /opensearchdescription.xml',
       'GET /api/v1/openapi.json',
       'GET /openapi.json',
     ],
@@ -174,6 +177,7 @@ export const handleApiRoot: RouteHandler = (_req, res, context) => {
       lenses: '/api/v1/lenses',
       feedback: '/api/v1/feedback',
       feedbackReview: '/api/v1/feedback/review',
+      opensearch: '/opensearch.xml',
       openapi: '/api/v1/openapi.json',
       docs: '/docs',
     },
@@ -185,6 +189,19 @@ export const handleApiRoot: RouteHandler = (_req, res, context) => {
 export const handleOpenApiSpec: RouteHandler = (_req, res, _context) => {
   const spec = generateOpenApiSpec();
   res.status(200).json(spec);
+};
+
+export const handleOpenSearchDescriptor: RouteHandler = (req, res, context) => {
+  const hostHeader = (req.headers['x-forwarded-host'] as string) || (req.headers['host'] as string) || `${context.config.api.server.host}:${context.config.api.server.port}`;
+  const proto = (req.headers['x-forwarded-proto'] as string) || 'http';
+  const baseUrl = `${proto}://${hostHeader}`;
+
+  const xml = generateOpenSearchDescriptor({
+    baseUrl,
+  });
+
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.status(HTTP_STATUS.OK).text(xml, OPENSEARCH_DESCRIPTOR_MIME_TYPE);
 };
 
 export const handleApiDocs: RouteHandler = (_req, res, _context) => {
@@ -208,6 +225,13 @@ export const handleSuggest: RouteHandler = (req, res, context) => {
 
   const prefixTrie = context.services?.prefixTrie;
   const suggestions = prefixTrie ? prefixTrie.suggest(rawQuery, limit) : [];
+
+  // OpenSearch 1.1 JSON suggestion format for browser address bars: ["query", ["s1", "s2", ...]]
+  if (req.query['format'] === 'opensearch') {
+    const suggestionTexts = suggestions.map(s => s.text);
+    res.status(HTTP_STATUS.OK).text(JSON.stringify([rawQuery, suggestionTexts]), 'application/x-suggestions+json; charset=utf-8');
+    return;
+  }
 
   const payload: SuggestApiResponse = {
     query: rawQuery,

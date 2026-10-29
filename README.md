@@ -939,7 +939,7 @@ $ audit --privacy-boundaries
 | **Milestone 34** | **Tracker-Aware Search & Focus Lenses**  | Phases 99 – 102| Reviewable tracker registry, static subresource parsing, tracker-aware ranking signals, Focus Lens schema & initial profiles | `[MILESTONE 34 PASSED]` |
 | **Milestone 35** | **Instant Answers and Quick Answer**     | Phases 103 – 104| Modular instant-answer framework, provenance attribution, deterministic extractive Quick Answer panel, verifiable non-fabricated citations, privacy boundaries | `[MILESTONE 35 PASSED]` |
 | **Milestone 36** | **Optional Search Quality Feedback**    | Phases 105 – 106| Restrained feedback rating, explicit user consent, strict prohibition of queries/IPs, 30-day retention, local review queue, held-out evaluation isolation, ranking safety guard | `[MILESTONE 36 PASSED]` |
-| **Milestone 37** | **API, Browser Search & MCP Integration**| Phases 107 – 109| OpenAPI 3.1.0 contract fidelity, schema consistency, SSE streaming audit, OpenSearch browser descriptor, MCP server | `[PHASE 107 PASSED]` |
+| **Milestone 37** | **API, Browser Search & MCP Integration**| Phases 107 – 109| OpenAPI 3.1.0 contract fidelity, schema consistency, SSE streaming audit, OpenSearch browser descriptor, MCP server | `[PHASE 108 PASSED]` |
 
 <br/>
 
@@ -951,6 +951,8 @@ $ npm test
 ✓ apps/api/tests/api.test.ts (38 tests)
 ✓ apps/api/tests/openapi-docs.test.ts (18 tests)
 ✓ apps/api/tests/openapi-contract.test.ts (12 tests)
+✓ apps/api/tests/browser-search-descriptor.test.ts (11 tests)
+✓ apps/web/tests/browser-search-descriptor.test.ts (6 tests)
 ✓ packages/ranking/tests/instant-answer-framework.test.ts (14 tests)
 ✓ packages/ranking/tests/quick-answer.test.ts (19 tests)
 ✓ packages/ranking/tests/privacy-conscious-feedback.test.ts (13 tests)
@@ -958,11 +960,11 @@ $ npm test
 ✓ apps/api/tests/feedback-review-api.test.ts (8 tests)
 ✓ apps/api/tests/lens-api.test.ts (7 tests)
 ...
-Test Files  101 passed (101)
-     Tests  1119 passed (1119)
-  Duration  14.60s -- 100% Passing Pass Rate
+Test Files  103 passed (103)
+     Tests  1136 passed (1136)
+  Duration  14.64s -- 100% Passing Pass Rate
 ────────────────────────────────────────────────────────────
-TOTAL RESULT: 1119 / 1119 TESTS PASSED (100.0%) -- V1.5.0 PHASE 107 VERIFIED
+TOTAL RESULT: 1136 / 1136 TESTS PASSED (100.0%) -- V1.5.0 PHASE 108 VERIFIED
 ```
 
 ---

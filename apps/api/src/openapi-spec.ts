@@ -900,6 +900,25 @@ export function generateOpenApiSpec(options: OpenApiSpecOptions = {}): Record<st
           },
         },
       },
+      '/opensearch.xml': {
+        get: {
+          tags: ['Documentation'],
+          summary: 'OpenSearch 1.1 browser search description document (OSDD)',
+          description:
+            'Returns standards-compatible OpenSearch 1.1 XML search descriptor for native browser address bar integration (Firefox, Chrome, Brave, Edge, Safari).',
+          operationId: 'opensearchXmlGet',
+          responses: {
+            '200': {
+              description: 'OpenSearch 1.1 XML Description Document.',
+              content: {
+                'application/opensearchdescription+xml': {
+                  schema: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+      },
       '/api/v1/openapi.json': {
         get: {
           tags: ['Documentation'],

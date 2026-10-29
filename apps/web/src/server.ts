@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { AppConfig, createLogger, loadConfig, Logger } from '@opensearch/shared';
 import { generateDocsHtml, generateOpenApiSpec } from '@opensearch/api';
+import { generateOpenSearchDescriptor, OPENSEARCH_DESCRIPTOR_MIME_TYPE } from '@opensearch/api';
 import { generateHtmlShell } from './html-template.js';
 
 export interface WebServerOptions {
@@ -121,6 +122,125 @@ export class WebServer {
       res.setHeader('Content-Type', 'application/json; charset=utf-8');
       res.setHeader('Content-Length', Buffer.byteLength(specPayload));
       res.end(specPayload);
+      return;
+    }
+
+    if (pathname === '/opensearch.xml' || pathname === '/opensearchdescription.xml') {
+      const proto = (req.headers['x-forwarded-proto'] as string) || 'http';
+      const host = (req.headers['x-forwarded-host'] as string) || req.headers.host || `${this.config.web.server.host}:${this.config.web.server.port}`;
+      const baseUrl = `${proto}://${host}`;
+      const xml = generateOpenSearchDescriptor({ baseUrl });
+
+      res.statusCode = 200;
+      res.setHeader('Content-Type', OPENSEARCH_DESCRIPTOR_MIME_TYPE);
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      res.setHeader('Content-Length', Buffer.byteLength(xml));
+      res.end(xml);
+      return;
+    }
+
+    if (pathname === '/browser-search' || pathname === '/browser-search/') {
+      const proto = (req.headers['x-forwarded-proto'] as string) || 'http';
+      const host = (req.headers['x-forwarded-host'] as string) || req.headers.host || `${this.config.web.server.host}:${this.config.web.server.port}`;
+      const baseUrl = `${proto}://${host}`;
+      const browserSearchHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="How to add OpenSearch Web as your default browser search engine in Firefox, Chrome, Brave, Edge, and Safari.">
+  <link rel="search" type="application/opensearchdescription+xml" title="OpenSearch Web" href="/opensearch.xml">
+  <title>Add to Browser — OpenSearch Web</title>
+  <style>
+    ${this.cssCache}
+    .guide-content { max-width: 820px; margin: 2rem auto; padding: 1.5rem; line-height: 1.6; }
+    .guide-content h1, .guide-content h2, .guide-content h3 { color: var(--accent-primary, #38bdf8); }
+    .guide-step { background: rgba(30, 41, 59, 0.7); border: 1px solid #334155; border-radius: 8px; padding: 1.25rem; margin: 1.25rem 0; }
+    .guide-step h3 { margin-top: 0; }
+    .guide-code { background: #0f172a; padding: 0.4rem 0.6rem; border-radius: 4px; font-family: monospace; color: #38bdf8; display: inline-block; }
+    .back-btn { display: inline-block; margin-bottom: 1rem; color: #38bdf8; text-decoration: none; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="guide-content">
+    <a href="/" class="back-btn">← Back to Search</a>
+    <h1>Add OpenSearch Web to Your Browser</h1>
+    <p>OpenSearch Web is an independent, privacy-first web search engine. You can configure it as your default search engine in any modern browser without installing any extensions.</p>
+
+    <div class="guide-step">
+      <h3>🦊 Mozilla Firefox (Desktop &amp; Mobile)</h3>
+      <ol>
+        <li>Visit the OpenSearch home page (<a href="/">/</a>).</li>
+        <li>Right-click the address bar (or click the three-dot action menu in the URL bar).</li>
+        <li>Select <strong>Add "OpenSearch Web"</strong>.</li>
+        <li>To make it default: Open <code>Settings &gt; Search &gt; Default Search Engine</code> and select <strong>OpenSearch Web</strong>.</li>
+      </ol>
+    </div>
+
+    <div class="guide-step">
+      <h3>🌐 Google Chrome &amp; Chromium</h3>
+      <ol>
+        <li>Open <code>Settings &gt; Search engine &gt; Manage search engines and site search</code>.</li>
+        <li>Under <strong>Site search</strong>, click <strong>Add</strong>:
+          <ul>
+            <li><strong>Name:</strong> OpenSearch Web</li>
+            <li><strong>Shortcut:</strong> <code>@os</code> or <code>os</code></li>
+            <li><strong>URL with %s in place of query:</strong> <span class="guide-code">${baseUrl}/?q=%s</span></li>
+          </ul>
+        </li>
+        <li>Click the three dots next to OpenSearch Web and select <strong>Make default</strong>.</li>
+      </ol>
+    </div>
+
+    <div class="guide-step">
+      <h3>🦁 Brave Browser</h3>
+      <ol>
+        <li>Open <code>Settings &gt; Search engine &gt; Manage search engines and site search</code>.</li>
+        <li>Under <strong>Site search</strong>, add OpenSearch Web with URL: <span class="guide-code">${baseUrl}/?q=%s</span>.</li>
+        <li>Set OpenSearch Web as default search provider.</li>
+      </ol>
+    </div>
+
+    <div class="guide-step">
+      <h3>🌊 Microsoft Edge</h3>
+      <ol>
+        <li>Open <code>Settings &gt; Privacy, search, and services &gt; Address bar and search</code>.</li>
+        <li>Click <strong>Manage search engines</strong>, add OpenSearch Web with search URL: <span class="guide-code">${baseUrl}/?q=%s</span>.</li>
+        <li>Choose OpenSearch Web in the "Search engine used in the address bar" dropdown.</li>
+      </ol>
+    </div>
+
+    <div class="guide-step">
+      <h3>🧭 Apple Safari &amp; iOS</h3>
+      <ol>
+        <li>Add a custom bookmark or use a Safari search engine shortcut extension configured with URL: <span class="guide-code">${baseUrl}/?q=%s</span>.</li>
+      </ol>
+    </div>
+
+    <div class="guide-step">
+      <h3>⚡ Vivaldi</h3>
+      <ol>
+        <li>Right-click the search input on the OpenSearch homepage and select <strong>Add as Search Engine...</strong>.</li>
+        <li>Or configure manually in <code>Settings &gt; Search</code> using URL: <span class="guide-code">${baseUrl}/?q=%s</span>.</li>
+      </ol>
+    </div>
+
+    <div class="guide-step">
+      <h3>📜 OpenSearch Description Document (OSDD)</h3>
+      <p>Standard XML descriptor available at: <a href="/opensearch.xml" target="_blank"><code>/opensearch.xml</code></a></p>
+    </div>
+
+    <div class="guide-step">
+      <h3>ℹ️ Distinct Product Identity</h3>
+      <p>OpenSearch Web is an independent privacy-first search project. Not affiliated with Amazon Web Services or Amazon OpenSearch Service.</p>
+    </div>
+  </div>
+</body>
+</html>`;
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.setHeader('Content-Length', Buffer.byteLength(browserSearchHtml));
+      res.end(browserSearchHtml);
       return;
     }
 

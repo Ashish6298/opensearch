@@ -60,6 +60,12 @@ export {
 } from './routes.js';
 export { generateOpenApiSpec } from './openapi-spec.js';
 export { generateDocsHtml } from './docs-html.js';
+export {
+  generateOpenSearchDescriptor,
+  OPENSEARCH_DESCRIPTOR_MIME_TYPE,
+  DEFAULT_DESCRIPTOR_CONFIG,
+  type OpenSearchDescriptorOptions,
+} from './opensearch-descriptor.js';
 export { ApiServer, createApiServer } from './server.js';
 
 export function createApiContext(overrides?: Record<string, string | undefined>): ApiAppContext {
