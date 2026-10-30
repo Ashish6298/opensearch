@@ -65,6 +65,7 @@ import {
   handleApproveEvaluationCase,
   handleRankingSafetyCheck,
   handleOpenSearchDescriptor,
+  handleDemoInfo,
   handleMcpPost,
   handleMcpSse,
 } from './routes.js';
@@ -397,6 +398,7 @@ export class ApiServer {
     this.router.get('/opensearch.xml', handleOpenSearchDescriptor);
     this.router.get('/opensearchdescription.xml', handleOpenSearchDescriptor);
     this.router.get('/metrics', handleMetrics);
+    this.router.get('/api/v1/demo', handleDemoInfo);
     this.router.post('/api/v1/mcp', handleMcpPost);
     this.router.get('/api/v1/mcp/sse', handleMcpSse);
     this.router.get('/api/v1/openapi.json', handleOpenApiSpec);

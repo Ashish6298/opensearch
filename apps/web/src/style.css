@@ -2195,3 +2195,86 @@ html[data-theme='light'] .run-btn:hover {
   margin-top: 6px;
   letter-spacing: 0.2px;
 }
+
+/* Phase 116: Demo Mode and Accessibility Enhancements */
+.demo-mode-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--bg-surface, #1e293b);
+  border: 1px solid var(--border-terminal);
+  border-radius: 14px;
+  padding: 3px 10px;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.15s ease;
+}
+
+.demo-mode-chip:hover,
+.demo-mode-chip:focus-within {
+  border-color: #f59e0b;
+}
+
+.demo-mode-checkbox {
+  cursor: pointer;
+  accent-color: #f59e0b;
+  margin: 0;
+}
+
+.demo-mode-label {
+  font-weight: 500;
+  font-size: 12px;
+  color: #f59e0b;
+}
+
+.demo-mode-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  margin-bottom: 12px;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: var(--border-radius, 4px);
+  color: #f59e0b;
+  font-size: 13px;
+}
+
+.result-demo-badge {
+  display: inline-block;
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 3px;
+  font-size: 11px;
+  padding: 1px 6px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Phase 116: WCAG AA Visible Focus Indicators */
+:focus-visible {
+  outline: 2px solid var(--accent-green, #00ff66) !important;
+  outline-offset: 2px !important;
+}
+
+/* Phase 116: Reduced Motion Accessibility Support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .cli-loading,
+  .run-btn,
+  .result-item,
+  .autocomplete-dropdown {
+    animation: none !important;
+    transition: none !important;
+  }
+}

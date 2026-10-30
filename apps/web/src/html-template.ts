@@ -170,12 +170,19 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
                 <span class="local-only-icon" aria-hidden="true">🔒</span>
                 <span class="local-only-label">Local-only</span>
               </label>
-              <!-- Phase 102: Accessible Focus Lens Selector -->
+
+              <!-- Phase 116: Offline Demo Mode Control -->
+              <label class="demo-mode-chip" for="demo-mode-checkbox" title="Toggle Demo mode: Searches offline curated demo corpus with zero external calls">
+                <input type="checkbox" id="demo-mode-checkbox" class="demo-mode-checkbox" />
+                <span class="demo-mode-icon" aria-hidden="true">🧪</span>
+                <span class="demo-mode-label">Demo</span>
+              </label>
               <div class="lens-control-container" title="Select a Focus Lens ranking profile">
                 <label for="lens-selector" class="lens-selector-label" title="Focus Lens">
                   <span class="lens-icon" aria-hidden="true">🎯</span>
                   <span class="sr-only">Focus Lens:</span>
                 </label>
+
                 <select id="lens-selector" class="lens-selector" aria-label="Focus Lens ranking profile" title="Select Focus Lens profile">
                   <option value="general" selected>General Lens</option>
                   <option value="student">🎓 Student</option>
@@ -192,6 +199,11 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
             <!-- Quick Suggestions for approachable discovery -->
             <div class="quick-topics-row" id="quick-topics" aria-label="Suggested searches">
               <span class="quick-topics-label">Try:</span>
+              <button type="button" class="quick-topic-tag" data-query="typescript compiler" title="Developer query: TypeScript Compiler">typescript compiler</button>
+              <button type="button" class="quick-topic-tag" data-query="bm25 ranking" title="Developer query: BM25 Ranking Algorithm">bm25 ranking</button>
+              <button type="button" class="quick-topic-tag" data-query="weather" title="Everyday query: Weather & Forecast">weather</button>
+              <button type="button" class="quick-topic-tag" data-query="solar system" title="Everyday query: Solar System Science">solar system</button>
+              <button type="button" class="quick-topic-tag" data-query="healthy recipe" title="Everyday query: Healthy Recipe">healthy recipe</button>
               <button type="button" class="quick-topic-tag" data-query="privacy guide">privacy guide</button>
               <button type="button" class="quick-topic-tag" data-query="local search engine">local search</button>
               <button type="button" class="quick-topic-tag" data-query="open source">open source</button>
@@ -246,6 +258,11 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
             <span class="local-only-notice-text" id="local-only-notice-text">Local-only mode active: Searching local index only.</span>
             <button type="button" class="disable-local-only-btn" id="disable-local-only-btn" title="Disable local-only mode and search global web providers">Search Web</button>
           </div>
+          <!-- Phase 116: Demo Mode Banner -->
+          <div class="demo-mode-banner" id="demo-mode-banner" role="status" aria-live="polite" style="display:none;">
+            <span class="demo-mode-icon" aria-hidden="true">🧪</span>
+            <span class="demo-mode-text" id="demo-mode-text">Demo Mode Active: Offline curated demo results. Zero external providers contacted.</span>
+          </div>
 
           <!-- Phase 78: Partial Results Banner -->
           <div class="partial-results-banner" id="partial-results-banner" role="status" aria-live="polite" style="display:none;">
@@ -272,6 +289,7 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
               [PROVIDER UNAVAILABLE] Search provider is temporarily unreachable. <span id="provider-failure-message">Local index search remains active.</span>
             </div>
             <button type="button" class="cli-retry-btn" id="provider-retry-btn">[ retry provider ]</button>
+            <button type="button" class="cli-retry-btn" id="provider-demo-fallback-btn" style="margin-left:8px;">[ switch to offline demo ]</button>
           </div>
 
           <!-- Phase 78: Rate Limiting State (HTTP 429) -->

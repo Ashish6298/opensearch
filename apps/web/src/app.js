@@ -65,6 +65,10 @@
   const resetSettingsBtn = document.getElementById('reset-settings-btn');
   const showOnboardingBtn = document.getElementById('show-onboarding-btn');
   const settingsStatusMsg = document.getElementById('settings-status-msg');
+  const demoModeCheckbox = document.getElementById('demo-mode-checkbox');
+  const demoModeBanner = document.getElementById('demo-mode-banner');
+  const demoModeText = document.getElementById('demo-mode-text');
+  let isDemoMode = false;
 
   // Configuration
   const rawApiUrl = window.__OPENSEARCH_API_URL__ || '';
@@ -118,6 +122,12 @@
     const initialFilter = params.get('filter') || 'all';
     activeFilter = initialFilter;
     updateActiveFilterUI(activeFilter);
+
+    const demoParam = params.get('demo') || params.get('demo_mode');
+    if (demoParam === 'true' || demoParam === '1') {
+      isDemoMode = true;
+      if (demoModeCheckbox) demoModeCheckbox.checked = true;
+    }
 
     if (initialQuery) {
       searchInput.value = initialQuery;
@@ -247,6 +257,12 @@
         activeFilter = filterVal;
         updateActiveFilterUI(activeFilter);
 
+    const demoParam = params.get('demo') || params.get('demo_mode');
+    if (demoParam === 'true' || demoParam === '1') {
+      isDemoMode = true;
+      if (demoModeCheckbox) demoModeCheckbox.checked = true;
+    }
+
         const query = currentQuery || searchInput.value.trim();
         if (query) {
           currentPage = 1;
@@ -366,6 +382,34 @@
       });
     }
 
+
+
+
+
+
+
+    if (demoModeCheckbox) {
+      demoModeCheckbox.addEventListener('change', function () {
+        isDemoMode = demoModeCheckbox.checked;
+        announceA11y(`Demo search mode ${isDemoMode ? 'enabled' : 'disabled'}.`);
+        if (currentQuery) {
+          performSearch(currentQuery, 1);
+        }
+      });
+    }
+
+    const providerDemoFallbackBtn = document.getElementById('provider-demo-fallback-btn');
+    if (providerDemoFallbackBtn) {
+      providerDemoFallbackBtn.addEventListener('click', function () {
+        isDemoMode = true;
+        if (demoModeCheckbox) demoModeCheckbox.checked = true;
+        announceA11y('Switched to offline demo mode.');
+        if (currentQuery) {
+          performSearch(currentQuery, 1);
+        }
+      });
+    }
+
     function disableLocalOnlyAndSearch() {
       isLocalOnly = false;
       try {
@@ -374,6 +418,7 @@
       if (localOnlyCheckbox) localOnlyCheckbox.checked = false;
       if (settingLocalOnlyToggle) settingLocalOnlyToggle.checked = false;
       if (localOnlyNoticeBanner) localOnlyNoticeBanner.style.display = 'none';
+    if (demoModeBanner) demoModeBanner.style.display = 'none';
       if (emptyLocalOnlyAction) emptyLocalOnlyAction.style.display = 'none';
       announceA11y('Local-only search mode disabled. Searching web.');
       if (currentQuery) {
@@ -1019,6 +1064,7 @@
   function hideAllStates() {
     if (loadingIndicator) loadingIndicator.style.display = 'none';
     if (localOnlyNoticeBanner) localOnlyNoticeBanner.style.display = 'none';
+    if (demoModeBanner) demoModeBanner.style.display = 'none';
     if (emptyLocalOnlyAction) emptyLocalOnlyAction.style.display = 'none';
     if (emptyState) emptyState.style.display = 'none';
     if (errorState) errorState.style.display = 'none';
@@ -1148,6 +1194,9 @@
       if (currentLens && currentLens !== 'general') {
         fetchUrl += '&lens=' + encodeURIComponent(currentLens);
       }
+      if (isDemoMode) {
+        fetchUrl += '&demo=true';
+      }
       const res = await fetch(fetchUrl, { signal });
 
       // Stale response guard (Race-condition protection)
@@ -1222,6 +1271,14 @@
 
     if (resultFiltersBar) {
       resultFiltersBar.style.display = 'flex';
+    }
+
+    // Phase 116: Demo Mode Banner representation
+    if (data.meta?.demoMode && demoModeBanner) {
+      demoModeBanner.style.display = 'flex';
+      if (demoModeText && data.meta.demoNotice) {
+        demoModeText.textContent = data.meta.demoNotice;
+      }
     }
 
     const hits = data.results || [];
@@ -1577,6 +1634,7 @@
             <div class="result-item-body">
               <div class="result-index-title">
                 <span class="result-index">[${itemNum}]</span>
+                ${item.isDemo ? '<span class="result-demo-badge" aria-label="Demo corpus result">[Demo]</span> ' : ''}
                 <a href="${safeUrl}" ${openInNewTab ? 'target="_blank" rel="noopener noreferrer"' : ''} class="result-title-link">${displayTitle}</a>
               </div>
               <div class="result-url-line">

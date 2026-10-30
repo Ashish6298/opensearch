@@ -945,7 +945,7 @@ $ audit --privacy-boundaries
 | **Milestone 36** | **Optional Search Quality Feedback**    | Phases 105 – 106| Restrained feedback rating, explicit user consent, strict prohibition of queries/IPs, 30-day retention, local review queue, held-out evaluation isolation, ranking safety guard | `[MILESTONE 36 PASSED]` |
 | **Milestone 37** | **API, Browser Search & MCP Integration**| Phases 107 – 109| OpenAPI 3.1.0 contract fidelity, schema consistency, SSE streaming audit, OpenSearch browser descriptor, MCP server | `[MILESTONE 37 PASSED]` |
 | **Milestone 38** | **Security and Operational Resilience** | Phases 110 – 113| SSRF defense audit, scheme allowlist, robots/limits validation, zero script execution, storage persistence audit, multi-tier rate limiting, proxy trust, health & readiness probes, graceful shutdown draining, privacy-safe Prometheus metrics without query surveillance | `[MILESTONE 38 PASSED]` |
-| **Milestone 39** | **Documentation, Repository Hygiene & Demo** | Phases 114 – 118| Distinct product identity (OpenSearch Web), trademark disambiguation & non-affiliation notices, README and user docs, reproducible demo setup, contributor guidelines, release packaging | `[PHASE 115 PASSED]` |
+| **Milestone 39** | **Documentation, Repository Hygiene & Demo** | Phases 114 – 118| Distinct product identity (OpenSearch Web), trademark disambiguation & non-affiliation notices, README and user docs, reproducible demo setup, contributor guidelines, release packaging | `[PHASE 116 PASSED]` |
 
 <br/>
 
@@ -953,6 +953,7 @@ $ audit --privacy-boundaries
 
 ```console
 $ npm test
+✓ apps/api/tests/demo-experience-accessibility.test.ts (17 tests)
 ✓ apps/api/tests/readme-documentation.test.ts (5 tests)
 ✓ apps/api/tests/product-identity.test.ts (12 tests)
 ✓ apps/api/tests/observability-metrics.test.ts (14 tests)
@@ -972,11 +973,11 @@ $ npm test
 ✓ apps/api/tests/feedback-review-api.test.ts (8 tests)
 ✓ apps/api/tests/lens-api.test.ts (7 tests)
 ...
-Test Files  110 passed (110)
-     Tests  1250 passed (1250)
+Test Files  111 passed (111)
+     Tests  1267 passed (1267)
   Duration  16.16s -- 100% Passing Pass Rate
 ────────────────────────────────────────────────────────────
-TOTAL RESULT: 1250 / 1250 TESTS PASSED (100.0%) -- V1.5.0 PHASE 115 VERIFIED (README & USER DOCUMENTATION)
+TOTAL RESULT: 1267 / 1267 TESTS PASSED (100.0%) -- V1.5.0 PHASE 116 VERIFIED (DEMO EXPERIENCE & ACCESSIBILITY REVIEW)
 ```
 
 ---

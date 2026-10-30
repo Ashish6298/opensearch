@@ -149,6 +149,7 @@ export interface ApiAppContext {
   isShuttingDown?: boolean;
   lifecycleState?: ServerLifecycleState;
   metrics?: MetricsRegistry;
+  isDemoMode?: boolean;
 }
 
 export interface ComponentHealth {
@@ -247,6 +248,7 @@ export interface ApiServerOptions {
   routeRateLimits?: import('./rate-limiter.js').RouteRateLimitRule[];
   /** Metrics registry instance (Phase 113) */
   metrics?: MetricsRegistry;
+  isDemoMode?: boolean;
   /** Whether Prometheus metrics are enabled (default: true) */
   enableMetrics?: boolean;
 }

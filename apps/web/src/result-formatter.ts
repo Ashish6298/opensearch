@@ -34,6 +34,7 @@ export interface FormattedResultItem {
   imageHeight?: number;
   isStale?: boolean;
   recencyLabel?: string;
+  isDemo?: boolean;
 }
 
 export interface PaginationData {
@@ -249,6 +250,10 @@ export function renderResultCard(item: FormattedResultItem): string {
     ? `<span class="result-attribution-badge" aria-label="Attribution">[${safeAttribution}]</span>`
     : (safeSource ? `<span class="result-source-badge" aria-label="Source">[source: ${safeSource}]</span>` : '');
 
+  const demoBadge = item.isDemo
+    ? `<span class="result-demo-badge" aria-label="Demo corpus result">[Demo]</span>`
+    : '';
+
   const licenseBadge = safeLicense
     ? `<span class="result-license-badge" aria-label="License">[${safeLicense}]</span>`
     : '';
@@ -271,7 +276,7 @@ export function renderResultCard(item: FormattedResultItem): string {
       ${thumbnailHtml}
       <div class="result-content">
         <div class="result-header">
-          ${safeDomain ? `<span class="result-domain-badge" aria-label="Domain">${safeDomain}</span>` : ''}
+          ${demoBadge ? `${demoBadge} ` : ''}${safeDomain ? `<span class="result-domain-badge" aria-label="Domain">${safeDomain}</span>` : ''}
           ${provenanceBadge ? `${provenanceBadge} ` : ''}${licenseBadge ? `${licenseBadge} ` : ''}${contentTypeBadge ? `${contentTypeBadge} ` : ''}${dateBadge ? `${dateBadge} ` : ''}${recencyBadge ? `${recencyBadge} ` : ''}<cite class="result-url" title="${safeUrl}">${safeDisplayUrl}</cite>
         </div>
         <h2 class="result-title" id="result-title-${escapeHtml(item.documentId)}">

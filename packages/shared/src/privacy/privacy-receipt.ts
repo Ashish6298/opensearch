@@ -14,7 +14,7 @@
 
 import { randomUUID } from 'node:crypto';
 
-export type SearchPrivacyMode = 'standard' | 'local-only';
+export type SearchPrivacyMode = 'standard' | 'local-only' | 'demo';
 
 export type ProviderRequestPurpose =
   | 'web-retrieval'
@@ -33,6 +33,7 @@ export type ProviderExecutionStatus =
 
 export type ProviderSkipReason =
   | 'local-only-mode'
+  | 'demo-mode'
   | 'sufficient-local-results'
   | 'category-mismatch'
   | 'rate-limited'
