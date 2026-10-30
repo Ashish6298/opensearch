@@ -16,6 +16,11 @@
   "scripts": {
     "build": "tsc -b && npm --workspace=@opensearch/web run build:assets",
     "opensearch": "node ./packages/cli/dist/bin.js",
+    "seed": "node ./scripts/feed-corpus.mjs",
+    "bench": "node ./packages/cli/dist/bin.js benchmark",
+    "eval": "node ./packages/cli/dist/bin.js experiment",
+    "profile": "node ./packages/cli/dist/bin.js profile",
+    "topk": "node ./packages/cli/dist/bin.js topk",
     "start": "npm run start:api",
     "start:api": "npm --workspace=@opensearch/api run start",
     "start:web": "npm --workspace=@opensearch/web run start",

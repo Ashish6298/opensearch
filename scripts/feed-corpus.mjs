@@ -47,8 +47,8 @@ async function indexAll() {
 
   const summary = await indexBuilder.build({ mode: 'full' });
   console.log('Index successfully built and updated!');
-  console.log(`Total Docs Indexed: ${summary.documentCount}`);
-  console.log(`Total Terms Indexed: ${summary.termCount}`);
+  console.log(`Total Docs Indexed: ${summary.stats?.documentsIndexed ?? summary.documentCount}`);
+  console.log(`Total Terms Indexed: ${summary.stats?.termsIndexed ?? summary.termCount}`);
   await storage.close();
 }
 
