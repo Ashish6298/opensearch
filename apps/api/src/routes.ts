@@ -13,6 +13,10 @@ import {
   HTTP_STATUS,
   PROJECT_NAME,
   PROJECT_VERSION,
+  PRODUCT_NAME,
+  PRODUCT_FULL_NAME,
+  PRODUCT_DISCLAIMER,
+  TRADEMARK_NOTICE,
   ValidationError,
   createPrivacyReceipt,
   ContactedProviderRecord,
@@ -22,6 +26,9 @@ import {
   DEFAULT_LATENCY_BUCKETS,
   DEFAULT_COUNT_BUCKETS,
   getDefaultRegistry,
+  searchDemoCorpus,
+  REPRESENTATIVE_DEMO_QUERIES,
+  DEMO_CORPUS_DOCUMENTS,
 } from '@opensearch/shared';
 import {
   HealthCheckResponse,
@@ -254,8 +261,10 @@ export const handleReadinessCheck: RouteHandler = (_req, res, context) => {
 export const handleApiRoot: RouteHandler = (_req, res, context) => {
   res.status(200).json({
     name: PROJECT_NAME,
+    product: PRODUCT_NAME,
+    fullName: PRODUCT_FULL_NAME,
     version: PROJECT_VERSION,
-    description: 'OpenSearch Public HTTP Search API',
+    description: 'OpenSearch Web Public HTTP Search API',
     documentation: '/docs',
     openapi: '/api/v1/openapi.json',
     endpoints: {
@@ -272,6 +281,11 @@ export const handleApiRoot: RouteHandler = (_req, res, context) => {
       opensearch: '/opensearch.xml',
       openapi: '/api/v1/openapi.json',
       docs: '/docs',
+    },
+    legal: {
+      disclaimer: PRODUCT_DISCLAIMER,
+      trademarkNotice: TRADEMARK_NOTICE,
+      notAffiliatedWith: 'Amazon Web Services or Amazon OpenSearch Project',
     },
     timestamp: new Date().toISOString(),
     environment: context.config.env,
@@ -373,8 +387,9 @@ export const handleSystemStatus: RouteHandler = (_req, res, context) => {
 
   res.status(status === 'error' ? 503 : 200).json({
     name: PROJECT_NAME,
+    product: PRODUCT_NAME,
     version: PROJECT_VERSION,
-    phase: 'Milestone 38 — Security & Operational Resilience (Phase 112: Health, Status & Graceful Shutdown)',
+    phase: 'Milestone 39 — Documentation, Repository Hygiene & Demo (Phase 114: Product Identity)',
     status,
     timestamp: new Date().toISOString(),
     uptimeSeconds,
@@ -402,6 +417,10 @@ export const handleSystemStatus: RouteHandler = (_req, res, context) => {
       zeroTracking: true,
       zeroCookies: true,
       noQueryStorage: true,
+    },
+    legal: {
+      disclaimer: PRODUCT_DISCLAIMER,
+      trademarkNotice: TRADEMARK_NOTICE,
     },
   });
 };
@@ -565,6 +584,12 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
 
   const rawMode = ((req.query['mode'] as string) || ((req.body as Record<string, unknown>)?.['mode'] as string) || '').toLowerCase().trim();
   const isLocalOnly = req.query['localOnly'] === 'true' || rawMode === 'local' || rawMode === 'local-only';
+  const isDemo =
+    req.query['demo'] === 'true' ||
+    req.query['demo_mode'] === 'true' ||
+    rawMode === 'demo' ||
+    req.headers['x-demo-mode'] === 'true' ||
+    Boolean(context.isDemoMode);
 
   // 2. Validate input constraints
   if (page < 1) {
@@ -713,7 +738,7 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
   // Query live web search when local indexed results are insufficient (unless in local-only mode)
   // In Local-Only mode: query planner strictly suppresses external search providers
   const providerRegistry = context.services.providerRegistry ?? context.providerRegistry;
-  const canFetchExternal = !isLocalOnly && (process.env.NODE_ENV !== 'test' || Boolean(providerRegistry));
+  const canFetchExternal = !isLocalOnly && !isDemo && (process.env.NODE_ENV !== 'test' || Boolean(providerRegistry));
 
   // Phase 84 — Privacy Receipt Telemetry Collection:
   const contactedProviders: ContactedProviderRecord[] = [];
@@ -724,7 +749,17 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
 
   const activeRegistry = providerRegistry ?? getSharedProviderRegistry();
 
-  if (isLocalOnly) {
+  if (isDemo) {
+    if (activeRegistry) {
+      for (const p of activeRegistry.getAllProviders()) {
+        skippedProviders.push({
+          providerId: p.metadata.id,
+          reason: 'demo-mode',
+          details: 'External search provider suppressed because Demo mode is active.',
+        });
+      }
+    }
+  } else if (isLocalOnly) {
     if (activeRegistry) {
       for (const p of activeRegistry.getAllProviders()) {
         skippedProviders.push({
@@ -835,6 +870,34 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
   }
 
   // Apply consistent local Safe Search filtering to both local index and provider results
+  // Phase 116: Offline Curated Demo Corpus Fallback
+  if (isDemo && finalResults.length === 0) {
+    const demoMatches = searchDemoCorpus(rawQuery, { limit: pageSize, category: requestedCategory });
+    finalResults = demoMatches.documents.map((doc, idx) => ({
+      documentId: doc.id,
+      score: 1.0 - idx * 0.05,
+      rank: idx + 1,
+      title: doc.title,
+      highlightedTitle: doc.title,
+      url: doc.url,
+      displayUrl: doc.displayUrl,
+      domain: doc.domain,
+      snippet: doc.snippet,
+      highlightedSnippet: doc.snippet,
+      language: 'en',
+      indexedAt: doc.publishedAt,
+      source: 'demo',
+      isDemo: true as const,
+      contentType: doc.contentType,
+      publishedAt: doc.publishedAt,
+      attribution: 'Curated OpenSearch Demo Corpus',
+    }));
+    totalHits = finalResults.length;
+  } else if (isDemo && finalResults.length > 0) {
+    finalResults.forEach(item => {
+      item.isDemo = true;
+    });
+  }
   const safeFilterResult = filterSafeSearchResults(finalResults, safeSearchLevel);
   finalResults = safeFilterResult.filtered;
   totalHits = Math.max(0, totalHits - safeFilterResult.excludedCount);
@@ -845,7 +908,7 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
   const instantAnswer = instantAnswerEngine
     ? await instantAnswerEngine.evaluateAsync(rawQuery, {
         isLocalOnly,
-        privacyMode: isLocalOnly ? 'local-only' : 'standard',
+        privacyMode: isLocalOnly || isDemo ? 'local-only' : 'standard',
         timeoutMs: 2000,
       })
     : null;
@@ -889,7 +952,7 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
   const firstIp = rawIpString.split(',')[0]?.trim() || '127.0.0.1';
 
   const privacyReceipt = createPrivacyReceipt({
-    mode: isLocalOnly ? 'local-only' : 'standard',
+    mode: isDemo ? 'demo' : (isLocalOnly ? 'local-only' : 'standard'),
     clientIp: firstIp,
     category: requestedCategory,
     contactedProviders,
@@ -940,6 +1003,10 @@ export const handleSearch: RouteHandler = async (req, res, context) => {
         ? false
         : true,
       localOnly: isLocalOnly,
+      demoMode: isDemo,
+      demoNotice: isDemo
+        ? 'OpenSearch Web Demo Mode: Results served from offline curated demo corpus without external network calls.'
+        : undefined,
       privacyReceipt,
       limitedResultsNotice: isLocalOnly && finalResults.length < pageSize
         ? finalResults.length === 0
@@ -1055,12 +1122,18 @@ export const handleSearchStream: RouteHandler = async (req, res, context) => {
 
   const rawMode = ((req.query['mode'] as string) || '').toLowerCase().trim();
   const isLocalOnly = req.query['localOnly'] === 'true' || rawMode === 'local' || rawMode === 'local-only';
+  const isDemo =
+    req.query['demo'] === 'true' ||
+    req.query['demo_mode'] === 'true' ||
+    rawMode === 'demo' ||
+    req.headers['x-demo-mode'] === 'true' ||
+    Boolean(context.isDemoMode);
 
   // 1. Instant Answer evaluation & streaming (first event)
   if (instantAnswerEngine) {
     const instantAnswer = await instantAnswerEngine.evaluateAsync(rawQuery, {
       isLocalOnly,
-      privacyMode: isLocalOnly ? 'local-only' : 'standard',
+      privacyMode: isLocalOnly || isDemo ? 'local-only' : 'standard',
       timeoutMs: 2000,
     });
     if (instantAnswer) {
@@ -1485,5 +1558,30 @@ export const handleRankingSafetyCheck: RouteHandler = (req, res) => {
 };
 
 export { handleMcpPost, handleMcpSse } from './mcp/index.js';
+
+/**
+ * GET /api/v1/demo
+ * Returns representative demo queries and offline demo dataset metadata (Phase 116).
+ */
+export const handleDemoInfo: RouteHandler = (_req, res) => {
+  res.status(HTTP_STATUS.OK).json({
+    status: 'ready',
+    demoMode: true,
+    paidServicesRequired: false,
+    externalCallsEnabled: false,
+    representativeQueries: REPRESENTATIVE_DEMO_QUERIES,
+    corpusSummary: {
+      totalDocuments: DEMO_CORPUS_DOCUMENTS.length,
+      categories: ['everyday', 'developer'],
+      description: 'Zero-credential, self-contained offline demo dataset with truthful labeling.',
+    },
+    privacy: {
+      outboundRequests: 0,
+      tracking: 'disabled',
+      guarantee: 'Demo mode never silently invokes third-party providers or transmits query text.',
+    },
+    timestamp: new Date().toISOString(),
+  });
+};
 
 

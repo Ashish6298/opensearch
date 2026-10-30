@@ -5,6 +5,40 @@
 export const PROJECT_NAME = 'OpenSearch';
 export const PROJECT_VERSION = '1.4.0';
 
+/**
+ * Product Identity & Disambiguation (Phase 114)
+ *
+ * To avoid confusion with Amazon OpenSearch (the AWS Elasticsearch fork)
+ * and generic OpenSearch 1.1 browser autodiscovery standards:
+ * - Public-facing UI, documentation, and browser descriptors use "OpenSearch Web".
+ * - Internal code, test fixtures, and npm scopes (@opensearch/*) retain "OpenSearch"
+ *   for backward compatibility and workspace cohesion.
+ * - Legal Trademark Notice: No claim of legal trademark clearance or ownership is made.
+ *   This project is independent and not affiliated with Amazon Web Services (AWS)
+ *   or the Amazon OpenSearch project.
+ */
+export const PRODUCT_IDENTITY = {
+  canonicalName: 'OpenSearch',
+  distinctName: 'OpenSearch Web',
+  shortName: 'OpenSearch Web',
+  fullName: 'OpenSearch Web — Sovereign Privacy-Preserving Search Engine',
+  tagline: 'Independent, privacy-first web search engine with zero tracking and zero telemetry.',
+  version: PROJECT_VERSION,
+  packageScope: '@opensearch',
+  repositoryName: 'opensearch',
+  legalDisclaimer:
+    'OpenSearch Web is an independent software project. It is not affiliated with, funded by, or endorsed by Amazon Web Services, Inc. (AWS) or the Amazon OpenSearch project.',
+  trademarkNotice:
+    'No claim of legal trademark clearance, ownership, or registration is asserted or implied. All trademarks, service marks, and company names belong to their respective owners.',
+  protocolCompatibility:
+    'Compatible with the OpenSearch 1.1 Draft 6 browser search description standard (A9).',
+} as const;
+
+export const PRODUCT_NAME = PRODUCT_IDENTITY.distinctName;
+export const PRODUCT_FULL_NAME = PRODUCT_IDENTITY.fullName;
+export const PRODUCT_DISCLAIMER = PRODUCT_IDENTITY.legalDisclaimer;
+export const TRADEMARK_NOTICE = PRODUCT_IDENTITY.trademarkNotice;
+
 export const ENVIRONMENTS = {
   DEVELOPMENT: 'development',
   PRODUCTION: 'production',

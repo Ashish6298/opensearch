@@ -113,6 +113,8 @@ export interface SearchResultItem {
   trackerIndicator?: TrackerIndicator;
   /** Focus Lens applied and score explanation (Phase 101) */
   lensExplain?: LensScoreExplanation;
+  /** Whether item is a curated demo result (Phase 116) */
+  isDemo?: boolean;
 }
 
 export interface SearchResultSet {

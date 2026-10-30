@@ -6,7 +6,7 @@
  * and error models.
  */
 
-import { PROJECT_NAME, PROJECT_VERSION } from '@opensearch/shared';
+import { PROJECT_NAME, PROJECT_VERSION, PRODUCT_NAME } from '@opensearch/shared';
 
 export interface OpenApiSpecOptions {
   baseUrl?: string;
@@ -19,16 +19,16 @@ export function generateOpenApiSpec(options: OpenApiSpecOptions = {}): Record<st
   return {
     openapi: '3.1.0',
     info: {
-      title: `${PROJECT_NAME} REST API`,
+      title: `${PRODUCT_NAME} REST API`,
       version: PROJECT_VERSION,
       description:
-        'Privacy-first, self-hostable search engine REST API. Provides BM25 lexical search, instant answers, developer bangs, typo corrections, prefix autocomplete, and cluster health monitoring with zero tracking and zero telemetry.',
+        'Privacy-first, self-hostable search engine REST API. OpenSearch Web provides BM25 lexical search, instant answers, developer bangs, typo corrections, prefix autocomplete, and cluster health monitoring with zero tracking and zero telemetry. Note: OpenSearch Web is an independent project and is not affiliated with, sponsored by, or endorsed by Amazon Web Services, Inc. or the Amazon OpenSearch Project.',
       license: {
         name: 'MIT',
         url: 'https://github.com/Ashish6298/opensearch/blob/main/LICENSE.md',
       },
       contact: {
-        name: 'OpenSearch Maintainers',
+        name: 'OpenSearch Web Maintainers',
         url: 'https://github.com/Ashish6298/opensearch',
       },
     },

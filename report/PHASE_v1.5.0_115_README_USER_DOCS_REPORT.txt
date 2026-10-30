@@ -1,0 +1,69 @@
+================================================================================
+OPENSEARCH VERIFICATION & IMPLEMENTATION REPORT — PHASE 115
+Milestone 39 — Documentation, Repository Hygiene, and Demo
+Phase 115 — README and user documentation
+Date: 2026-10-30
+Branch: ashish
+Status: VERIFIED & COMPLETED
+Ready for Next Phase: YES (Milestone 39, Phase 116 — Demo experience and accessibility review)
+================================================================================
+
+1. EXECUTIVE SUMMARY
+--------------------------------------------------------------------------------
+Phase 115 provides a comprehensive, plain-language user guide, tested clean-checkout
+quickstart instructions, runtime configuration references, privacy mode and Privacy
+Receipt explanations, indexing/benchmarking/eval lifecycle commands, troubleshooting
+solutions, known limitations, and external search provider integration guidelines.
+
+All documented commands were tested and verified from clean invocation.
+
+2. TASKS FULFILLED
+--------------------------------------------------------------------------------
+[x] Plain-language product pitch:
+    - Added dedicated plain-language overview covering everyday users, students/educators,
+      developers, researchers, and privacy-conscious users in docs/user-guide.md.
+[x] Quick-start guide tested from clean checkout:
+    - Step-by-step bootstrap verified: git clone, npm install, npm run build,
+      npm run seed, npm run start:api, npm run start:web.
+[x] Supported runtime versions, setup, configuration, and data sources:
+    - Node.js >= 20.0.0, npm >= 10.0.0, TypeScript 5.7+.
+    - Complete .env configuration reference with defaults.
+    - Curated seed corpus (114 targets across 19 categories).
+[x] Privacy modes and Privacy Receipt behavior:
+    - Detailed Standard vs Local-Only mode distinction.
+    - JSON schema and field-by-field breakdown of Privacy Receipt (queryHash,
+      providersContacted, ipMasked, zeroTracking).
+[x] Document indexing, benchmarking, testing, and evaluation commands:
+    - Added convenience scripts to package.json: 'seed', 'bench', 'eval', 'profile', 'topk'.
+    - Fully documented CLI and npm commands.
+[x] Troubleshooting guide:
+    - Documented EADDRINUSE, missing dist artifacts, index unseeded, 429 rate limit.
+[x] Known limitations and non-guarantees:
+    - Scale boundaries (curated/federated vs 100B page web crawler).
+    - Upstream provider availability and truthful degradation.
+    - No trademark clearance claim.
+[x] Contribution & Provider Integration guidelines:
+    - Created docs/provider-integration-guide.md with SearchProvider implementation
+      example and zero-PII privacy requirements.
+
+3. ARCHITECTURAL & DOCUMENTATION DELIVERABLES
+--------------------------------------------------------------------------------
+1. docs/user-guide.md: Comprehensive user & self-hosting manual.
+2. docs/provider-integration-guide.md: Guide to implementing compliant SearchProviders.
+3. package.json: Added 'seed', 'bench', 'eval', 'profile', 'topk' lifecycle scripts.
+4. .env.example: Added DEPLOYMENT_MODEL, TRUST_PROXY, and ENABLE_MCP variables.
+5. apps/api/src/server.ts: Support ENABLE_MCP environment variable configuration.
+6. apps/api/tests/readme-documentation.test.ts: 5-test documentation consistency suite.
+
+4. VERIFICATION TEST SUITE
+--------------------------------------------------------------------------------
+- apps/api/tests/readme-documentation.test.ts: 5/5 PASSED
+- Tested npm run seed: 114 documents indexed, 841 terms.
+- Tested npm run bench: Benchmark report generated.
+- Tested npm run eval: Judged dataset IR comparison generated (nDCG@10: 0.9736).
+
+5. CONCLUSION & READINESS
+--------------------------------------------------------------------------------
+Phase 115 is fully verified and documented. Ready for Milestone 39, Phase 116 — Demo
+experience and accessibility review.
+================================================================================

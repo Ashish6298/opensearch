@@ -65,6 +65,7 @@ import {
   handleApproveEvaluationCase,
   handleRankingSafetyCheck,
   handleOpenSearchDescriptor,
+  handleDemoInfo,
   handleMcpPost,
   handleMcpSse,
 } from './routes.js';
@@ -154,7 +155,9 @@ export class ApiServer {
     this.customIndexProvided = Boolean(options.services || options.index);
 
     // Initialize Model Context Protocol (MCP) server (Phase 109)
-    this.enableMcp = options.enableMcp ?? true;
+    const envMcp = process.env.ENABLE_MCP?.trim().toLowerCase();
+    this.enableMcp =
+      options.enableMcp ?? (envMcp !== undefined ? envMcp === 'true' || envMcp === '1' : true);
     this.mcpServer = new OpenSearchMcpServer({
       services: this.services,
       config: this.config,
@@ -395,6 +398,7 @@ export class ApiServer {
     this.router.get('/opensearch.xml', handleOpenSearchDescriptor);
     this.router.get('/opensearchdescription.xml', handleOpenSearchDescriptor);
     this.router.get('/metrics', handleMetrics);
+    this.router.get('/api/v1/demo', handleDemoInfo);
     this.router.post('/api/v1/mcp', handleMcpPost);
     this.router.get('/api/v1/mcp/sse', handleMcpSse);
     this.router.get('/api/v1/openapi.json', handleOpenApiSpec);

@@ -64,7 +64,7 @@ export class WebServer {
    */
   renderIndexHtml(): string {
     return generateHtmlShell({
-      title: 'OpenSearch — Privacy-First Web Search',
+      title: 'OpenSearch Web — Privacy-First Web Search',
       apiUrl: this.apiUrl,
       cssContent: this.cssCache,
       jsContent: this.jsCache,
