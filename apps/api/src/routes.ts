@@ -13,6 +13,10 @@ import {
   HTTP_STATUS,
   PROJECT_NAME,
   PROJECT_VERSION,
+  PRODUCT_NAME,
+  PRODUCT_FULL_NAME,
+  PRODUCT_DISCLAIMER,
+  TRADEMARK_NOTICE,
   ValidationError,
   createPrivacyReceipt,
   ContactedProviderRecord,
@@ -254,8 +258,10 @@ export const handleReadinessCheck: RouteHandler = (_req, res, context) => {
 export const handleApiRoot: RouteHandler = (_req, res, context) => {
   res.status(200).json({
     name: PROJECT_NAME,
+    product: PRODUCT_NAME,
+    fullName: PRODUCT_FULL_NAME,
     version: PROJECT_VERSION,
-    description: 'OpenSearch Public HTTP Search API',
+    description: 'OpenSearch Web Public HTTP Search API',
     documentation: '/docs',
     openapi: '/api/v1/openapi.json',
     endpoints: {
@@ -272,6 +278,11 @@ export const handleApiRoot: RouteHandler = (_req, res, context) => {
       opensearch: '/opensearch.xml',
       openapi: '/api/v1/openapi.json',
       docs: '/docs',
+    },
+    legal: {
+      disclaimer: PRODUCT_DISCLAIMER,
+      trademarkNotice: TRADEMARK_NOTICE,
+      notAffiliatedWith: 'Amazon Web Services or Amazon OpenSearch Project',
     },
     timestamp: new Date().toISOString(),
     environment: context.config.env,
@@ -373,8 +384,9 @@ export const handleSystemStatus: RouteHandler = (_req, res, context) => {
 
   res.status(status === 'error' ? 503 : 200).json({
     name: PROJECT_NAME,
+    product: PRODUCT_NAME,
     version: PROJECT_VERSION,
-    phase: 'Milestone 38 — Security & Operational Resilience (Phase 112: Health, Status & Graceful Shutdown)',
+    phase: 'Milestone 39 — Documentation, Repository Hygiene & Demo (Phase 114: Product Identity)',
     status,
     timestamp: new Date().toISOString(),
     uptimeSeconds,
@@ -402,6 +414,10 @@ export const handleSystemStatus: RouteHandler = (_req, res, context) => {
       zeroTracking: true,
       zeroCookies: true,
       noQueryStorage: true,
+    },
+    legal: {
+      disclaimer: PRODUCT_DISCLAIMER,
+      trademarkNotice: TRADEMARK_NOTICE,
     },
   });
 };

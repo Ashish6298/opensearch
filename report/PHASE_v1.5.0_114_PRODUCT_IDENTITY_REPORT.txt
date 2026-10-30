@@ -1,0 +1,121 @@
+================================================================================
+OPENSEARCH VERIFICATION & IMPLEMENTATION REPORT — PHASE 114
+Milestone 39 — Documentation, Repository Hygiene, and Demo
+Phase 114 — Product Identity and Trademark Disambiguation
+Date: 2026-10-30
+Branch: ashish
+Status: VERIFIED & COMPLETED
+Ready for Next Phase: YES (Milestone 39, Phase 115 — README and user documentation)
+================================================================================
+
+1. EXECUTIVE SUMMARY
+--------------------------------------------------------------------------------
+Phase 114 establishes the official public product identity for the engine as
+"OpenSearch Web" to prevent consumer and enterprise confusion with the Amazon
+OpenSearch Project (AWS / Linux Foundation Elasticsearch fork) and clarifies its
+relationship with the OpenSearch 1.1 browser autodiscovery specification.
+
+All legal disclaimers explicitly declare non-affiliation with Amazon Web
+Services, Inc. and state that no legal trademark clearance or ownership is
+claimed. Internal package names (@opensearch/*) and canonical engine constants
+(PROJECT_NAME = 'OpenSearch') are intentionally preserved for backward
+compatibility and monorepo cohesion.
+
+2. TASKS FULFILLED
+--------------------------------------------------------------------------------
+[x] Assess whether the current name could be confused with Amazon OpenSearch:
+    - Assessed naming collision risk with Amazon OpenSearch Service.
+    - Defined distinct public product identity: "OpenSearch Web".
+[x] Choose a distinct name if appropriate before public launch:
+    - Adopted "OpenSearch Web — Sovereign Privacy-Preserving Search Engine".
+    - ShortName: "OpenSearch Web" across autodiscovery and API endpoints.
+[x] Check repository/package naming and obvious conflicts:
+    - Retained '@opensearch/*' package scope and 'opensearch' repo name as
+      documented internal engine invariants.
+[x] Do not claim legal trademark clearance:
+    - Embedded clear, prominent disclaimer across shared substrate, API root (/),
+      status endpoint (/api/v1/status), OpenAPI spec, documentation (/docs),
+      and web client footer.
+[x] Update product naming consistently across UI, metadata, API docs, and browser:
+    - apps/web: HTML head title, autodiscovery descriptor link, footer identity notice.
+    - apps/api: Root (GET /), System Status (GET /api/v1/status), OpenAPI spec,
+      interactive Swagger-like docs (GET /docs), and OpenSearch XML descriptor (GET /opensearch.xml).
+[x] Document intentional legacy references:
+    - Documented in docs/product-identity-and-naming.md.
+
+3. ARCHITECTURAL & CODE IMPLEMENTATION
+--------------------------------------------------------------------------------
+1. packages/shared/src/constants.ts:
+   - Added PRODUCT_IDENTITY object containing:
+     * canonicalName: 'OpenSearch'
+     * distinctName: 'OpenSearch Web'
+     * shortName: 'OpenSearch Web'
+     * fullName: 'OpenSearch Web — Sovereign Privacy-Preserving Search Engine'
+     * packageScope: '@opensearch'
+     * repositoryName: 'opensearch'
+     * legalDisclaimer: Explicit non-affiliation with Amazon Web Services, Inc.
+     * trademarkNotice: Explicit statement that no trademark clearance is claimed
+     * protocolCompatibility: Statement of compliance with OpenSearch 1.1 format
+   - Exported PRODUCT_NAME, PRODUCT_FULL_NAME, PRODUCT_DISCLAIMER, TRADEMARK_NOTICE.
+   - Retained PROJECT_NAME = 'OpenSearch' for backward compatibility.
+
+2. packages/shared/src/index.ts:
+   - Updated getProjectIdentity() to return both legacy canonical name and public
+     product identity metadata, disclaimer, and trademark notices.
+
+3. apps/api/src/routes.ts:
+   - handleApiRoot (GET /): Returns product: 'OpenSearch Web', description, and
+     structured legal metadata.
+   - handleSystemStatus (GET /api/v1/status): Returns product: 'OpenSearch Web',
+     phase metadata, and structured legal disclaimer.
+
+4. apps/api/src/openapi-spec.ts:
+   - Updated OpenAPI 3.1 title to 'OpenSearch Web REST API', added maintainer
+     contact and non-affiliation disclaimer.
+
+5. apps/api/src/docs-html.ts:
+   - Updated API docs title and header branding to 'OpenSearch Web' with disclaimer.
+
+6. apps/web/src/html-template.ts & server.ts:
+   - Updated document title to 'OpenSearch Web — Privacy-First Web Search'.
+   - Added terminal footer identity notice with clear disclaimer.
+
+7. apps/web/src/manifest.json:
+   - Updated web app manifest name to 'OpenSearch Web'.
+
+4. VERIFICATION TEST SUITE
+--------------------------------------------------------------------------------
+A dedicated test suite was implemented in apps/api/tests/product-identity.test.ts:
+- 12 comprehensive unit and integration tests covering:
+  1. Shared Substrate Product Identity Models:
+     - Distinct name ('OpenSearch Web') vs internal canonical name ('OpenSearch').
+     - Inclusion of AWS non-affiliation disclaimer.
+     - Inclusion of no-trademark-clearance assertion.
+     - getProjectIdentity() contract validity.
+  2. API Server Product Identity & Metadata:
+     - GET / exposes product identity, version, endpoints, and legal metadata.
+     - GET /api/v1/status exposes product identity and legal metadata.
+     - GET /opensearch.xml serves OpenSearch Web descriptor with non-affiliation disclaimer.
+     - GET /docs renders distinct OpenSearch Web branding and legal notice.
+  3. Web Application Identity & Disambiguation:
+     - HTML shell head declares distinct title and autodiscovery link.
+     - Terminal footer presents distinct product identity notice.
+     - /browser-search guide presents distinct product identity section.
+
+Test Results:
+- apps/api/tests/product-identity.test.ts: 12/12 PASSED (84ms)
+- Full Monorepo Test Run:
+  Test Files: 109 passed (109)
+  Tests: 1,245 passed (1,245)
+  Duration: 15.44s
+  Regressions: 0
+
+5. CONCLUSION & READINESS
+--------------------------------------------------------------------------------
+Phase 114 acceptance criteria are fully met. Product identity is consistent and
+unambiguous across all layers without altering core runtime mechanics or UI layout.
+Remaining references to 'OpenSearch' are strictly internal and thoroughly documented.
+
+Ready for Next Phase: YES
+Proceed to Milestone 39, Phase 115 — README and user documentation.
+================================================================================

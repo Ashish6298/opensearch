@@ -40,6 +40,10 @@ Unlike every major search engine in existence, OpenSearch:
 
 This is not a proxy. This is not a meta-search engine wrapper. This is a **fully functional search engine**, built ground-up in TypeScript with a polite crawler, custom indexer, ranking engine, REST API, and a terminal-aesthetic web frontend.
 
+> [!NOTE]
+> **Product Identity & Non-Affiliation Notice:**  
+> **OpenSearch Web** is an independent, sovereign open-source search engine project. It is **not affiliated with, funded by, or endorsed by Amazon Web Services, Inc. (AWS) or the Amazon OpenSearch project**. All trademarks belong to their respective owners, and no claim of legal trademark clearance is made. It is compatible with the OpenSearch 1.1 browser description standard. See [docs/product-identity-and-naming.md](docs/product-identity-and-naming.md) for full architectural naming details.
+
 ---
 
 ## 🧭 Navigation Matrix
@@ -941,6 +945,7 @@ $ audit --privacy-boundaries
 | **Milestone 36** | **Optional Search Quality Feedback**    | Phases 105 – 106| Restrained feedback rating, explicit user consent, strict prohibition of queries/IPs, 30-day retention, local review queue, held-out evaluation isolation, ranking safety guard | `[MILESTONE 36 PASSED]` |
 | **Milestone 37** | **API, Browser Search & MCP Integration**| Phases 107 – 109| OpenAPI 3.1.0 contract fidelity, schema consistency, SSE streaming audit, OpenSearch browser descriptor, MCP server | `[MILESTONE 37 PASSED]` |
 | **Milestone 38** | **Security and Operational Resilience** | Phases 110 – 113| SSRF defense audit, scheme allowlist, robots/limits validation, zero script execution, storage persistence audit, multi-tier rate limiting, proxy trust, health & readiness probes, graceful shutdown draining, privacy-safe Prometheus metrics without query surveillance | `[MILESTONE 38 PASSED]` |
+| **Milestone 39** | **Documentation, Repository Hygiene & Demo** | Phases 114 – 118| Distinct product identity (OpenSearch Web), trademark disambiguation & non-affiliation notices, README and user docs, reproducible demo setup, contributor guidelines, release packaging | `[PHASE 114 PASSED]` |
 
 <br/>
 
@@ -948,6 +953,7 @@ $ audit --privacy-boundaries
 
 ```console
 $ npm test
+✓ apps/api/tests/product-identity.test.ts (12 tests)
 ✓ apps/api/tests/observability-metrics.test.ts (14 tests)
 ✓ apps/api/tests/health-status-graceful-shutdown.test.ts (10 tests)
 ✓ apps/api/tests/rate-limiting-and-hosting.test.ts (22 tests)
@@ -965,11 +971,11 @@ $ npm test
 ✓ apps/api/tests/feedback-review-api.test.ts (8 tests)
 ✓ apps/api/tests/lens-api.test.ts (7 tests)
 ...
-Test Files  108 passed (108)
-     Tests  1233 passed (1233)
+Test Files  109 passed (109)
+     Tests  1245 passed (1245)
   Duration  16.16s -- 100% Passing Pass Rate
 ────────────────────────────────────────────────────────────
-TOTAL RESULT: 1233 / 1233 TESTS PASSED (100.0%) -- V1.5.0 PHASE 113 VERIFIED (MILESTONE 38 PASSED: OBSERVABILITY WITHOUT QUERY SURVEILLANCE)
+TOTAL RESULT: 1245 / 1245 TESTS PASSED (100.0%) -- V1.5.0 PHASE 114 VERIFIED (PRODUCT IDENTITY & TRADEMARK DISAMBIGUATION)
 ```
 
 ---

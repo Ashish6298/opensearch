@@ -2187,3 +2187,11 @@ html[data-theme='light'] .run-btn:hover {
   border-left: 2px solid var(--accent-blue, #0a84ff);
   padding-left: 8px;
 }
+
+/* Phase 114: Product Identity Footer Notice */
+.footer-identity-notice {
+  font-size: 11px;
+  color: var(--text-muted-50, #888);
+  margin-top: 6px;
+  letter-spacing: 0.2px;
+}

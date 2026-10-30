@@ -17,7 +17,7 @@ const ASCII_LOGO = `  ___                    ____                      _
       |_|                                                `;
 
 export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
-  const title = options.title || 'OpenSearch — Privacy-First Web Search';
+  const title = options.title || 'OpenSearch Web — Privacy-First Web Search';
   const apiUrl = options.apiUrl || 'http://localhost:3000/api/v1/search';
 
   return `<!DOCTYPE html>
@@ -25,7 +25,7 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="OpenSearch is a public, privacy-first search engine built from scratch.">
+  <meta name="description" content="OpenSearch Web is an independent, privacy-first search engine built from scratch. Not affiliated with Amazon Web Services or Amazon OpenSearch Service.">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="theme-color" content="#0d0d0d">
   <link rel="manifest" href="/manifest.json">
@@ -301,7 +301,8 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
     <!-- Terminal Footer -->
     <footer class="terminal-footer">
       <div class="footer-container">
-        <span class="footer-text"><a href="/about">about</a> · <a href="/docs">docs</a> · <a href="/privacy">privacy</a> · <a href="/browser-search">browser search</a> · <a href="/health" target="_blank" rel="noopener noreferrer">status</a> · <button type="button" class="footer-settings-btn" id="footer-settings-btn" aria-label="Open search settings">settings</button> · <button type="button" class="footer-shortcuts-btn" id="shortcuts-toggle-btn" aria-label="Keyboard Shortcuts (Press ?)">shortcuts [?]</button> · <a href="https://github.com/Ashish6298/opensearch" target="_blank" rel="noopener noreferrer">source</a> — v1.2.0</span>
+        <span class="footer-text"><a href="/about">about</a> · <a href="/docs">docs</a> · <a href="/privacy">privacy</a> · <a href="/browser-search">browser search</a> · <a href="/health" target="_blank" rel="noopener noreferrer">status</a> · <button type="button" class="footer-settings-btn" id="footer-settings-btn" aria-label="Open search settings">settings</button> · <button type="button" class="footer-shortcuts-btn" id="shortcuts-toggle-btn" aria-label="Keyboard Shortcuts (Press ?)">shortcuts [?]</button> · <a href="https://github.com/Ashish6298/opensearch" target="_blank" rel="noopener noreferrer">source</a> — v1.4.0</span>
+        <div class="footer-identity-notice" style="margin-top: 6px; font-size: 11px; color: var(--text-muted-50, #888);">OpenSearch Web is an independent search engine project. Not affiliated with Amazon Web Services or the Amazon OpenSearch Project. Compatible with OpenSearch 1.1 description format.</div>
       </div>
     </footer>
 

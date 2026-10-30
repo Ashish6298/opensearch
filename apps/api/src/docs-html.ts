@@ -6,7 +6,7 @@
  * snippets (cURL, JS, Python, Go, Rust), and complete schema references.
  */
 
-import { PROJECT_NAME, PROJECT_VERSION } from '@opensearch/shared';
+import { PROJECT_VERSION, PRODUCT_NAME, PRODUCT_DISCLAIMER } from '@opensearch/shared';
 
 export interface DocsHtmlOptions {
   apiUrl?: string;
@@ -22,9 +22,9 @@ export function generateDocsHtml(options: DocsHtmlOptions = {}): string {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="OpenSearch REST API Documentation & Interactive Developer Sandbox. Zero-tracking search API reference.">
+  <meta name="description" content="OpenSearch Web REST API Documentation & Interactive Developer Sandbox. Zero-tracking search API reference.">
   <link rel="search" type="application/opensearchdescription+xml" title="OpenSearch Web" href="/opensearch.xml">
-  <title>Developer Docs & API Sandbox — OpenSearch</title>
+  <title>Developer Docs & API Sandbox — OpenSearch Web</title>
   <style>
     :root {
       --bg-primary: #050505;
@@ -351,7 +351,7 @@ export function generateDocsHtml(options: DocsHtmlOptions = {}): string {
 
   <header class="header">
     <div class="brand">
-      <a href="/" style="color: inherit;">⚡ ${PROJECT_NAME}</a>
+      <a href="/" style="color: inherit;">⚡ ${PRODUCT_NAME}</a>
       <span class="badge">v${PROJECT_VERSION}</span>
       <span class="badge" style="background: rgba(56, 189, 248, 0.15); color: var(--accent-cyan); border-color: var(--accent-cyan);">OpenAPI 3.1.0</span>
     </div>
@@ -366,7 +366,7 @@ export function generateDocsHtml(options: DocsHtmlOptions = {}): string {
     <section class="hero">
       <h1>Developer API Reference & Sandbox</h1>
       <p>
-        The OpenSearch REST API provides privacy-first, zero-telemetry lexical and hybrid search, instant answers, developer bangs, typo corrections, prefix autocomplete, and cluster health telemetry.
+        The OpenSearch Web REST API provides privacy-first, zero-telemetry lexical and hybrid search, instant answers, developer bangs, typo corrections, prefix autocomplete, and cluster health telemetry. ${PRODUCT_DISCLAIMER}
       </p>
     </section>
 
