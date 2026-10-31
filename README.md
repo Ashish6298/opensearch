@@ -683,6 +683,25 @@ OpenSearch Web enforces formal deployment tiers, persistence invariants, and zer
 - **Zero Mandatory Secrets:** Starts cleanly with empty environment variables or without a `.env` file.
 - **Runtime Introspection:** Query `GET /api/v1/deployment` or `GET /api/v1/status` for real-time capability and persistence verification.
 
+### 🐳 Docker & Docker Compose Quickstart (Phase 119)
+
+OpenSearch Web provides an unprivileged, non-root multi-stage container on `node:20-alpine` with explicit persistent volume storage and native health checks:
+
+```bash
+# Launch sovereign container via Docker Compose (Single Service, Zero Secrets)
+docker compose up -d
+
+# Verify container health
+docker compose ps
+# -> STATUS: Up (healthy)
+
+# View unified search web interface
+open http://localhost:3000
+```
+
+- **Persistent Volume:** Stored in named volume `opensearch_data` (`/app/data`). Search indexes and crawled documents survive container recreation.
+- **Operations & Backups Guide:** See [`docs/docker-and-compose.md`](docs/docker-and-compose.md) for volume snapshots, zero-downtime upgrades, and reset procedures.
+
 ---
 
 ## 💻 Running the Services
@@ -978,7 +997,7 @@ $ audit --privacy-boundaries
 | **Milestone 37** | **API, Browser Search & MCP Integration**| Phases 107 – 109| OpenAPI 3.1.0 contract fidelity, schema consistency, SSE streaming audit, OpenSearch browser descriptor, MCP server | `[MILESTONE 37 PASSED]` |
 | **Milestone 38** | **Security and Operational Resilience** | Phases 110 – 113| SSRF defense audit, scheme allowlist, robots/limits validation, zero script execution, storage persistence audit, multi-tier rate limiting, proxy trust, health & readiness probes, graceful shutdown draining, privacy-safe Prometheus metrics without query surveillance | `[MILESTONE 38 PASSED]` |
 | **Milestone 39** | **Documentation, Repository Hygiene & Demo** | Phases 114 – 116| Distinct product identity (OpenSearch Web), trademark disambiguation & non-affiliation notices, README and user docs, reproducible demo setup, contributor guidelines, accessibility audit | `[MILESTONE 39 PASSED]` |
-| **Milestone 40** | **Deployment and Container Support** | Phases 118 – 120| Deployment architecture decision (Tier 1 local-first/self-hosted vs Tier 2 serverless/cluster), storage durability invariants, multi-instance rate limits, zero-secret/zero-paid guarantees | `[PHASE 118 PASSED]` |
+| **Milestone 40** | **Deployment and Container Support** | Phases 118 – 120| Multi-stage Docker container (node:20-alpine), unprivileged non-root user (UID 1001), Docker Compose genuine services, explicit volume durability (/app/data), native health checks, zero secrets baked in, backup/upgrade/reset runbooks | `[PHASE 119 PASSED]` |
 
 <br/>
 

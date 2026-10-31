@@ -1,0 +1,52 @@
+# ==============================================================================
+# OpenSearch Web — Docker Compose Specification (Phase 119)
+#
+# Principles:
+# 1. Services genuinely required: opensearch (all-in-one sovereign engine)
+# 2. Named persistent volume: opensearch_data -> /app/data
+# 3. Non-root user execution with integrated health checks
+# 4. Zero mandatory secrets and zero paid dependencies
+# ==============================================================================
+
+services:
+  opensearch:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: opensearch-web:latest
+    container_name: opensearch-web
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=production
+      - DEPLOYMENT_MODE=self-hosted
+      - PORT=3000
+      - HOST=0.0.0.0
+      - STORAGE_DIR=/app/data/storage
+      - INDEX_DIR=/app/data/index
+      - CRAWLER_DATA_DIR=/app/data/crawler
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_FORMAT=${LOG_FORMAT:-json}
+      - TRUST_PROXY=${TRUST_PROXY:-false}
+    volumes:
+      - opensearch_data:/app/data
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    stop_signal: SIGTERM
+    stop_grace_period: 15s
+
+volumes:
+  opensearch_data:
+    driver: local
+    name: opensearch_data
