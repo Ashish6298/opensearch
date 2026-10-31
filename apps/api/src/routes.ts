@@ -29,6 +29,8 @@ import {
   searchDemoCorpus,
   REPRESENTATIVE_DEMO_QUERIES,
   DEMO_CORPUS_DOCUMENTS,
+  evaluateDeploymentArchitecture,
+  getReleaseMetadata,
 } from '@opensearch/shared';
 import {
   HealthCheckResponse,
@@ -278,6 +280,9 @@ export const handleApiRoot: RouteHandler = (_req, res, context) => {
       feedbackReview: '/api/v1/feedback/review',
       mcp: '/api/v1/mcp',
       metrics: '/metrics',
+      demo: '/api/v1/demo',
+      deployment: '/api/v1/deployment',
+      release: '/api/v1/release',
       opensearch: '/opensearch.xml',
       openapi: '/api/v1/openapi.json',
       docs: '/docs',
@@ -417,6 +422,15 @@ export const handleSystemStatus: RouteHandler = (_req, res, context) => {
       zeroTracking: true,
       zeroCookies: true,
       noQueryStorage: true,
+    },
+    deployment: {
+      mode: context.deploymentModel ?? 'local-first',
+      tier: (context.deploymentModel === 'serverless' || context.deploymentModel === 'cluster') ? 2 : 1,
+      durability: context.deploymentEvaluation?.storage.durability ?? 'durable',
+      isEphemeral: context.deploymentEvaluation?.storage.isEphemeral ?? false,
+      rateLimiterScope: context.deploymentEvaluation?.rateLimiting.scope ?? 'instance-local',
+      zeroPaidDependencies: true,
+      zeroSecretsRequired: true,
     },
     legal: {
       disclaimer: PRODUCT_DISCLAIMER,
@@ -1585,3 +1599,40 @@ export const handleDemoInfo: RouteHandler = (_req, res) => {
 };
 
 
+
+
+/**
+ * GET /api/v1/deployment
+ * Authoritative deployment architecture evaluation and platform capabilities (Phase 118).
+ */
+export const handleDeploymentInfo: RouteHandler = (_req, res, context) => {
+  const evalResult =
+    context.deploymentEvaluation ??
+    evaluateDeploymentArchitecture({
+      mode: context.deploymentModel,
+      storageDir: context.config.storage.storageDir,
+      isProduction: context.config.isProduction,
+    });
+
+  res.status(HTTP_STATUS.OK).json({
+    status: 'ok',
+    name: PROJECT_NAME,
+    product: PRODUCT_NAME,
+    version: PROJECT_VERSION,
+    timestamp: new Date().toISOString(),
+    deployment: evalResult,
+  });
+};
+
+
+/**
+ * GET /api/v1/release
+ * Traceable release metadata, versioning, and environment invariants (Phase 120).
+ */
+export const handleReleaseInfo: RouteHandler = (_req, res) => {
+  const release = getReleaseMetadata();
+  res.status(HTTP_STATUS.OK).json({
+    status: 'ok',
+    release,
+  });
+};

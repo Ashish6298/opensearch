@@ -1,6 +1,7 @@
 {
   "name": "@opensearch/cli",
   "version": "1.4.0",
+  "private": true,
   "description": "Zero-dependency command-line search tool for OpenSearch",
   "type": "module",
   "main": "./dist/index.js",

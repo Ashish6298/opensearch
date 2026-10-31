@@ -623,6 +623,57 @@ export function generateOpenApiSpec(options: OpenApiSpecOptions = {}): Record<st
           },
         },
       },
+      '/api/v1/deployment': {
+        get: {
+          tags: ['System & Health'],
+          summary: 'Deployment architecture evaluation and platform capabilities',
+          description: 'Returns authoritative deployment mode, storage durability assessment, rate limit scope, and zero-cost/zero-secret invariants.',
+          operationId: 'deploymentGet',
+          responses: {
+            '200': {
+              description: 'Deployment architecture evaluation and platform capabilities.',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      status: { type: 'string', example: 'ok' },
+                      product: { type: 'string', example: 'OpenSearch Web' },
+                      version: { type: 'string', example: PROJECT_VERSION },
+                      timestamp: { type: 'string', format: 'date-time' },
+                      deployment: { type: 'object' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      '/api/v1/release': {
+        get: {
+          tags: ['System & Health'],
+          summary: 'Release metadata and build traceability',
+          description: 'Returns traceable release version, build timestamp, runtime versions, git revision, and zero-secret guarantees.',
+          operationId: 'releaseGet',
+          responses: {
+            '200': {
+              description: 'Release metadata and build information.',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      status: { type: 'string', example: 'ok' },
+                      release: { type: 'object' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
       '/api/v1/lenses': {
         get: {
           tags: ['Focus Lenses'],

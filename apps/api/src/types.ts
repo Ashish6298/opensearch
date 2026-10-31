@@ -27,7 +27,15 @@ import {
   BangResult,
   ProviderRegistry,
 } from '@opensearch/ranking';
-import { AppConfig, Logger, SystemStatus, PrivacyReceipt, MetricsRegistry } from '@opensearch/shared';
+import {
+  AppConfig,
+  Logger,
+  SystemStatus,
+  PrivacyReceipt,
+  MetricsRegistry,
+  SupportedDeploymentMode,
+  DeploymentArchitectureEvaluation,
+} from '@opensearch/shared';
 import { MemoryRateLimiter } from './rate-limiter.js';
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'OPTIONS' | 'HEAD' | string;
@@ -111,7 +119,7 @@ export interface McpServerLike {
 }
 
 export type TrustProxyConfig = boolean | string[] | ((ip: string) => boolean);
-export type DeploymentModel = 'standalone' | 'cluster' | 'serverless';
+export type DeploymentModel = SupportedDeploymentMode | 'standalone';
 export type ServerLifecycleState = 'initializing' | 'ready' | 'shutting_down' | 'stopped';
 
 export interface ReadinessResponse {
@@ -150,6 +158,7 @@ export interface ApiAppContext {
   lifecycleState?: ServerLifecycleState;
   metrics?: MetricsRegistry;
   isDemoMode?: boolean;
+  deploymentEvaluation?: DeploymentArchitectureEvaluation;
 }
 
 export interface ComponentHealth {
@@ -249,6 +258,7 @@ export interface ApiServerOptions {
   /** Metrics registry instance (Phase 113) */
   metrics?: MetricsRegistry;
   isDemoMode?: boolean;
+  deploymentEvaluation?: DeploymentArchitectureEvaluation;
   /** Whether Prometheus metrics are enabled (default: true) */
   enableMetrics?: boolean;
 }

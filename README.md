@@ -653,6 +653,68 @@ node scripts/feed-corpus.mjs
 
 ---
 
+## 🏛️ Deployment Architecture & Hosting Compatibility (Milestone 40)
+
+OpenSearch Web enforces formal deployment tiers, persistence invariants, and zero-paid infrastructure guarantees (see [`docs/deployment-architecture.md`](docs/deployment-architecture.md)):
+
+### Supported Deployment Modes
+
+1. **`local-first` (Tier 1 — Primary & Fully Supported):**
+   - **Target:** Developer laptops, desktop workstations, single-user offline environments.
+   - **Characteristics:** Zero cloud dependencies, zero secrets required, SQLite WAL durability on local disk, 100% offline-capable with built-in demo corpus.
+   - **Execution:** `npm run dev` or `npm start`.
+
+2. **`self-hosted` (Tier 1 — Primary & Fully Supported):**
+   - **Target:** Single Linux VPS (Ubuntu/Debian), home servers (Raspberry Pi/NUC), or Docker containers.
+   - **Characteristics:** Persistent volume mounted at `/app/data`, continuous crawler execution, PageRank pipelines, in-memory or file-backed rate limiting, reverse proxy friendly (Nginx/Caddy).
+
+3. **`serverless` (Tier 2 — Restricted / Read-Only Advisory):**
+   - **Target:** AWS Lambda, Vercel Serverless, Netlify Functions.
+   - **Explicit Non-Assumptions:** Serverless filesystem writes (`/tmp`) are ephemeral and wiped between invocations; background crawlers cannot run due to invocation timeouts; process-memory rate limits are instance-local and do NOT provide global cluster guarantees. Supported **strictly as a read-only query node**.
+
+4. **`cluster` (Tier 2 — Multi-Instance Clustered):**
+   - **Target:** Multi-process Node instances behind an ingress reverse proxy or load balancer.
+   - **Requirement:** Ingress rate limiting (Nginx `limit_req_zone` or Caddy `rate_limit`) required for cluster-wide enforcement.
+
+### Zero-Cost & Zero-Secret Invariants
+
+- **Zero Paid Domains:** Operates out-of-the-box on `localhost`, `127.0.0.1`, or private network IPs.
+- **Zero Paid Services:** Requires no commercial databases, no Redis clusters, and no third-party search APIs.
+- **Zero Mandatory Secrets:** Starts cleanly with empty environment variables or without a `.env` file.
+- **Runtime Introspection:** Query `GET /api/v1/deployment` or `GET /api/v1/status` for real-time capability and persistence verification.
+
+### 🐳 Docker & Docker Compose Quickstart (Phase 119)
+
+OpenSearch Web provides an unprivileged, non-root multi-stage container on `node:20-alpine` with explicit persistent volume storage and native health checks:
+
+```bash
+# Launch sovereign container via Docker Compose (Single Service, Zero Secrets)
+docker compose up -d
+
+# Verify container health
+docker compose ps
+# -> STATUS: Up (healthy)
+
+# View unified search web interface
+open http://localhost:3000
+```
+
+- **Persistent Volume:** Stored in named volume `opensearch_data` (`/app/data`). Search indexes and crawled documents survive container recreation.
+- **Operations & Backups Guide:** See [`docs/docker-and-compose.md`](docs/docker-and-compose.md) for volume snapshots, zero-downtime upgrades, and reset procedures.
+
+### 📦 Release Packaging, Migrations & Rollback (Phase 120)
+
+OpenSearch Web release workflows prioritize determinism, zero accidental data loss, and zero unvetted package exposure:
+
+- **Traceable Release Metadata:** Inspect the active build revision, node runtime, build date, and safe configuration defaults via `GET /api/v1/release`.
+- **Pre-Migration Automated Backups:** All schema migrations execute a non-destructive pre-flight integrity check and create an atomic snapshot in `<storageDir>/backups/pre-migration-v<version>-<timestamp>`.
+- **Automatic Failure Recovery:** If a migration script or post-validation fails, the system automatically restores from the pre-migration snapshot, guaranteeing that broken upgrades never destroy existing indexes or crawl data.
+- **Safe Environment Defaults:** 100% of environment variables feature explicit zero-secret fallbacks. The system boots cleanly without any `.env` file or credentials. See [`docs/environment-variables.md`](docs/environment-variables.md).
+- **Publication Safety Guard:** All 9 packages across `packages/*`, `apps/*`, and root feature `"private": true`. `scripts/publish-guard.mjs` is bound via `prepublishOnly` to prevent accidental publication without explicit `ALLOW_PUBLISH=true`.
+- **Comprehensive Rollback Runbook:** Step-by-step procedures for local binary rollback and Docker container rollbacks are detailed in [`docs/release-and-rollback.md`](docs/release-and-rollback.md).
+
+---
+
 ## 💻 Running the Services
 
 Launch both daemon processes in separate terminal instances:
@@ -945,7 +1007,8 @@ $ audit --privacy-boundaries
 | **Milestone 36** | **Optional Search Quality Feedback**    | Phases 105 – 106| Restrained feedback rating, explicit user consent, strict prohibition of queries/IPs, 30-day retention, local review queue, held-out evaluation isolation, ranking safety guard | `[MILESTONE 36 PASSED]` |
 | **Milestone 37** | **API, Browser Search & MCP Integration**| Phases 107 – 109| OpenAPI 3.1.0 contract fidelity, schema consistency, SSE streaming audit, OpenSearch browser descriptor, MCP server | `[MILESTONE 37 PASSED]` |
 | **Milestone 38** | **Security and Operational Resilience** | Phases 110 – 113| SSRF defense audit, scheme allowlist, robots/limits validation, zero script execution, storage persistence audit, multi-tier rate limiting, proxy trust, health & readiness probes, graceful shutdown draining, privacy-safe Prometheus metrics without query surveillance | `[MILESTONE 38 PASSED]` |
-| **Milestone 39** | **Documentation, Repository Hygiene & Demo** | Phases 114 – 118| Distinct product identity (OpenSearch Web), trademark disambiguation & non-affiliation notices, README and user docs, reproducible demo setup, contributor guidelines, release packaging | `[PHASE 116 PASSED]` |
+| **Milestone 39** | **Documentation, Repository Hygiene & Demo** | Phases 114 – 116| Distinct product identity (OpenSearch Web), trademark disambiguation & non-affiliation notices, README and user docs, reproducible demo setup, contributor guidelines, accessibility audit | `[MILESTONE 39 PASSED]` |
+| **Milestone 40** | **Deployment and Container Support** | Phases 118 – 120| Multi-stage Docker container (node:20-alpine), unprivileged non-root user (UID 1001), Docker Compose genuine services, explicit volume durability (/app/data), release packaging and rollback runbooks, pre-migration automated snapshots, publish protection guard, repeatable npm ci builds | `[MILESTONE 40 PASSED]` |
 
 <br/>
 

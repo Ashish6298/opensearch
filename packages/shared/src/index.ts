@@ -22,6 +22,8 @@ export * from './config/index.js';
 export * from './privacy/index.js';
 export * from './metrics/index.js';
 export * from './demo-data.js';
+export * from './deployment/index.js';
+export * from './release/index.js';
 
 export interface ProjectIdentity {
   name: string;
