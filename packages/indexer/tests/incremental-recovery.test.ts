@@ -215,10 +215,11 @@ describe('Phase 76 — Incremental Indexing & Safe Recovery', () => {
       const activeBefore = await builder.getActiveMetadata();
       expect(activeBefore).not.toBeNull();
 
-      // Simulate a failed build by passing an invalid custom target directory that rejects writes
+      const collisionFile = path.join(tempDir, 'collision.txt');
+      fs.writeFileSync(collisionFile, 'data', 'utf8');
       const failingSummary = await builder.build({
         mode: 'full',
-        targetDir: 'Z:\\non_existent_drive_opensearch_fail\\invalid',
+        targetDir: path.join(collisionFile, 'invalid_sub'),
       });
 
       expect(failingSummary.status).toBe('failed');

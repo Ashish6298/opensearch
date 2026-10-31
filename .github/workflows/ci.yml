@@ -65,6 +65,9 @@ jobs:
       - name: Install dependencies (frozen lockfile)
         run: npm ci
 
+      - name: Build packages and assets
+        run: npm run build
+
       - name: Run unit and integration tests
         run: npm test
 
@@ -85,8 +88,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build packages and assets
+        run: npm run build
+
       - name: Run security regression audits
-        run: npx vitest run apps/api/tests/security-audit.test.ts apps/api/tests/security-regression-audit.test.ts
+        run: npx vitest run apps/api/tests/security-audit.test.ts packages/crawler/tests/security-regression-audit.test.ts
 
       - name: Run network data flow & local-only audits
         run: npx vitest run packages/shared/tests/network-data-flow-audit.test.ts apps/api/tests/local-only-mode.test.ts packages/shared/tests/privacy-receipt.test.ts

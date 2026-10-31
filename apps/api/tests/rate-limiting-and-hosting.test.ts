@@ -132,7 +132,9 @@ describe('Phase 111 — Rate Limiting and Hosting Compatibility Suite', () => {
 
       // Update in storeB and verify storeA reloads on modification
       storeB.set('worker-client', { tokens: 6, windowStartMs: now }, 60_000);
-      // Touch mtime slightly to trigger reload in storeA
+      // Touch mtime slightly to trigger reload in storeA across all filesystem resolutions
+      const nextTime = new Date(Date.now() + 50);
+      fs.utimesSync(filePath, nextTime, nextTime);
       const reloaded = storeA.get('worker-client');
       expect(reloaded?.tokens).toBe(6);
     });

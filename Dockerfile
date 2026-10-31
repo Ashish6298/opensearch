@@ -20,8 +20,6 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Install build prerequisites for native bindings (if required by SQLite/build tools)
-RUN apk add --no-cache python3 make g++
-
 # Copy package manifests for deterministic dependency caching
 COPY package.json package-lock.json ./
 COPY apps/api/package.json ./apps/api/
@@ -37,7 +35,7 @@ COPY packages/storage/package.json ./packages/storage/
 RUN npm ci
 
 # Copy root configurations and source packages
-COPY tsconfig.json ./
+COPY tsconfig.json tsconfig.base.json ./
 COPY packages ./packages
 COPY apps ./apps
 COPY scripts ./scripts
@@ -100,7 +98,7 @@ COPY --from=builder --chown=opensearch:opensearch /app/packages/storage/dist ./p
 
 # Copy unified production runner and serverless router
 COPY --from=builder --chown=opensearch:opensearch /app/api ./api
-COPY --from=builder --chown=opensearch:opensearch /app/scripts/start-production.mjs ./scripts/start-production.mjs
+COPY --from=builder --chown=opensearch:opensearch /app/scripts ./scripts
 
 # Declare explicit persistent volume mount point
 VOLUME ["/app/data"]
