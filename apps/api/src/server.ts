@@ -29,7 +29,16 @@ import {
   createFeedbackService,
   createFeedbackReviewQueue,
 } from '@opensearch/ranking';
-import { AppConfig, createLogger, loadConfig, Logger, getDefaultRegistry, MetricsRegistry } from '@opensearch/shared';
+import {
+  AppConfig,
+  createLogger,
+  loadConfig,
+  Logger,
+  getDefaultRegistry,
+  MetricsRegistry,
+  DeploymentArchitectureEvaluation,
+  evaluateDeploymentArchitecture,
+} from '@opensearch/shared';
 import {
   createCorsMiddleware,
   createLoggingMiddleware,
@@ -66,6 +75,7 @@ import {
   handleRankingSafetyCheck,
   handleOpenSearchDescriptor,
   handleDemoInfo,
+  handleDeploymentInfo,
   handleMcpPost,
   handleMcpSse,
 } from './routes.js';
@@ -93,6 +103,7 @@ export class ApiServer {
   private readonly enableMcp: boolean;
   private readonly trustProxy: TrustProxyConfig;
   private readonly deploymentModel: DeploymentModel;
+  private readonly deploymentEvaluation: DeploymentArchitectureEvaluation;
   private readonly metrics: MetricsRegistry;
   private server: Server | null = null;
   private state: ServerLifecycleState = 'initializing';
@@ -127,7 +138,17 @@ export class ApiServer {
     // Resolve hosting deployment model (default: standalone)
     this.deploymentModel =
       options.deploymentModel ??
-      ((process.env.DEPLOYMENT_MODEL as DeploymentModel) || 'standalone');
+      (process.env.DEPLOYMENT_MODE as DeploymentModel) ??
+      (process.env.DEPLOYMENT_MODEL as DeploymentModel) ??
+      (this.config.isProduction ? 'self-hosted' : 'local-first');
+
+    this.deploymentEvaluation =
+      options.deploymentEvaluation ??
+      evaluateDeploymentArchitecture({
+        mode: this.deploymentModel,
+        storageDir: this.config.storage.storageDir,
+        isProduction: this.config.isProduction,
+      });
 
     this.router = new Router({ trustProxy: this.trustProxy });
     this.startTime = Date.now();
@@ -200,6 +221,10 @@ export class ApiServer {
     return this.metrics;
   }
 
+  getDeploymentEvaluation(): DeploymentArchitectureEvaluation {
+    return this.deploymentEvaluation;
+  }
+
   getState(): ServerLifecycleState {
     return this.state;
   }
@@ -223,6 +248,7 @@ export class ApiServer {
       mcpServer: this.mcpServer,
       enableMcp: this.enableMcp,
       trustProxy: this.trustProxy,
+      deploymentEvaluation: this.deploymentEvaluation,
       deploymentModel: this.deploymentModel,
       metrics: this.metrics,
       get isShuttingDown() {
@@ -399,6 +425,7 @@ export class ApiServer {
     this.router.get('/opensearchdescription.xml', handleOpenSearchDescriptor);
     this.router.get('/metrics', handleMetrics);
     this.router.get('/api/v1/demo', handleDemoInfo);
+    this.router.get('/api/v1/deployment', handleDeploymentInfo);
     this.router.post('/api/v1/mcp', handleMcpPost);
     this.router.get('/api/v1/mcp/sse', handleMcpSse);
     this.router.get('/api/v1/openapi.json', handleOpenApiSpec);
@@ -505,6 +532,15 @@ export class ApiServer {
     }
     if (!this.config.storage.indexDir) {
       this.logger.warn('Index directory not specified in configuration; using defaults');
+    }
+
+    if (this.deploymentEvaluation.warnings.length > 0) {
+      for (const w of this.deploymentEvaluation.warnings) {
+        this.logger.warn(`Deployment architecture notice: ${w}`, {
+          mode: this.deploymentModel,
+          tier: this.deploymentEvaluation.tierLabel,
+        });
+      }
     }
 
     const persistenceAudit = auditStoragePersistence(

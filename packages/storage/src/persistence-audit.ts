@@ -10,7 +10,9 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
-export type DeploymentModel = 'standalone' | 'cluster' | 'serverless';
+import { SupportedDeploymentMode } from '@opensearch/shared';
+
+export type DeploymentModel = SupportedDeploymentMode | 'standalone';
 
 export interface StoragePersistenceAudit {
   /** Whether the storage path is evaluated as durable persistent storage */

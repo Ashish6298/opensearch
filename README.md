@@ -653,6 +653,38 @@ node scripts/feed-corpus.mjs
 
 ---
 
+## 🏛️ Deployment Architecture & Hosting Compatibility (Milestone 40)
+
+OpenSearch Web enforces formal deployment tiers, persistence invariants, and zero-paid infrastructure guarantees (see [`docs/deployment-architecture.md`](docs/deployment-architecture.md)):
+
+### Supported Deployment Modes
+
+1. **`local-first` (Tier 1 — Primary & Fully Supported):**
+   - **Target:** Developer laptops, desktop workstations, single-user offline environments.
+   - **Characteristics:** Zero cloud dependencies, zero secrets required, SQLite WAL durability on local disk, 100% offline-capable with built-in demo corpus.
+   - **Execution:** `npm run dev` or `npm start`.
+
+2. **`self-hosted` (Tier 1 — Primary & Fully Supported):**
+   - **Target:** Single Linux VPS (Ubuntu/Debian), home servers (Raspberry Pi/NUC), or Docker containers.
+   - **Characteristics:** Persistent volume mounted at `/app/data`, continuous crawler execution, PageRank pipelines, in-memory or file-backed rate limiting, reverse proxy friendly (Nginx/Caddy).
+
+3. **`serverless` (Tier 2 — Restricted / Read-Only Advisory):**
+   - **Target:** AWS Lambda, Vercel Serverless, Netlify Functions.
+   - **Explicit Non-Assumptions:** Serverless filesystem writes (`/tmp`) are ephemeral and wiped between invocations; background crawlers cannot run due to invocation timeouts; process-memory rate limits are instance-local and do NOT provide global cluster guarantees. Supported **strictly as a read-only query node**.
+
+4. **`cluster` (Tier 2 — Multi-Instance Clustered):**
+   - **Target:** Multi-process Node instances behind an ingress reverse proxy or load balancer.
+   - **Requirement:** Ingress rate limiting (Nginx `limit_req_zone` or Caddy `rate_limit`) required for cluster-wide enforcement.
+
+### Zero-Cost & Zero-Secret Invariants
+
+- **Zero Paid Domains:** Operates out-of-the-box on `localhost`, `127.0.0.1`, or private network IPs.
+- **Zero Paid Services:** Requires no commercial databases, no Redis clusters, and no third-party search APIs.
+- **Zero Mandatory Secrets:** Starts cleanly with empty environment variables or without a `.env` file.
+- **Runtime Introspection:** Query `GET /api/v1/deployment` or `GET /api/v1/status` for real-time capability and persistence verification.
+
+---
+
 ## 💻 Running the Services
 
 Launch both daemon processes in separate terminal instances:
@@ -945,7 +977,8 @@ $ audit --privacy-boundaries
 | **Milestone 36** | **Optional Search Quality Feedback**    | Phases 105 – 106| Restrained feedback rating, explicit user consent, strict prohibition of queries/IPs, 30-day retention, local review queue, held-out evaluation isolation, ranking safety guard | `[MILESTONE 36 PASSED]` |
 | **Milestone 37** | **API, Browser Search & MCP Integration**| Phases 107 – 109| OpenAPI 3.1.0 contract fidelity, schema consistency, SSE streaming audit, OpenSearch browser descriptor, MCP server | `[MILESTONE 37 PASSED]` |
 | **Milestone 38** | **Security and Operational Resilience** | Phases 110 – 113| SSRF defense audit, scheme allowlist, robots/limits validation, zero script execution, storage persistence audit, multi-tier rate limiting, proxy trust, health & readiness probes, graceful shutdown draining, privacy-safe Prometheus metrics without query surveillance | `[MILESTONE 38 PASSED]` |
-| **Milestone 39** | **Documentation, Repository Hygiene & Demo** | Phases 114 – 118| Distinct product identity (OpenSearch Web), trademark disambiguation & non-affiliation notices, README and user docs, reproducible demo setup, contributor guidelines, release packaging | `[PHASE 116 PASSED]` |
+| **Milestone 39** | **Documentation, Repository Hygiene & Demo** | Phases 114 – 116| Distinct product identity (OpenSearch Web), trademark disambiguation & non-affiliation notices, README and user docs, reproducible demo setup, contributor guidelines, accessibility audit | `[MILESTONE 39 PASSED]` |
+| **Milestone 40** | **Deployment and Container Support** | Phases 118 – 120| Deployment architecture decision (Tier 1 local-first/self-hosted vs Tier 2 serverless/cluster), storage durability invariants, multi-instance rate limits, zero-secret/zero-paid guarantees | `[PHASE 118 PASSED]` |
 
 <br/>
 
