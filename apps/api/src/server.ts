@@ -235,7 +235,7 @@ export class ApiServer {
   }
 
   getContext(): ApiAppContext {
-    const self = this;
+    const getState = () => this.state;
     return {
       config: this.config,
       logger: this.logger,
@@ -253,10 +253,10 @@ export class ApiServer {
       deploymentModel: this.deploymentModel,
       metrics: this.metrics,
       get isShuttingDown() {
-        return self.state === 'shutting_down';
+        return getState() === 'shutting_down';
       },
       get lifecycleState() {
-        return self.state;
+        return getState();
       },
     };
   }

@@ -713,6 +713,24 @@ OpenSearch Web release workflows prioritize determinism, zero accidental data lo
 - **Publication Safety Guard:** All 9 packages across `packages/*`, `apps/*`, and root feature `"private": true`. `scripts/publish-guard.mjs` is bound via `prepublishOnly` to prevent accidental publication without explicit `ALLOW_PUBLISH=true`.
 - **Comprehensive Rollback Runbook:** Step-by-step procedures for local binary rollback and Docker container rollbacks are detailed in [`docs/release-and-rollback.md`](docs/release-and-rollback.md).
 
+### 🚀 GitHub Actions CI/CD & Automated Release Gates (Milestone 41)
+
+Automated continuous integration and release workflows enforce reproducibility, zero-secret operations, and least-privilege security:
+
+- **Least-Privilege Security:** Workflows enforce top-level `permissions: contents: read` (elevated to `contents: write` exclusively for publishing tagged release assets).
+- **PR Quality Gate (`.github/workflows/ci.yml`):**
+  - Frozen dependency installation via `npm ci` adhering to [`package-lock.json`](package-lock.json).
+  - TypeScript typechecking (`npm run typecheck`), ESLint zero-error validation (`npm run lint`), and composite package builds (`npm run build`).
+  - Unit and integration tests across Node.js 20 LTS and Node.js 22 LTS.
+  - Security regressions, network data flow privacy audits, local-only mode enforcement, and OpenAPI 3.1.0 contract verification.
+  - Multi-stage Docker container build verification.
+- **Main & Release Packaging (`.github/workflows/release.yml`):**
+  - Clean checkout builds triggered on version tags (`v*.*.*`) or default branch pushes.
+  - Automated release artifact bundling (`tar.gz`) with SHA256 checksum provenance generation.
+  - Accidental package registry publication prevention via [`scripts/publish-guard.mjs`](scripts/publish-guard.mjs).
+- **Zero Secrets Invariant:** All CI testing and build gates execute completely without external API keys, tokens, or paid services.
+- **Verification Runbook:** See dedicated test suite [`apps/api/tests/final-release-gate.test.ts`](apps/api/tests/final-release-gate.test.ts).
+
 ---
 
 ## 💻 Running the Services
@@ -1009,6 +1027,7 @@ $ audit --privacy-boundaries
 | **Milestone 38** | **Security and Operational Resilience** | Phases 110 – 113| SSRF defense audit, scheme allowlist, robots/limits validation, zero script execution, storage persistence audit, multi-tier rate limiting, proxy trust, health & readiness probes, graceful shutdown draining, privacy-safe Prometheus metrics without query surveillance | `[MILESTONE 38 PASSED]` |
 | **Milestone 39** | **Documentation, Repository Hygiene & Demo** | Phases 114 – 116| Distinct product identity (OpenSearch Web), trademark disambiguation & non-affiliation notices, README and user docs, reproducible demo setup, contributor guidelines, accessibility audit | `[MILESTONE 39 PASSED]` |
 | **Milestone 40** | **Deployment and Container Support** | Phases 118 – 120| Multi-stage Docker container (node:20-alpine), unprivileged non-root user (UID 1001), Docker Compose genuine services, explicit volume durability (/app/data), release packaging and rollback runbooks, pre-migration automated snapshots, publish protection guard, repeatable npm ci builds | `[MILESTONE 40 PASSED]` |
+| **Milestone 41** | **Final Quality Gates and GitHub Actions CI/CD** | Phases 121 – 124| Least-privilege CI workflow (.github/workflows/ci.yml), pull-request verification gate, release packaging & provenance (.github/workflows/release.yml), publish guard, complete end-to-end regression pass (115 suites, 1,339 tests) | `[MILESTONE 41 PASSED]` |
 
 <br/>
 

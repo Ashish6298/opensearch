@@ -24,7 +24,7 @@ export class SymbolicMathEngine {
     // 1. Linear Equation Solver: solve ax + b = c or solve ax - b = c
     const linearMatch = query.match(/^solve\s+([+-]?\s*\d*\.?\d*)\s*x\s*([+-])\s*(\d+\.?\d*)\s*=\s*([+-]?\s*\d+\.?\d*)$/i);
     if (linearMatch && linearMatch[1] !== undefined && linearMatch[2] && linearMatch[3] && linearMatch[4]) {
-      let aStr = linearMatch[1].replace(/\s+/g, '');
+      const aStr = linearMatch[1].replace(/\s+/g, '');
       const a = aStr === '' || aStr === '+' ? 1 : aStr === '-' ? -1 : parseFloat(aStr);
       const sign = linearMatch[2];
       const bVal = parseFloat(linearMatch[3]);

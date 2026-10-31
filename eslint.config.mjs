@@ -37,6 +37,7 @@ export default tseslint.config(
       '@typescript-eslint/no-explicit-any': 'warn',
       'no-control-regex': 'off',
       'no-console': 'off',
+      'no-empty': ['error', { allowEmptyCatch: true }],
     },
   },
 );

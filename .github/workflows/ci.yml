@@ -1,0 +1,112 @@
+name: CI Quality Gate
+
+on:
+  push:
+    branches:
+      - main
+      - ashish
+  pull_request:
+    branches:
+      - main
+      - ashish
+
+# Least-privilege permissions: read-only access to repository contents
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Typecheck, Lint & Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: npm
+
+      - name: Install dependencies (frozen lockfile)
+        run: npm ci
+
+      - name: TypeScript typecheck
+        run: npm run typecheck
+
+      - name: ESLint check
+        run: npm run lint -- --quiet
+
+      - name: Build packages and assets
+        run: npm run build
+
+  test:
+    name: Test Suite (Node ${{ matrix.node-version }})
+    needs: validate
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [20.x, 22.x]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: npm
+
+      - name: Install dependencies (frozen lockfile)
+        run: npm ci
+
+      - name: Run unit and integration tests
+        run: npm test
+
+  security-and-privacy:
+    name: Security, Privacy & Contract Audit
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run security regression audits
+        run: npx vitest run apps/api/tests/security-audit.test.ts apps/api/tests/security-regression-audit.test.ts
+
+      - name: Run network data flow & local-only audits
+        run: npx vitest run packages/shared/tests/network-data-flow-audit.test.ts apps/api/tests/local-only-mode.test.ts packages/shared/tests/privacy-receipt.test.ts
+
+      - name: Run OpenAPI contract validation
+        run: npx vitest run apps/api/tests/openapi-contract.test.ts apps/api/tests/openapi-docs.test.ts
+
+      - name: Run search quality evaluation
+        run: npx vitest run packages/ranking/tests/evaluation-metrics.test.ts packages/ranking/tests/experiment-runner.test.ts
+
+  docker-validate:
+    name: Docker Container Build
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker container image
+        run: docker build -t opensearch-web:ci .

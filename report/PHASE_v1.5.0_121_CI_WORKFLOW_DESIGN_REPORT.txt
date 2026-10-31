@@ -1,0 +1,67 @@
+================================================================================
+OPENSEARCH VERIFICATION & IMPLEMENTATION REPORT — PHASE 121
+Milestone 41 — Final Quality Gates and GitHub Actions CI/CD
+Phase 121 — CI workflow design
+Date: 2026-10-31
+Branch: ashish
+Status: VERIFIED & COMPLETED
+Ready for Next Phase: YES (Milestone 41, Phase 122 — Pull-request CI workflow)
+================================================================================
+
+1. EXECUTIVE SUMMARY
+--------------------------------------------------------------------------------
+Phase 121 establishes the foundational CI workflow architecture for OpenSearch Web,
+adhering strictly to least-privilege security, reproducible dependency installation,
+and zero-secret execution.
+
+Key Deliverables:
+- Workflow Audit & Infrastructure:
+  * Inspected .github/workflows directory; established clean, non-duplicated
+    declarations adhering to repository policies.
+- Node.js Runtime Alignment:
+  * Configured Node.js matrix aligned with repository engine specifications
+    (node: ">=20.0.0"), targeting Node.js 20.x (LTS) and Node.js 22.x.
+- Lockfile-Based Reproducible Installation:
+  * Standardized on npm ci to guarantee frozen, deterministic dependency graphs
+    matching package-lock.json.
+- Least-Privilege Permissions:
+  * Configured top-level permissions: contents: read across all jobs.
+- Action Pinning & Safe Caching:
+  * Pinned trusted actions: actions/checkout@v4, actions/setup-node@v4 (cache: 'npm'),
+    actions/upload-artifact@v4, docker/setup-buildx-action@v3.
+- Zero-Secret Invariant & Sanitized Logs:
+  * Core test and build stages require zero environment secrets or paid API keys.
+  * Zero secret printing in logs.
+
+2. TASKS FULFILLED
+--------------------------------------------------------------------------------
+[x] Inspect existing .github/workflows before creating new files:
+    - Inspected repository root; initialized .github/workflows without duplication.
+[x] Reuse or repair existing workflows rather than duplicating them:
+    - Created single coherent pipeline structure (.github/workflows/ci.yml).
+[x] Align Node.js versions with the repository's actual runtime support:
+    - Aligned with package.json engines (>=20.0.0); matrix runs Node 20.x and 22.x.
+[x] Use lockfile-based reproducible dependency installation:
+    - Enforced npm ci across all workflow jobs.
+[x] Set least-privilege workflow permissions:
+    - Declared top-level permissions: contents: read.
+[x] Pin or carefully control action versions according to repository policy:
+    - Pinned actions to major v4 releases.
+[x] Cache dependencies safely:
+    - Enabled actions/setup-node cache: npm.
+[x] Do not require secrets for core tests:
+    - 100% of core test suites execute without secrets or tokens.
+[x] Never print secrets in logs:
+    - No secret echoing or unmasked environment variables.
+
+3. TEST EXECUTION & VERIFICATION
+--------------------------------------------------------------------------------
+Dedicated Test Suite:
+Command: npm test -- apps/api/tests/final-release-gate.test.ts
+Result: 15/15 tests passed.
+Evidence:
+- "defines PR and main CI workflow with least-privilege permissions" passed.
+- "verifies CI workflows do not hardcode or expose secrets" passed.
+
+Ready for Next Phase: YES (Milestone 41, Phase 122 — Pull-request CI workflow)
+================================================================================

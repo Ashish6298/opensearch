@@ -156,7 +156,7 @@ describe('Phase 89 — PageRank Ranking Integration & Explainability Suite', () 
       expect(topHit.score).toBeGreaterThan(secondHit.score);
 
       expect(topHit.explanation?.pageRankBonus).toBeGreaterThan(0);
-      expect(topHit.explanation?.pageRankBonus).toBeGreaterThan(secondHit.explanation?.pageRankBonus!);
+      expect(topHit.explanation?.pageRankBonus).toBeGreaterThan(secondHit.explanation?.pageRankBonus ?? 0);
       expect(topHit.explanation?.pageRankExplain?.status).toBe('computed');
     });
 
@@ -204,8 +204,8 @@ describe('Phase 89 — PageRank Ranking Integration & Explainability Suite', () 
         },
       });
 
-      const bonusHigh = resultHighWeight.hits[0]!.explanation?.pageRankBonus!;
-      const bonusLow = resultLowWeight.hits[0]!.explanation?.pageRankBonus!;
+      const bonusHigh = resultHighWeight.hits[0]!.explanation?.pageRankBonus ?? 0;
+      const bonusLow = resultLowWeight.hits[0]!.explanation?.pageRankBonus ?? 0;
 
       expect(bonusHigh).toBeGreaterThan(bonusLow);
     });

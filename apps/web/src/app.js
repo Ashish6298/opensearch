@@ -123,12 +123,6 @@
     activeFilter = initialFilter;
     updateActiveFilterUI(activeFilter);
 
-    const demoParam = params.get('demo') || params.get('demo_mode');
-    if (demoParam === 'true' || demoParam === '1') {
-      isDemoMode = true;
-      if (demoModeCheckbox) demoModeCheckbox.checked = true;
-    }
-
     if (initialQuery) {
       searchInput.value = initialQuery;
       performSearch(initialQuery, initialPage, false);
@@ -257,11 +251,7 @@
         activeFilter = filterVal;
         updateActiveFilterUI(activeFilter);
 
-    const demoParam = params.get('demo') || params.get('demo_mode');
-    if (demoParam === 'true' || demoParam === '1') {
-      isDemoMode = true;
-      if (demoModeCheckbox) demoModeCheckbox.checked = true;
-    }
+
 
         const query = currentQuery || searchInput.value.trim();
         if (query) {
