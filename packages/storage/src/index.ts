@@ -53,3 +53,21 @@ export type {
   StoragePersistenceAudit,
 } from './persistence-audit.js';
 
+
+// ── Phase 120: Release Packaging, Schema Migration & Rollback (V1.5.0) ──
+export {
+  SCHEMA_VERSION_FILENAME,
+  CURRENT_STORAGE_SCHEMA_VERSION,
+  loadSchemaMigrationState,
+  saveSchemaMigrationState,
+  runSchemaMigrations,
+  rollbackSchemaMigration,
+} from './migration/index.js';
+export type {
+  StorageMigration,
+  StorageMigrationRecord,
+  SchemaMigrationState,
+  MigrationOptions,
+  MigrationResult,
+  RollbackOptions,
+} from './migration/index.js';

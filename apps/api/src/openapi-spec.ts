@@ -650,6 +650,30 @@ export function generateOpenApiSpec(options: OpenApiSpecOptions = {}): Record<st
           },
         },
       },
+      '/api/v1/release': {
+        get: {
+          tags: ['System & Health'],
+          summary: 'Release metadata and build traceability',
+          description: 'Returns traceable release version, build timestamp, runtime versions, git revision, and zero-secret guarantees.',
+          operationId: 'releaseGet',
+          responses: {
+            '200': {
+              description: 'Release metadata and build information.',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      status: { type: 'string', example: 'ok' },
+                      release: { type: 'object' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
       '/api/v1/lenses': {
         get: {
           tags: ['Focus Lenses'],

@@ -30,6 +30,7 @@ import {
   REPRESENTATIVE_DEMO_QUERIES,
   DEMO_CORPUS_DOCUMENTS,
   evaluateDeploymentArchitecture,
+  getReleaseMetadata,
 } from '@opensearch/shared';
 import {
   HealthCheckResponse,
@@ -281,6 +282,7 @@ export const handleApiRoot: RouteHandler = (_req, res, context) => {
       metrics: '/metrics',
       demo: '/api/v1/demo',
       deployment: '/api/v1/deployment',
+      release: '/api/v1/release',
       opensearch: '/opensearch.xml',
       openapi: '/api/v1/openapi.json',
       docs: '/docs',
@@ -1619,5 +1621,18 @@ export const handleDeploymentInfo: RouteHandler = (_req, res, context) => {
     version: PROJECT_VERSION,
     timestamp: new Date().toISOString(),
     deployment: evalResult,
+  });
+};
+
+
+/**
+ * GET /api/v1/release
+ * Traceable release metadata, versioning, and environment invariants (Phase 120).
+ */
+export const handleReleaseInfo: RouteHandler = (_req, res) => {
+  const release = getReleaseMetadata();
+  res.status(HTTP_STATUS.OK).json({
+    status: 'ok',
+    release,
   });
 };

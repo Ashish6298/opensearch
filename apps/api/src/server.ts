@@ -76,6 +76,7 @@ import {
   handleOpenSearchDescriptor,
   handleDemoInfo,
   handleDeploymentInfo,
+  handleReleaseInfo,
   handleMcpPost,
   handleMcpSse,
 } from './routes.js';
@@ -426,6 +427,7 @@ export class ApiServer {
     this.router.get('/metrics', handleMetrics);
     this.router.get('/api/v1/demo', handleDemoInfo);
     this.router.get('/api/v1/deployment', handleDeploymentInfo);
+    this.router.get('/api/v1/release', handleReleaseInfo);
     this.router.post('/api/v1/mcp', handleMcpPost);
     this.router.get('/api/v1/mcp/sse', handleMcpSse);
     this.router.get('/api/v1/openapi.json', handleOpenApiSpec);
