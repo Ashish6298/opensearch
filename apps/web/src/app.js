@@ -100,7 +100,6 @@
   let currentThemePreference = 'system';
   let isLocalOnly = false;
   let openInNewTab = true;
-    currentSafeSearch = 'moderate';
   let currentSafeSearch = 'moderate';
 
   const PREFERENCE_KEYS = {

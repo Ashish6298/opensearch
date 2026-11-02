@@ -147,6 +147,7 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
               <input
                 type="text"
                 id="search-input"
+                name="q"
                 class="terminal-search-input"
                 placeholder="Search the web privately..."
                 autocomplete="off"

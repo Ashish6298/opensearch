@@ -437,6 +437,16 @@ body {
   opacity: 1;
 }
 
+.terminal-search-input,
+.terminal-search-input:focus,
+.terminal-search-input:focus-visible,
+.terminal-search-input:active {
+  outline: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  -webkit-appearance: none;
+}
+
 .terminal-search-input:focus-visible {
   outline: none;
 }
