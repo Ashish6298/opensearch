@@ -27,7 +27,7 @@ curl -s http://localhost:3000/api/v1/release | jq
 {
   "status": "ok",
   "release": {
-    "version": "1.4.0",
+    "version": "1.5.0",
     "productName": "OpenSearch Web",
     "canonicalName": "OpenSearch",
     "timestamp": "2026-10-31T14:15:00.000Z",
@@ -55,7 +55,7 @@ To build a bit-for-bit reproducible release from a clean checkout:
 ```bash
 # 1. Fetch official release tag
 git fetch --tags
-git checkout v1.4.0
+git checkout v1.5.0
 
 # 2. Enforce clean, deterministic dependency installation
 npm ci
@@ -94,7 +94,7 @@ If a newly deployed container image exhibits regressions:
 docker compose down
 
 # Step 2: Checkout the previous known-good tag
-git checkout v1.4.0
+git checkout v1.5.0
 
 # Step 3: Rebuild the known-good container image
 docker compose build

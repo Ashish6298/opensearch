@@ -1,5 +1,3 @@
-# OpenSearch (V1.4.0)
-
 <div align="center">
 
 ```
@@ -15,12 +13,12 @@
 
 <!-- System Metrics & Badges -->
 
-[![TypeScript](https://img.shields.io/badge/Language-TypeScript_5.7+-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Node.js](https://img.shields.io/badge/Runtime-Node.js_20+-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-00ff66?style=for-the-badge&logo=opensourceinitiative&logoColor=white)](LICENSE.md)
-[![Code of Conduct](https://img.shields.io/badge/Conduct-Contributor_Covenant_2.1-blue?style=for-the-badge&logo=handshake&logoColor=white)](CODE_OF_CONDUCT.md)
-[![Telemetry](https://img.shields.io/badge/Tracking-Zero_Telemetry-ff3333?style=for-the-badge&logo=ghostery&logoColor=white)](docs/PRIVACY.md)
-[![Status: V1.4.0 Released](https://img.shields.io/badge/Release-v1.4.0_Production_Ready-brightgreen?style=for-the-badge&logo=git&logoColor=white)](PHASEv1.4.0.txt)
+[![TypeScript](https://img.shields.io/badge/Language-TypeScript_5.7+-3178C6?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Runtime-Node.js_20+-339933?style=flat&logo=node.js&logoColor=white)](https://nodejs.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-00ff66?style=flat&logo=opensourceinitiative&logoColor=white)](LICENSE.md)
+[![Code of Conduct](https://img.shields.io/badge/Conduct-Contributor_Covenant_2.1-blue?style=flat&logo=handshake&logoColor=white)](CODE_OF_CONDUCT.md)
+[![Telemetry](https://img.shields.io/badge/Tracking-Zero_Telemetry-ff3333?style=flat&logo=ghostery&logoColor=white)](docs/PRIVACY.md)
+[![Status: V1.5.0 Released](https://img.shields.io/badge/Release-v1.5.0_Production_Ready-brightgreen?style=flat&logo=git&logoColor=white)](PHASEv1.5.0.txt)
 
 </div>
 
@@ -43,6 +41,20 @@ This is not a proxy. This is not a meta-search engine wrapper. This is a **fully
 > [!NOTE]
 > **Product Identity & Non-Affiliation Notice:**  
 > **OpenSearch Web** is an independent, sovereign open-source search engine project. It is **not affiliated with, funded by, or endorsed by Amazon Web Services, Inc. (AWS) or the Amazon OpenSearch project**. All trademarks belong to their respective owners, and no claim of legal trademark clearance is made. It is compatible with the OpenSearch 1.1 browser description standard. See [docs/product-identity-and-naming.md](docs/product-identity-and-naming.md) for full architectural naming details.
+
+---
+
+## ✨ What's New in v1.5.0
+
+OpenSearch **v1.5.0** delivers a major evolution across the search engine lifecycle, hardening privacy guarantees, incorporating graph-based authority scoring, enhancing developer tooling, and introducing zero-secret container deployments:
+
+- 🛡️ **Cryptographic Privacy Receipts & Local-Only Mode:** Run completely offline (`LOCAL_ONLY=true`) or toggle on-demand via the Web UI. Every search response includes an auditable Privacy Receipt documenting data-flow minimization and zero query logging.
+- 🌐 **Link Graph & Power-Iteration PageRank:** Real graph-based link analysis computed over crawler link adjacency matrices ($d=0.85$, $L_1$ convergence $\le 10^{-6}$), integrated with BM25 and freshness into a multi-tier ranker with full score explainability (`?explain=true`).
+- 🎯 **Tracker-Aware Ranking & Focus Lenses:** Automatic score penalties for domains with heavy surveillance trackers (via DuckDuckGo Tracker Radar), plus curated domain lenses (`Developer`, `Academic`, `News`, `Privacy`).
+- ⚡ **Deterministic Extractive Quick Answers:** Highlights cited passages extracted directly from top matching documents without LLM hallucinations, accompanied by a modular instant-answer toolkit (weather, currency FX, crypto, unit conversion, LaTeX math).
+- 🔌 **OpenAPI 3.1, Browser Search & MCP Integration:** Interactive Swagger UI documentation (`/docs`), OpenSearch 1.1 browser discovery (`/opensearch.xml`), and native Model Context Protocol (MCP) server support for AI agents.
+- 🐳 **Alpine Dockerization & Volume Durability:** Multi-stage `node:20-alpine` container running under unprivileged `appuser:1001` with Docker Compose, automated schema migration snapshots, and rollback runbooks.
+- 🚀 **Automated CI/CD Quality Gates:** Least-privilege GitHub Actions workflows, frozen reproducible dependency builds, and 100% pass rate across 115 test suites and 1,339 tests.
 
 ---
 
@@ -69,14 +81,15 @@ This is not a proxy. This is not a meta-search engine wrapper. This is a **fully
 
 | Sector                | Module              | Quick Jump                                                   | Focus                                                            |
 | :-------------------- | :------------------ | :----------------------------------------------------------- | :--------------------------------------------------------------- |
-| **01 // Core Engine** | `feat:capabilities` | [⚡ **System Features**](#features)                          | BM25 ranking, zero cookies, LRU query caching & live fallback    |
+| **01 // Core Engine** | `feat:v1.5.0`       | [✨ **What's New in v1.5.0**](#-whats-new-in-v150)           | Privacy receipts, PageRank, Focus Lenses, MCP & Docker           |
+|                       | `feat:capabilities` | [⚡ **System Features**](#features)                          | BM25 ranking, zero cookies, LRU query caching & live fallback    |
 |                       | `flow:lifecycle`    | [🧬 **How It Works**](#how-it-works)                         | Query parsing, candidate retrieval & multi-tier hybrid scoring   |
 |                       | `data:corpus`       | [🌱 **Seed Corpus (113)**](#seed-corpus-categories)          | 19 curated domain categories across tech, AI, news & reference   |
 |                       | `sec:zero-log`      | [🛡️ **Privacy Guarantee**](#privacy-guarantee)               | Strict data minimization, zero tracking & IP anonymization       |
 | **02 // Deep Dive**   | `arch:boundaries`   | [🏛️ **Architecture Tree**](#architecture)                    | Modular monorepo (`apps/*`, `packages/*`) & strict boundaries    |
 |                       | `cmp:matrix`        | [⚔️ **Competitive Matrix**](#how-opensearch-is-different)    | Side-by-side comparison with Google, DuckDuckGo, Brave & SearXNG |
 |                       | `env:stack`         | [🛠️ **Technology Stack**](#tech-stack)                       | Native TypeScript 5.7+, Node.js 20+, Vitest & zero-dep UI        |
-|                       | `status:v1.0.0`     | [🏁 **Milestone Roadmap**](#project-status)                  | Phases 1–34 verification log (100% production release gate)      |
+|                       | `status:v1.5.0`     | [🏁 **Architecture Verification**](#project-status)          | Production verification ledger (115 suites, 1,339 tests passing)  |
 | **03 // Operations**  | `ops:bootstrap`     | [🚀 **Getting Started**](#getting-started)                   | Repository clone, workspace installation & index seeding         |
 |                       | `ops:runtime`       | [💻 **Running the Stack**](#running-the-stack)               | Dual-daemon launch (`api:3001` + `web:3000`) & curl healthchecks |
 |                       | `ops:tooling`       | [📜 **Development Scripts**](#development-scripts)           | Monorepo build, linting, formatting & automated test runners     |
@@ -231,7 +244,7 @@ Query Cache Telemetry (Hit Ratio: ~94% on warm traffic)
 
 ---
 
-### `08` // 🧮 Scientific Math, Currency & Developer Diagnostics (Milestone 21 & 23)
+### `08` // 🧮 Scientific Math, Currency & Developer Diagnostics
 
 > **Instant runtime answers for engineers, mathematicians, and sysadmins.**
 
@@ -475,9 +488,9 @@ opensearch/
 │
 ├── scripts/                  # Lifecycle scripts (feed-corpus, deploy-production, verifications)
 ├── docs/                     # PRIVACY.md, DEPLOYMENT.md, SECURITY.md
-├── report/                   # Milestone audit reports (Phases 1 through 34)
+├── report/                   # Verification audit reports and evaluation metrics
 ├── PROJECT.txt               # Full technical specification and constraints
-└── PHASE.txt                 # Detailed phase roadmap and verification milestones
+└── PHASE.txt                 # Detailed engineering roadmap and verification ledger
 ```
 
 ---
@@ -653,7 +666,7 @@ node scripts/feed-corpus.mjs
 
 ---
 
-## 🏛️ Deployment Architecture & Hosting Compatibility (Milestone 40)
+## 🏛️ Deployment Architecture & Container Support
 
 OpenSearch Web enforces formal deployment tiers, persistence invariants, and zero-paid infrastructure guarantees (see [`docs/deployment-architecture.md`](docs/deployment-architecture.md)):
 
@@ -713,7 +726,7 @@ OpenSearch Web release workflows prioritize determinism, zero accidental data lo
 - **Publication Safety Guard:** All 9 packages across `packages/*`, `apps/*`, and root feature `"private": true`. `scripts/publish-guard.mjs` is bound via `prepublishOnly` to prevent accidental publication without explicit `ALLOW_PUBLISH=true`.
 - **Comprehensive Rollback Runbook:** Step-by-step procedures for local binary rollback and Docker container rollbacks are detailed in [`docs/release-and-rollback.md`](docs/release-and-rollback.md).
 
-### 🚀 GitHub Actions CI/CD & Automated Release Gates (Milestone 41)
+### 🚀 GitHub Actions CI/CD & Automated Quality Gates
 
 Automated continuous integration and release workflows enforce reproducibility, zero-secret operations, and least-privilege security:
 
@@ -842,9 +855,9 @@ OpenSearch utilizes automated **GitHub Actions** workflows ([`.github/workflows/
 │ PIPELINE STAGE           │ RUNNER / MATRIX      │ CRITICAL GATES                       │
 ├──────────────────────────┼──────────────────────┼──────────────────────────────────────┤
 │ 1. 🔍 Lint, Format & Types│ Ubuntu (Node 20 & 22)│ ESLint 9, Prettier, tsc -b composite │
-│ 2. 🧪 Automated Tests    │ Ubuntu (Node 20 LTS) │ 360 Unit/Integration Tests (Vitest)  │
-│ 3. 🛡️ Verification Gate  │ Ubuntu (Node 20 LTS) │ Milestone 10 (Phases 31–34) audits   │
-│ 4. 📦 Artifact Archival  │ Ubuntu (Node 20 LTS) │ Uploads production API & Web dist    │
+│ 2. 🧪 Automated Tests    │ Ubuntu (Node 20 & 22)│ 115 Vitest Suites (1,339 Tests)     │
+│ 3. 🛡️ Security & Privacy │ Ubuntu (Node 20 LTS) │ Zero-PII, SSRF guard & leak audits  │
+│ 4. 🐳 Docker & Packaging │ Ubuntu (Node 20 LTS) │ Multi-stage build & SHA256 archive   │
 └──────────────────────────┴──────────────────────┴──────────────────────────────────────┘
 ```
 
@@ -857,9 +870,9 @@ OpenSearch utilizes automated **GitHub Actions** workflows ([`.github/workflows/
 ```mermaid
 flowchart TD
     A[Git Push / PR Event] --> B[Job 1: Lint, Format & Types<br/>Node 20.x & 22.x Matrix]
-    B --> C[Job 2: Vitest Automated Test Suite<br/>360 Passing Unit & Integration Tests]
-    C --> D[Job 3: Milestone Verification Gate<br/>Phase 31 - 34 Production Audit Scripts]
-    D --> E[Job 4: Production Artifact Build<br/>Archive API & Web dist bundles]
+    B --> C[Job 2: Vitest Automated Test Suite<br/>115 Suites & 1,339 Passing Tests]
+    B --> D[Job 3: Security & Privacy Gate<br/>Zero-PII & Network Data Flow Audits]
+    B --> E[Job 4: Docker Container Build<br/>Alpine Multi-Stage Container Check]
 ```
 
 - 🔄 **Concurrency Controls:** Active workflows are automatically grouped and cancelled if superseded by newer commits (`cancel-in-progress: true`).
@@ -971,16 +984,16 @@ $ audit --privacy-boundaries
 
 ---
 
-## 🏁 Release Roadmap & Verification Ledger (V1.4.0 Production)
+## 🏁 Architecture Verification Ledger & Capabilities Matrix
 
 <div align="center">
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                        MILESTONE EXECUTION & VERIFICATION LEDGER                       │
+│                       ARCHITECTURE & VERIFICATION LEDGER                       │
 ├──────────────────────────────────────┬─────────────────────────────────────────────────┤
-│ TARGET BUILD : v1.4.0-RELEASE        │ TOTAL PHASES : 65 OF 65 COMPLETED [100%]        │
-│ INTEGRATION  : PASSING (521 TESTS)   │ AUDIT STATUS : PRODUCTION VERIFIED & SEALED     │
+│ TARGET BUILD : v1.5.0-STABLE         │ ARCHITECTURE : MODULAR TYPESCRIPT MONOREPO      │
+│ TEST SUITE   : 115 SUITES (1,339)    │ AUDIT STATUS : 100% QUALITY GATE VERIFIED       │
 └──────────────────────────────────────┴─────────────────────────────────────────────────┘
 ```
 
@@ -988,46 +1001,46 @@ $ audit --privacy-boundaries
 
 <br/>
 
-### Milestone Lifecycle Matrix
+### Core Architecture & Capabilities Delivery Matrix
 
-| Milestone        | Scope & Engineering Focus               | Phases Covered | Delivery Verification                                                    |   Status   |
-| :--------------- | :-------------------------------------- | :------------- | :----------------------------------------------------------------------- | :--------: |
-| **Milestone 01** | **Monorepo & Storage Substrate**        | Phases 1 – 3   | TS 5.7+ composite configs, JSON storage adapter, ACID file locks         | `[PASSED]` |
-| **Milestone 02** | **Polite Crawler & Fetching Engine**    | Phases 4 – 8   | RFC 3986 URL canon, SSRF DNS guards, robots.txt parser, HTML extractor   | `[PASSED]` |
-| **Milestone 03** | **Search Index & Normalization**        | Phases 9 – 11  | Multilingual tokenization, positional postings, incremental indexer      | `[PASSED]` |
-| **Milestone 04** | **Query Processing & BM25 Ranking**     | Phases 12 – 15 | Quoted phrases, negation, multi-field BM25 ($k_1=1.2, b=0.75$), snippets | `[PASSED]` |
-| **Milestone 05** | **HTTP REST API & Security Gate**       | Phases 16 – 18 | Pure `node:http` router, sliding-window rate limiter, payload bounds     | `[PASSED]` |
-| **Milestone 06** | **Public Terminal Web Interface**       | Phases 19 – 21 | Responsive TUI, JetBrains Mono phosphor styling, full a11y & keybinds    | `[PASSED]` |
-| **Milestone 07** | **End-to-End Search Pipeline**          | Phases 22 – 24 | Cold-start crawl loop, 113 curated seed corpus, IR MRR quality benchmark | `[PASSED]` |
-| **Milestone 08** | **Security Hardening & Zero-Logs**      | Phases 25 – 27 | CSP enforcement, circular redirect traps, IP subnet masking (/24 & /48)  | `[PASSED]` |
-| **Milestone 09** | **High-Concurrency Performance**        | Phases 28 – 30 | In-memory LRU query cache (<10ms warm hits), crawler memory backpressure | `[PASSED]` |
-| **Milestone 10** | **Production Release & Live Fallback**  | Phases 31 – 34 | Google/DuckDuckGo live hybrid search, cross-env tests, release sign-off  | `[PASSED]` |
-| **Milestone 11** | **Query Intelligence & Productivity**   | Phases 35 – 38 | Autocomplete, Levenshtein typo-tolerance, advanced operators, 50+ bangs  | `[PASSED]` |
-| **Milestone 12** | **Terminal UI, Accessibility & Themes** | Phases 39 – 40 | Vim/terminal keybinds (`j`/`k`/`v`/`/`/`Esc`), 5 retro CRT themes        | `[PASSED]` |
-| **Milestone 13** | **Crawler Efficiency & Sitemaps**       | Phases 41 – 42 | Streaming/Gzip Sitemap ingestion, HTTP 304 fast path & ETag re-crawling  | `[PASSED]` |
-| **Milestone 14** | **Developer Platform & CLI Tooling**    | Phases 43 – 44 | OpenAPI 3.1.0 spec (`/docs`), standalone `@opensearch/cli` terminal tool | `[PASSED]` |
-| **Milestone 15** | **Release Convergence & Benchmarking**  | Phase 45       | Full regression testing, sub-5ms P99 latency SLA, v1.2.0 verification    | `[PASSED]` |
-| **Milestone 21** | **Developer Utilities & Runtime Toolkit**| Phases 56 – 57 | UUID/Password/JWT/Hash crypto engine, CIDR IPv4 subnets, cron explainer  | `[PASSED]` |
-| **Milestone 22** | **Privacy Auditing & Zero-Trace Reader** | Phases 58 – 59 | Domain security grades (A+ to F), TLS/HSTS audit, zero-trace Markdown reader| `[PASSED]` |
-| **Milestone 23** | **Scientific Math & Currency Engine**   | Phases 60 – 61 | Real-time fiat FX, crypto rates (BTC/ETH/SOL), symbolic algebra & LaTeX  | `[PASSED]` |
-| **Milestone 24** | **Hacker UX & Retro Themes**            | Phases 62 – 63 | Vim result navigation (`j`/`k`/`o`/`c`/`r`), `/dev` `/news` `/papers` filters| `[PASSED]` |
-| **Milestone 25** | **Offline PWA & V1.4.0 Release**        | Phases 64 – 65 | ServiceWorker offline caching, PWA Manifest, full v1.4.0 regression seal | `[PASSED]` |
-| **Milestone 26** | **Repository Audit & Baseline (v1.5.0)**| Phases 66 – 68 | Architecture inventory, baseline measurements, product & privacy contracts | `[PASSED]` |
-| **Milestone 27** | **Search Providers & Source Reliability**| Phases 69 – 72 | Standard provider interface, zero brittle scraping, resilience, attribution compliance | `[PASSED]` |
-| **Milestone 28** | **Index Storage & Dataset Growth**      | Phases 73 – 76 | Lifecycle audit, storage abstraction, reproducible corpus expansion, incremental recovery | `[MILESTONE 28 PASSED]` |
-| **Milestone 29** | **Everyday-User Interface**             | Phases 77 – 81 | Search-first responsive home, result cards & states, themes & preferences, categories, safe search controls | `[MILESTONE 29 PASSED]` |
-| **Milestone 30** | **Privacy Receipt & Local-Only Mode**   | Phases 82 – 86 | Network & data-flow audit, local-only enforcement, privacy receipt schema, leak tests | `[MILESTONE 30 PASSED]`
-| **Milestone 31** | **Real PageRank & Ranking Explainability**| Phases 87 – 89 | Link graph extraction, power-iteration PageRank, multi-tier ranking, explainability | `[MILESTONE 31 PASSED]` |
-| **Milestone 32** | **Search Quality Lab**                  | Phases 90 – 93 | Graded judged dataset, evaluation metrics (NDCG/MAP), score ablation, regressions | `[MILESTONE 32 PASSED]` |
-| **Milestone 33** | **Performance & Large-Scale Search**    | Phases 94 – 98 | Benchmark harness, execution profiling, postings traversal, segment indexing & scale metrics | `[MILESTONE 33 PASSED]` |
-| **Milestone 34** | **Tracker-Aware Search & Focus Lenses**  | Phases 99 – 102| Reviewable tracker registry, static subresource parsing, tracker-aware ranking signals, Focus Lens schema & initial profiles | `[MILESTONE 34 PASSED]` |
-| **Milestone 35** | **Instant Answers and Quick Answer**     | Phases 103 – 104| Modular instant-answer framework, provenance attribution, deterministic extractive Quick Answer panel, verifiable non-fabricated citations, privacy boundaries | `[MILESTONE 35 PASSED]` |
-| **Milestone 36** | **Optional Search Quality Feedback**    | Phases 105 – 106| Restrained feedback rating, explicit user consent, strict prohibition of queries/IPs, 30-day retention, local review queue, held-out evaluation isolation, ranking safety guard | `[MILESTONE 36 PASSED]` |
-| **Milestone 37** | **API, Browser Search & MCP Integration**| Phases 107 – 109| OpenAPI 3.1.0 contract fidelity, schema consistency, SSE streaming audit, OpenSearch browser descriptor, MCP server | `[MILESTONE 37 PASSED]` |
-| **Milestone 38** | **Security and Operational Resilience** | Phases 110 – 113| SSRF defense audit, scheme allowlist, robots/limits validation, zero script execution, storage persistence audit, multi-tier rate limiting, proxy trust, health & readiness probes, graceful shutdown draining, privacy-safe Prometheus metrics without query surveillance | `[MILESTONE 38 PASSED]` |
-| **Milestone 39** | **Documentation, Repository Hygiene & Demo** | Phases 114 – 116| Distinct product identity (OpenSearch Web), trademark disambiguation & non-affiliation notices, README and user docs, reproducible demo setup, contributor guidelines, accessibility audit | `[MILESTONE 39 PASSED]` |
-| **Milestone 40** | **Deployment and Container Support** | Phases 118 – 120| Multi-stage Docker container (node:20-alpine), unprivileged non-root user (UID 1001), Docker Compose genuine services, explicit volume durability (/app/data), release packaging and rollback runbooks, pre-migration automated snapshots, publish protection guard, repeatable npm ci builds | `[MILESTONE 40 PASSED]` |
-| **Milestone 41** | **Final Quality Gates and GitHub Actions CI/CD** | Phases 121 – 124| Least-privilege CI workflow (.github/workflows/ci.yml), pull-request verification gate, release packaging & provenance (.github/workflows/release.yml), publish guard, complete end-to-end regression pass (115 suites, 1,339 tests) | `[MILESTONE 41 PASSED]` |
+| Subsystem / Capability Layer | Architecture & Engineering Focus | Delivery Verification & Artifacts | Status |
+| :--------------------------- | :------------------------------- | :-------------------------------- | :----: |
+| **Monorepo & Storage Substrate** | Scalable monorepo architecture with strict TypeScript composite project references and atomic persistence | TS 5.7+ composite configs, JSON storage adapter, ACID file locks | `[VERIFIED]` |
+| **Polite Crawler & Fetching Engine** | RFC 3986 URL canonicalization, DNS-level SSRF resolution guards, robots.txt politeness parser | SSRF DNS guards, robots.txt parser, HTML streaming extractor, link discovery | `[VERIFIED]` |
+| **Search Index & Normalization** | Positional postings inverted index, multilingual tokenization, Unicode normalization, incremental recovery | Multilingual tokenization, positional postings, incremental indexer | `[VERIFIED]` |
+| **Query Processing & BM25 Scoring** | Lexical query parser, quoted phrase search, negation operators, multi-field BM25 ($k_1=1.2, b=0.75$) | Quoted phrases, negation, multi-field BM25 ranking, dynamic contextual snippets | `[VERIFIED]` |
+| **HTTP REST API & Security Gate** | Pure `node:http` router, sliding-window rate limiter, payload bounds, CORS and header security | Pure `node:http` router, sliding-window rate limiter, payload bounds, input validation | `[VERIFIED]` |
+| **Public Terminal Web Interface** | Responsive terminal user interface, JetBrains Mono phosphor styling, full keyboard accessibility | Responsive TUI, JetBrains Mono phosphor styling, full WCAG a11y, zero remote CDN assets | `[VERIFIED]` |
+| **End-to-End Search Pipeline** | Cold-start crawl loop, 113 curated seed corpus, crawler-to-indexer pipeline orchestration | Cold-start crawl loop, 113 curated seed corpus, IR MRR quality benchmark | `[VERIFIED]` |
+| **Security Hardening & Zero-Logs** | Strict CSP enforcement, anti-SSRF protections, circular redirect traps, IP subnet masking (/24 & /48) | Strict CSP enforcement, circular redirect traps, IP subnet masking, zero surveillance logs | `[VERIFIED]` |
+| **High-Concurrency Performance** | In-memory LRU query cache (<10ms warm hits), crawler memory backpressure, bounded heap allocations | In-memory LRU query cache, crawler memory backpressure, zero unbounded memory leaks | `[VERIFIED]` |
+| **Production Release & Live Fallback** | Resilience fallback integrating Google Suggest and DuckDuckGo for thin local results | Google/DuckDuckGo live hybrid search, cross-env tests, referrer isolation | `[VERIFIED]` |
+| **Query Intelligence & Productivity** | Autocomplete engine, Levenshtein distance typo tolerance, prefix matching, 50+ privacy bangs | Autocomplete, Levenshtein typo-tolerance, advanced operators, 50+ privacy-respecting bangs | `[VERIFIED]` |
+| **Terminal UI, Accessibility & Themes** | Full Vim navigation keybindings (`j`/`k`/`v`/`/`/`Esc`), 5 retro CRT themes, local preference storage | Vim/terminal keybinds, 5 retro CRT themes (Amber, Green, Cyberpunk, Matrix, Monokai) | `[VERIFIED]` |
+| **Crawler Efficiency & Sitemaps** | XML and Gzip sitemap stream parsing, HTTP 304 Not Modified conditional fetching via ETags | Streaming/Gzip Sitemap ingestion, HTTP 304 fast path & ETag re-crawling | `[VERIFIED]` |
+| **Developer Platform & CLI Tooling** | OpenAPI 3.1.0 specification with interactive Swagger UI (`/docs`), standalone `@opensearch/cli` | OpenAPI 3.1.0 spec (`/docs`), standalone `@opensearch/cli` terminal tool | `[VERIFIED]` |
+| **Release Convergence & Benchmarking** | Performance profiling, sub-5ms P99 latency SLA on warm indices, execution tracing | Full regression testing, sub-5ms P99 latency SLA, v1.2.0 verification | `[VERIFIED]` |
+| **Developer Utilities & Runtime Toolkit** | Instant utilities for UUID generation, secure passwords, JWT inspection, cryptographic hashes, CIDR IPv4 subnets, cron explainer | UUID/Password/JWT/Hash crypto engine, CIDR IPv4 subnets, cron explainer | `[VERIFIED]` |
+| **Privacy Auditing & Zero-Trace Reader** | Domain security grades (A+ to F), TLS/HSTS posture analyzer, zero-trace distraction-free Markdown document reader | Domain security grades, TLS/HSTS audit, zero-trace Markdown reader | `[VERIFIED]` |
+| **Scientific Math & Currency Engine** | Real-time fiat FX, crypto rates (BTC/ETH/SOL), symbolic algebra computation, rendered LaTeX formatting | Real-time fiat FX, crypto rates, symbolic algebra & LaTeX rendering | `[VERIFIED]` |
+| **Hacker UX & Retro Themes** | Vim result navigation (`j`/`k`/`o`/`c`/`r`), targeted search filters (`/dev`, `/news`, `/papers`, `/code`) | Vim result navigation, clipboard URL copy, tabbed query filters, zero-latency switching | `[VERIFIED]` |
+| **Offline PWA & Service Worker** | Progressive Web App manifest, ServiceWorker offline asset caching, offline fallback interface | ServiceWorker offline caching, PWA Manifest, offline search fallback, installation prompts | `[VERIFIED]` |
+| **Repository Audit & Sovereign Baseline** | Monorepo architecture audit, baseline benchmark instrumentation, formal product and privacy contracts | Architecture inventory, baseline measurements, product & privacy contracts | `[VERIFIED]` |
+| **Search Providers & Source Reliability** | Standardized `SearchProvider` interface, circuit breakers, timeout budgets, zero brittle scraping | Standard provider interface, zero brittle scraping, resilience, attribution compliance | `[VERIFIED]` |
+| **Index Storage & Dataset Growth** | Storage engine lifecycle audit, unified storage abstraction, reproducible 500+ document seed corpus | Lifecycle audit, storage abstraction, reproducible corpus expansion, incremental recovery | `[VERIFIED]` |
+| **Everyday-User Interface** | Search-first responsive layout, structured result cards, light/dark themes, category tabs, safe search | Search-first responsive home, result cards & states, themes & preferences, categories, safe search controls | `[VERIFIED]` |
+| **Privacy Receipt & Local-Only Mode** | Network and data-flow auditing, cryptographic privacy receipt generation, strict Local-Only mode | Network & data-flow audit, local-only enforcement, privacy receipt schema, leak tests | `[VERIFIED]` |
+| **Real PageRank & Ranking Explainability** | Power-iteration PageRank algorithm, link graph adjacency matrix extraction, hybrid ranking | Link graph extraction, power-iteration PageRank, multi-tier ranking, explainability breakdown | `[VERIFIED]` |
+| **Search Quality Lab** | Judged query evaluation harness, automated NDCG@10 and MAP scoring, ablation analysis | Graded judged dataset, evaluation metrics (NDCG/MAP), score ablation, quality regression gates | `[VERIFIED]` |
+| **Performance & Large-Scale Search** | Benchmark harness, execution profiling, postings traversal optimizations, multi-segment indexing | Benchmark harness, execution profiling, postings traversal, segment indexing & scale metrics | `[VERIFIED]` |
+| **Tracker-Aware Search & Focus Lenses** | Reviewable tracker registry (DuckDuckGo Tracker Radar), tracker penalty scoring, Focus Lens schema | Reviewable tracker registry, static subresource parsing, tracker-aware ranking signals, Focus Lens schema | `[VERIFIED]` |
+| **Instant Answers & Extractive Quick Answer** | Modular instant-answer framework (weather, time, calculator, unit conversion), extractive Quick Answer | Modular instant-answer framework, provenance attribution, deterministic Quick Answer panel | `[VERIFIED]` |
+| **Privacy-Preserving Quality Feedback** | User-consented search quality rating, strict query/IP redaction, 30-day retention with auto-purge | Restrained feedback rating, explicit user consent, strict prohibition of queries/IPs, 30-day retention | `[VERIFIED]` |
+| **API, Browser Search & MCP Integration** | OpenAPI 3.1.0 contract fidelity, schema consistency, OpenSearch browser descriptor, MCP server | OpenAPI 3.1.0 contract fidelity, schema consistency, OpenSearch descriptor, MCP server | `[VERIFIED]` |
+| **Security & Operational Resilience** | Multi-tier rate limiting, health/readiness probes, graceful shutdown connection draining, Prometheus metrics | SSRF defense audit, scheme allowlist, storage persistence audit, multi-tier rate limiting, Prometheus metrics | `[VERIFIED]` |
+| **Documentation, Hygiene & Product Identity** | OpenSearch Web distinct product branding, trademark non-affiliation notices, accessibility compliance | Distinct product identity (OpenSearch Web), trademark disambiguation, user docs, accessibility audit | `[VERIFIED]` |
+| **Deployment & Container Support** | Multi-stage Docker container (`node:20-alpine`), unprivileged non-root user (UID 1001), Docker Compose | Multi-stage Docker build, unprivileged user execution, explicit volume durability (`/app/data`), rollback runbooks | `[VERIFIED]` |
+| **GitHub Actions CI/CD & Automated Quality Gates** | Least-privilege automated CI workflows, frozen dependency installation, security/privacy regression checks | Least-privilege CI workflow, pull-request verification gate, release packaging & provenance, 115 suites passed | `[VERIFIED]` |
 
 <br/>
 
@@ -1054,12 +1067,14 @@ $ npm test
 ✓ packages/ranking/tests/feedback-review-workflow.test.ts (16 tests)
 ✓ apps/api/tests/feedback-review-api.test.ts (8 tests)
 ✓ apps/api/tests/lens-api.test.ts (7 tests)
+✓ apps/api/tests/release-packaging-rollback.test.ts (10 tests)
+✓ apps/api/tests/final-release-gate.test.ts (22 tests)
 ...
-Test Files  111 passed (111)
-     Tests  1267 passed (1267)
-  Duration  16.16s -- 100% Passing Pass Rate
+Test Files  115 passed (115)
+     Tests  1339 passed (1339)
+  Duration  24.55s -- 100% Passing Pass Rate
 ────────────────────────────────────────────────────────────
-TOTAL RESULT: 1267 / 1267 TESTS PASSED (100.0%) -- V1.5.0 PHASE 116 VERIFIED (DEMO EXPERIENCE & ACCESSIBILITY REVIEW)
+TOTAL RESULT: 1339 / 1339 TESTS PASSED (100.0%) -- V1.5.0 END-TO-END RELEASE GATE VERIFIED
 ```
 
 ---

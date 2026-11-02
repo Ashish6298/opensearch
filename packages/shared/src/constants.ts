@@ -3,7 +3,7 @@
  */
 
 export const PROJECT_NAME = 'OpenSearch';
-export const PROJECT_VERSION = '1.4.0';
+export const PROJECT_VERSION = '1.5.0';
 
 /**
  * Product Identity & Disambiguation (Phase 114)

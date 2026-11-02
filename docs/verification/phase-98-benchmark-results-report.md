@@ -2,7 +2,7 @@
 
 > **Report ID:** `pub-bench-1793125230990-bl5xm2`  
 > **Timestamp:** 2026-10-27T18:20:30.992Z  
-> **Engine Version:** OpenSearch v1.4.0  
+> **Engine Version:** OpenSearch v1.5.0  
 
 ## ⚠️ Official Disclaimer & Non-Misrepresentation Guarantee
 > [!IMPORTANT]

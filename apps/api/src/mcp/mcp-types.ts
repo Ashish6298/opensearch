@@ -10,7 +10,7 @@ import { AppConfig, Logger } from '@opensearch/shared';
 
 export const MCP_PROTOCOL_VERSION = '2024-11-05';
 export const MCP_SERVER_NAME = 'opensearch-mcp';
-export const MCP_SERVER_VERSION = '1.4.0';
+export const MCP_SERVER_VERSION = '1.5.0';
 
 // JSON-RPC 2.0 Error Codes
 export const JSONRPC_ERRORS = {

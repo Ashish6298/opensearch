@@ -61,7 +61,7 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
     <div class="corner-header-controls">
       <button type="button" class="theme-switcher-btn" id="theme-switcher-btn" aria-label="Toggle color theme" title="Click to cycle theme (Dark, Light, Matrix, Amber, Dracula, Nord, Monokai)">[theme: dark]</button>
       <button type="button" class="settings-toggle-btn" id="settings-toggle-btn" aria-label="Open settings and preferences" title="Search settings and privacy options">⚙️ settings</button>
-      <div class="corner-version">v1.4.0</div>
+      <div class="corner-version">v1.5.0</div>
     </div>
 
     <!-- Main Content Area -->
@@ -319,7 +319,7 @@ export function generateHtmlShell(options: HtmlTemplateOptions = {}): string {
     <!-- Terminal Footer -->
     <footer class="terminal-footer">
       <div class="footer-container">
-        <span class="footer-text"><a href="/about">about</a> · <a href="/docs">docs</a> · <a href="/privacy">privacy</a> · <a href="/browser-search">browser search</a> · <a href="/health" target="_blank" rel="noopener noreferrer">status</a> · <button type="button" class="footer-settings-btn" id="footer-settings-btn" aria-label="Open search settings">settings</button> · <button type="button" class="footer-shortcuts-btn" id="shortcuts-toggle-btn" aria-label="Keyboard Shortcuts (Press ?)">shortcuts [?]</button> · <a href="https://github.com/Ashish6298/opensearch" target="_blank" rel="noopener noreferrer">source</a> — v1.4.0</span>
+        <span class="footer-text"><a href="/about">about</a> · <a href="/docs">docs</a> · <a href="/privacy">privacy</a> · <a href="/browser-search">browser search</a> · <a href="/health" target="_blank" rel="noopener noreferrer">status</a> · <button type="button" class="footer-settings-btn" id="footer-settings-btn" aria-label="Open search settings">settings</button> · <button type="button" class="footer-shortcuts-btn" id="shortcuts-toggle-btn" aria-label="Keyboard Shortcuts (Press ?)">shortcuts [?]</button> · <a href="https://github.com/Ashish6298/opensearch" target="_blank" rel="noopener noreferrer">source</a> — v1.5.0</span>
         <div class="footer-identity-notice" style="margin-top: 6px; font-size: 11px; color: var(--text-muted-50, #888);">OpenSearch Web is an independent search engine project. Not affiliated with Amazon Web Services or the Amazon OpenSearch Project. Compatible with OpenSearch 1.1 description format.</div>
       </div>
     </footer>

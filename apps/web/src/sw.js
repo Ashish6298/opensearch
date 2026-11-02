@@ -5,7 +5,7 @@
  * and offline fallback for instant answers, cheatsheets, and documentation.
  */
 
-const CACHE_NAME = 'opensearch-v1.4.0';
+const CACHE_NAME = 'opensearch-v1.5.0';
 const STATIC_ASSETS = [
   '/',
   '/style.css',

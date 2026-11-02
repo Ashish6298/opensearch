@@ -67,7 +67,7 @@ export function captureEnvironment(): HardwareEnvironment {
     freeMemoryMb: Math.round(os.freemem() / (1024 * 1024)),
     nodeVersion: process.version,
     v8Version: process.versions.v8 || 'Unknown',
-    openSearchVersion: PROJECT_VERSION || '1.4.0',
+    openSearchVersion: PROJECT_VERSION || '1.5.0',
   };
 }
 

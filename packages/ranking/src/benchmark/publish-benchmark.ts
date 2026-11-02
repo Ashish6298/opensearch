@@ -296,7 +296,7 @@ export async function runPublishBenchmark(
   return {
     reportId: `pub-bench-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
     timestamp: new Date().toISOString(),
-    systemVersion: PROJECT_VERSION || '1.4.0',
+    systemVersion: PROJECT_VERSION || '1.5.0',
     environment: env,
     hardwareLimitGuard: guard,
     methodology: {

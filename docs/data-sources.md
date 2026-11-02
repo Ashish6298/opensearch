@@ -54,7 +54,7 @@ OpenSearch is architected on the principle of sovereign, privacy-preserving info
   - Maximum 200 requests per minute per IP.
   - Minimum 100ms delay between burst requests.
   - Mandatory User-Agent header specifying project name, version, repository URL, and contact email:
-    `User-Agent: OpenSearch/1.4.0 (https://github.com/Ashish6298/opensearch; search@opensearch.local)`
+    `User-Agent: OpenSearch/1.5.0 (https://github.com/Ashish6298/opensearch; search@opensearch.local)`
 - **Caching Permissibility:**
   - In-memory response caching permitted up to 3600 seconds TTL.
   - No user identifiers or cookies may be attached to cached records.

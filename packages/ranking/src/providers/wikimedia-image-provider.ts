@@ -117,7 +117,7 @@ export class WikimediaImageProvider implements SearchProvider {
     try {
       const response = await fetch(url, {
         headers: {
-          'User-Agent': 'OpenSearch/1.4.0 (https://github.com/Ashish6298/opensearch; search@opensearch.local)',
+          'User-Agent': 'OpenSearch/1.5.0 (https://github.com/Ashish6298/opensearch; search@opensearch.local)',
           Accept: 'application/json',
         },
         signal: options.signal ?? AbortSignal.timeout(timeoutMs),

@@ -7,6 +7,6 @@ describe('Shared Package Foundation', () => {
     expect(identity.name).toBe('OpenSearch');
     expect(identity.version).toBe(PROJECT_VERSION);
     expect(PROJECT_NAME).toBe('OpenSearch');
-    expect(PROJECT_VERSION).toBe('1.4.0');
+    expect(PROJECT_VERSION).toBe('1.5.0');
   });
 });
